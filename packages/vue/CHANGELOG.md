@@ -1,5 +1,12 @@
 # @anievo-id/rbac-evolution-vue
 
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [a890bc2]
+  - @anievo-id/rbac-evolution@0.3.1
+
 ## 0.3.0
 
 ### Patch Changes
