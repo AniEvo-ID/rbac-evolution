@@ -18,4 +18,4 @@ export type {
   RequirementKind,
   RequirementNames,
   RoleRequirementOptions,
-} from './requirements'
+} from '@anievo-id/rbac-evolution'

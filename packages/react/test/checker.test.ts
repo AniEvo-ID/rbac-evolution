@@ -60,3 +60,17 @@ describe('createRbacChecker', () => {
     expect(rbac.roles).toEqual([])
   })
 })
+
+describe('loading', () => {
+  it('denies every check, cannot included, and ignores a stale snapshot', () => {
+    const stale = createRbacChecker({ roles: ['admin'], permissions: ['x'] }, { loading: true, superAdminRoles: ['admin'] })
+    expect(stale.loading).toBe(true)
+    expect(stale.can('x')).toBe(false)
+    expect(stale.cannot('x')).toBe(false)
+    expect(stale.cannot('y')).toBe(false)
+    expect(stale.canAny('x')).toBe(false)
+    expect(stale.hasRole('admin')).toBe(false)
+    expect(stale.isSuperAdmin).toBe(false)
+    expect(createRbacChecker(null, { loading: true }).cannot('billing')).toBe(false)
+  })
+})

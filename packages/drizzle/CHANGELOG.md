@@ -1,5 +1,38 @@
 # @anievo-id/rbac-evolution-drizzle
 
+## 0.6.3
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@0.6.3
+
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [70a7cf2]
+  - @anievo-id/rbac-evolution@0.6.2
+
+## 0.6.1
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@0.6.1
+
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies [7cef7cb]
+  - @anievo-id/rbac-evolution@0.6.0
+
+## 0.5.0
+
+### Patch Changes
+
+- Updated dependencies [e9f2c48]
+  - @anievo-id/rbac-evolution@0.5.0
+
 ## 0.4.1
 
 ### Patch Changes

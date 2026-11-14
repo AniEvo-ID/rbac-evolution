@@ -1,4 +1,10 @@
-import type { SubjectRbac } from '@anievo-id/rbac-evolution'
+import {
+  type RbacRequirement,
+  REQUIREMENT_MESSAGES,
+  satisfiesRequirement,
+  type SubjectRbac,
+  UNAUTHENTICATED_MESSAGE,
+} from '@anievo-id/rbac-evolution'
 import {
   type CanActivate,
   type ExecutionContext,
@@ -10,7 +16,6 @@ import {
 import { Reflector } from '@nestjs/core'
 import { getResolved, hasResolved, requestKey, setResolved } from './context'
 import type { RbacModuleOptions } from './options'
-import { MESSAGES, type RbacRequirement, satisfies, UNAUTHENTICATED_MESSAGE } from './requirements'
 import { RBAC_MODULE_OPTIONS, RBAC_REQUIREMENTS } from './tokens'
 
 /** Handlers already enforced for a request — the guard may run twice (global + `@UseGuards`). */
@@ -59,11 +64,11 @@ export class RbacGuard implements CanActivate {
     }
 
     for (const requirement of requirements) {
-      if (!(await satisfies(rbac, requirement))) {
+      if (!(await satisfiesRequirement(rbac, requirement))) {
         throw new ForbiddenException({
           error: 'FORBIDDEN',
           reason: requirement.kind,
-          message: MESSAGES[requirement.kind],
+          message: REQUIREMENT_MESSAGES[requirement.kind],
           ...(this.options.exposeRequirements && { required: requirement.requirements }),
         })
       }

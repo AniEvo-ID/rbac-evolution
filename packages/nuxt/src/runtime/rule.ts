@@ -1,5 +1,13 @@
+import {
+  permissionRequirement,
+  type RbacRequirement,
+  type RequirementKind,
+  type RequirementNames,
+  REQUIREMENT_MESSAGES,
+  roleOrPermissionRequirement,
+  roleRequirement,
+} from '@anievo-id/rbac-evolution'
 import type { VueRbac } from '@anievo-id/rbac-evolution-vue'
-import { MESSAGES, requirementGroups, type RequirementKind, type RequirementNames } from '../requirements'
 
 /** `definePageMeta({ rbac: { ... } })` — same semantics as the Express / Nest guards. */
 export interface RbacRouteRule {
@@ -27,6 +35,15 @@ export type RouteRuleResult =
 const list = (names: RequirementNames | undefined): RequirementNames[] =>
   names === undefined ? [] : [names]
 
+/** A requirement without names can never be met: no groups, so the check below denies. */
+const groupsOf = (kind: RequirementKind, build: () => RbacRequirement): [RequirementKind, string[][]] => {
+  try {
+    return [kind, build().requirements]
+  } catch {
+    return [kind, []]
+  }
+}
+
 /**
  * Evaluates a route rule against the client-side snapshot. Pure and synchronous —
  * used by the `rbac` route middleware, exported for custom middleware.
@@ -36,13 +53,13 @@ export function evaluateRouteRule(rbac: VueRbac, rule: RbacRouteRule, isGuest: b
   // A key that is present but undefined (e.g. `permission: config.missing`) is a requirement nobody meets:
   // fail closed instead of silently opening the page. A rule without any requirement key still passes.
   if ('permission' in rule) {
-    checks.push(['permission', requirementGroups('permission', list(rule.permission), { any: rule.any })])
+    checks.push(groupsOf('permission', () => permissionRequirement(list(rule.permission), { any: rule.any })))
   }
   if ('role' in rule) {
-    checks.push(['role', requirementGroups('role', list(rule.role), { all: rule.all })])
+    checks.push(groupsOf('role', () => roleRequirement(list(rule.role), { all: rule.all })))
   }
   if ('roleOrPermission' in rule) {
-    checks.push(['role_or_permission', requirementGroups('role_or_permission', list(rule.roleOrPermission))])
+    checks.push(groupsOf('role_or_permission', () => roleOrPermissionRequirement(list(rule.roleOrPermission))))
   }
   if (checks.length === 0) return { ok: true }
   if (isGuest) return { ok: false, status: 401, error: 'UNAUTHENTICATED' }
@@ -55,7 +72,7 @@ export function evaluateRouteRule(rbac: VueRbac, rule: RbacRouteRule, isGuest: b
         if (kind === 'role') return rbac.hasAnyRole(group)
         return rbac.hasAnyRole(group) || rbac.canAny(group)
       })
-    if (!pass) return { ok: false, status: 403, error: 'FORBIDDEN', reason: kind, message: MESSAGES[kind] }
+    if (!pass) return { ok: false, status: 403, error: 'FORBIDDEN', reason: kind, message: REQUIREMENT_MESSAGES[kind] }
   }
   return { ok: true }
 }

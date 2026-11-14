@@ -1,5 +1,44 @@
 # @anievo-id/rbac-evolution-vue
 
+## 0.6.3
+
+### Patch Changes
+
+- ef494f0: While `loading`, every check returns `false`, `cannot()` included (it returned `true`), and a snapshot passed together with `loading: true` grants nothing until `setSnapshot()` is called. Same behaviour as the React package since 0.6.2.
+  - @anievo-id/rbac-evolution@0.6.3
+
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [70a7cf2]
+  - @anievo-id/rbac-evolution@0.6.2
+
+## 0.6.1
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@0.6.1
+
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies [7cef7cb]
+  - @anievo-id/rbac-evolution@0.6.0
+
+## 0.5.0
+
+### Minor Changes
+
+- e9f2c48: - React: `<RbacProvider loading>` and Vue: `createRbacPlugin({ loading: true })`. While the snapshot is still being fetched, `<Can>`, `<Cannot>`, `<HasRole>`, `v-can` and `v-role` render nothing (not even a fallback or a `not` branch), so "read-only" content no longer flashes before the real permissions arrive. Exposed as `useRbac().loading` / `rbac.loading.value`.
+  - Adapter test suite (`runAdapterTests`): reverse lookups (`getSubjectIdsWithRoles` / `getSubjectIdsWithPermissions`) are now checked per team.
+
+### Patch Changes
+
+- Updated dependencies [e9f2c48]
+  - @anievo-id/rbac-evolution@0.5.0
+
 ## 0.4.1
 
 ### Patch Changes

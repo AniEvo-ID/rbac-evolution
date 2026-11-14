@@ -242,6 +242,7 @@ describe('error handling', () => {
   it('rejects guards without names', () => {
     expect(() => requirePermission()).toThrow(TypeError)
     expect(() => requireRole({ all: true })).toThrow(TypeError)
+    expect(() => requireRole(' | ')).toThrow(TypeError) // used to answer 403 at runtime; now fails at startup like Nuxt/NestJS
   })
 })
 

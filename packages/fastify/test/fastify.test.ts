@@ -299,6 +299,7 @@ describe('error handling, scopes, teams and guards', () => {
   it('rejects guards without names', () => {
     expect(() => requirePermission()).toThrow(TypeError)
     expect(() => requireRole({ all: true })).toThrow(TypeError)
+    expect(() => requireRole(' | ')).toThrow(TypeError)
   })
 })
 

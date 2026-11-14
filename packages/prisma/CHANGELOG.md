@@ -1,5 +1,42 @@
 # @anievo-id/rbac-evolution-prisma
 
+## 0.6.3
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@0.6.3
+
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [70a7cf2]
+  - @anievo-id/rbac-evolution@0.6.2
+
+## 0.6.1
+
+### Patch Changes
+
+- 8d97357: Faster reverse lookups (`subjectsWithRole()` / `subjectsWithPermission()`) on large tables:
+
+  - Prisma: de-duplicates subject ids in the database with `groupBy` instead of loading every link row into JS. `PrismaRbacModelHasRoleDelegate` / `PrismaRbacModelHasPermissionDelegate` now include `groupBy` (every generated `PrismaClient` has it).
+  - Mongoose: uses an aggregation (`$group`) instead of `distinct`, whose single result document is capped at 16 MB (roughly 400k ids).
+  - @anievo-id/rbac-evolution@0.6.1
+
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies [7cef7cb]
+  - @anievo-id/rbac-evolution@0.6.0
+
+## 0.5.0
+
+### Patch Changes
+
+- Updated dependencies [e9f2c48]
+  - @anievo-id/rbac-evolution@0.5.0
+
 ## 0.4.1
 
 ### Patch Changes
