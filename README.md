@@ -30,26 +30,36 @@ Install only what you need — e.g. for a Next.js + Prisma app:
 npm i @anievo-id/rbac-evolution @anievo-id/rbac-evolution-prisma @anievo-id/rbac-evolution-next @anievo-id/rbac-evolution-react
 ```
 
-## Planned API (preview)
+## Quick start
 
 ```ts
+import { createRbac, MemoryAdapter } from '@anievo-id/rbac-evolution'
+
+const rbac = createRbac({ adapter: new MemoryAdapter() })
+
+await rbac.createPermission('edit articles')
+await rbac.createRole('writer')
+await rbac.role('writer').givePermissionTo('edit articles')
+
+const user = rbac.for({ type: 'user', id: 1 })
 await user.assignRole('writer')
-await role.givePermissionTo('edit articles')
 
 await user.hasRole('writer')               // true
 await user.hasPermissionTo('edit articles') // true
-await user.can('articles.*')                // wildcard support
 ```
+
+See the [core package README](./packages/core#readme) for guards, wildcards, teams and caching.
 
 > ⚠️ Client-side checks (React/Vue) are for UI only. Always enforce permissions on the server.
 
 ## Roadmap
 
-- [ ] Core: roles, permissions, direct user permissions
-- [ ] Guards (`web`, `api`, …)
-- [ ] Wildcard permissions
-- [ ] Caching layer
-- [ ] Teams / multi-tenancy
+- [x] Core: roles, permissions, direct user permissions
+- [x] Guards (`web`, `api`, …)
+- [x] Wildcard permissions
+- [x] Caching layer
+- [x] Teams / multi-tenancy
+- [x] In-memory adapter
 - [ ] Prisma & Drizzle adapters
 - [ ] Next.js, React, Vue, Express integrations
 - [ ] Documentation site
