@@ -1,15 +1,16 @@
 # Mascot and logo art sources
 
 The logo character and the nine "Sect of Evolution" mascots are generated in Google Flow (Nano Banana),
-in the maintainer's Flow project **"Nov 14 - 13:00"**. Every mascot has a 2D version
-(`docs/public/mascots/<id>.webp`) and a 3D figure version (`<id>-3d.webp`). The logo lives in
+in the maintainer's Flow project **"Nov 14 - 13:00"**. Every mascot has a 2D still
+(`docs/public/mascots/<id>.webp`); animated guardians also have a chibi clip (`<id>-chibi.*`) and a full-size
+anime clip (`<id>-anime.*`), each as `.webm` (VP9 + alpha), `.mov` (HEVC + alpha, Safari) and a `.webp` poster. The logo lives in
 `docs/public/brand/` and is built by `docs/scripts/brand.cjs`.
 
 Style: extreme super-deformed (SD) chibi, about 1.5 heads tall. Each character is generated from a text
 description, not from the older art: using the older images as a reference pulled the proportions back
 to a long body.
 
-| id | Character | Flow tile title (2D, then its 3D edit in the version history) |
+| id | Character | Flow tile title |
 | --- | --- | --- |
 | logo | Blue-haired key holder in a shield | Boy holding golden key |
 | sect-master | Yue, Sect Master | Woman holding jade seal stone |
@@ -47,15 +48,38 @@ Character descriptions used:
 - **Kitsu**: small white nine-tailed fox sitting, teal and gold flame-tipped tails, violet eyes, green bead collar with a gold bell, question-mark bubble.
 - **Logo**: original boy with bright electric blue spiky hair and round glasses, white and navy robe with a blue sash, golden key held like a sword, in front of a blue shield (#3B82F6, navy outline).
 
-3D figure (edit of the 2D version):
+## Animated clips
 
-> Turn this exact chibi character into a 3D rendered collectible vinyl figure with the SAME extreme
-> super-deformed proportions (huge head, tiny body, nub hands and feet): stylized 3D toon render, smooth
-> rounded sculpted forms, soft studio lighting with a crisp rim light, the same flat colors, same face, hair,
-> outfit, props and pose. Full body, centered, plain pure white background, no base or stand, no text.
+Every guardian has a chibi clip and an anime clip, made in the same Flow project with the agent (image 16:9 x1,
+Nano Banana 2.1; video 16:9 x1, Veo 3.1 Quality, 6 seconds). Start a new agent chat when it begins answering
+the previous message instead of the latest one.
+
+1. Chibi: attach the 2D still and ask for the same character redrawn on a flat chroma-key screen, filling about
+   55% of the height. Anime: no reference; describe the character with normal proportions, whole body visible,
+   about 70% of the height, on the same screen.
+2. Attach that image and ask Veo for a 6-second 16:9 video: flat 2D cel animation (not 3D), static camera, the
+   screen color throughout, the image as first and last frame, the action in between, everything inside the frame.
+3. Download the 720p MP4 and run `docs/scripts/key-video.sh` with `CROP` set to the area the action uses
+   (every frame keyed, union of the visible pixels, plus 3% of the height), `HEIGHT=580` for chibi and
+   `HEIGHT=640` for anime (the largest the page shows them; wide clips are also capped at 960 px). WebM and
+   MOV are capped at 1.5 Mbit/s, about 1-2 MB per clip. `KEY` defaults to the color in the top-left corner,
+   since Veo's green drifts.
+
+Screens and key settings that differ from the defaults (`SIM=0.38`, green screen):
+
+| Clip | Why |
+| --- | --- |
+| alchemist-*, spirit-fox-* | Magenta screen (`#FF00FF`): Xia's hair and Kitsu's tail tips are green. |
+| weaver-anime `SIM=0.20`, weaver-chibi `SIM=0.28` | Lan's dark jade robe is close to the screen color. |
+| disciple-anime `SIM=0.16` | Tao's trousers are green. |
+| gatekeeper-anime `CROP=1554:1068:146:6`, gatekeeper-chibi `CROP=822:666:194:10` | Rin was made at 1080p (anime). |
+
+Actions: Yue raises her jade seal and a sigil spins; Rin swings her sword; Mei opens her scroll and glyphs
+orbit; Hana and Sora swirl fire and water; Tao kicks and flashes a talisman; Lan casts a jade rune circle;
+Xia's furnace puffs smoke and she catches a pill; Feng calls out while paper cranes flap; Kitsu tilts its head,
+swishes its tails and lights foxfire.
 
 ## Export
 
 Download "1K original" from Flow. Flood-fill near-white pixels from the image border to transparent, trim,
-and export WebP (height 640). For the 3D renders, the grey floor shadow under the feet becomes a soft alpha
-shadow; Feng's 3D render also had a stray floor line cropped off below the feet.
+and export WebP (height 640).
