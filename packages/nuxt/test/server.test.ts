@@ -113,6 +113,26 @@ describe('createRbacServer', () => {
   })
 })
 
+describe('createRbacServer with several instances', () => {
+  it('each instance resolves its own subject; the first one fills event.context.rbac', async () => {
+    const rbac = await seededRbac()
+    await rbac.createRole('api-admin', { guard: 'api' })
+    await rbac.for({ type: 'user', id: 1 }, { guard: 'api' }).assignRole('api-admin')
+    const getSubject = (event: ReturnType<typeof fakeEvent>) => (event.user === undefined ? null : { type: 'user', id: event.user })
+    const web = createRbacServer<ReturnType<typeof fakeEvent>>({ rbac, getSubject })
+    const api = createRbacServer<ReturnType<typeof fakeEvent>>({ rbac, getSubject, guard: 'api' })
+    const event = fakeEvent(1)
+
+    const webSubject = await web.resolve(event)
+    const apiSubject = await api.resolve(event)
+    expect(apiSubject?.guardName).toBe('api')
+    expect(webSubject?.guardName).not.toBe('api')
+    expect(event.context['rbac']).toBe(webSubject)
+    await expect(api.requireRole(event, 'api-admin')).resolves.toBe(apiSubject)
+    await expect(web.requireRole(event, 'writer')).resolves.toBe(webSubject)
+  })
+})
+
 describe('createRbacServer canAny / canAll (spatie v8.5)', () => {
   it('canAny needs one of the permissions, canAll every entry', async () => {
     const s = createRbacServer<ReturnType<typeof fakeEvent>>({

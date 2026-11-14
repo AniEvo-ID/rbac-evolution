@@ -26,6 +26,28 @@ runAdapterTests('PrismaAdapter', async () => {
   return new PrismaAdapter(prisma)
 })
 
+describe('PrismaAdapter on an interactive-transaction client', () => {
+  it('deletes roles and permissions inside prisma.$transaction(async (tx) => ...)', async () => {
+    await resetDatabase()
+    const rbac = createRbac({ adapter: new PrismaAdapter(prisma), cache: false })
+    await rbac.createPermission('edit')
+    await rbac.createRole('writer')
+    await rbac.role('writer').givePermissionTo('edit')
+    await rbac.for({ type: 'user', id: 1 }).assignRole('writer')
+
+    await prisma.$transaction(async (tx) => {
+      const inTx = createRbac({ adapter: new PrismaAdapter(tx), cache: false })
+      await inTx.deleteRole('writer')
+      await inTx.deletePermission('edit')
+    })
+
+    expect(await prisma.rbacRole.count()).toBe(0)
+    expect(await prisma.rbacPermission.count()).toBe(0)
+    expect(await prisma.rbacModelHasRole.count()).toBe(0)
+    expect(await prisma.rbacRoleHasPermission.count()).toBe(0)
+  })
+})
+
 describe('PrismaAdapter specifics', () => {
   let adapter: PrismaAdapter
   const alice = { type: 'user', id: 1 }

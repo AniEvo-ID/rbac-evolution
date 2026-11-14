@@ -25,6 +25,19 @@ function setup(template: string, options: RbacPluginOptions = { snapshot: writer
 const visible = (el: Element | undefined) => (el as HTMLElement | undefined)?.style.display !== 'none'
 
 describe('directives', () => {
+  it('hides elements whose bound value is undefined or null (a typo must not show them)', () => {
+    const { wrapper } = setup(
+      `<div>
+        <button id="u" v-can="cfg.missing">U</button>
+        <button id="n" v-can.any="null">N</button>
+        <button id="r" v-role="cfg.missing">R</button>
+      </div>`,
+      { snapshot: { roles: ['admin'], permissions: ['edit articles'] }, superAdminRoles: ['admin'] },
+      () => ({ cfg: {} }),
+    )
+    for (const id of ['u', 'n', 'r']) expect(visible(wrapper.find(`#${id}`).element)).toBe(false)
+  })
+
   it('v-can hides elements and reacts to setSnapshot', async () => {
     const { rbac, wrapper } = setup(`
       <div>

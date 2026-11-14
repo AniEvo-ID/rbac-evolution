@@ -37,7 +37,8 @@ jobs:
           node-version: 22
           cache: pnpm
       # Trusted Publishing needs npm >= 11.5.1 (Node 22 ships npm 10)
-      - run: npm install -g npm@latest
+      # Pinned: this job can publish, so a new npm release must not run here unreviewed
+      - run: npm install -g npm@11.21.1
       - run: pnpm install --frozen-lockfile
       - name: Create release PR or publish to npm
         id: changesets
