@@ -1,8 +1,13 @@
 {
   "name": "@anievo-id/rbac-evolution",
   "version": "0.1.0",
-  "description": "Framework-agnostic RBAC engine for rbac-evolution — roles, permissions, guards.",
+  "description": "Framework-agnostic RBAC engine for rbac-evolution \u2014 roles, permissions, guards.",
   "license": "MIT",
+  "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
+  "homepage": "https://github.com/AniEvo-ID/rbac-evolution/tree/main/packages/core#readme",
+  "bugs": {
+    "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
+  },
   "type": "module",
   "repository": {
     "type": "git",
@@ -69,5 +74,8 @@
     "vitest": {
       "optional": true
     }
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
