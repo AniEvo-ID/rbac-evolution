@@ -107,16 +107,11 @@ async function animatePage() {
         gsap.from(row.querySelector('.panel'), { x: flip ? -40 : 40, opacity: 0, duration: 0.9, ease: 'power3.out', scrollTrigger: st })
       })
       gsap.from('.cta', { y: 40, opacity: 0, duration: 0.9, ease: 'power3.out', scrollTrigger: { trigger: '.cta', start: 'top 88%' } })
-      ScrollTrigger.batch('.roster .card', {
-        start: 'top 90%',
-        once: true,
-        onEnter: (els) => gsap.from(els, { y: 50, opacity: 0, rotate: -1.5, duration: 0.8, ease: 'back.out(1.4)', stagger: 0.07 }),
-      })
-      gsap.from('.roster-inner > :not(.cards)', { y: 30, opacity: 0, duration: 0.8, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: '.roster', start: 'top 80%' } })
+      gsap.from('.roster-inner > *', { y: 30, opacity: 0, duration: 0.8, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: '.roster', start: 'top 80%' } })
 
       if (finePointer) {
         document.querySelectorAll<HTMLElement>('.home-hero .actions .btn').forEach((b) => undo.push(magnetic(b, gsap)))
-        document.querySelectorAll<HTMLElement>('.rows .panel, .roster .card-link').forEach((c) => undo.push(tilt(c, gsap)))
+        document.querySelectorAll<HTMLElement>('.rows .panel').forEach((c) => undo.push(tilt(c, gsap)))
       }
     } else {
       // Docs stay calm: a short rise for the first blocks of the page.

@@ -11,6 +11,10 @@ export interface Mascot {
   line: string
   /** Accent color for glows and badges. */
   accent: string
+  /** Two or three sentences for the character select on the home page. */
+  description: string
+  /** What the "Learn …" button links to, e.g. `super-admin`. */
+  topic: string
 }
 
 export const mascots: Mascot[] = [
@@ -22,6 +26,9 @@ export const mascots: Mascot[] = [
     link: '/basic-usage/super-admin',
     line: 'The seal of the Sect Master opens every gate — use it sparingly.',
     accent: '#00c896',
+    description:
+      'Yue holds the one seal every gate obeys. Give a role to superAdminRoles, or decide in a before() hook, and every can() check says yes for that subject, across every guard and team.',
+    topic: 'super-admin',
   },
   {
     id: 'gatekeeper',
@@ -31,6 +38,9 @@ export const mascots: Mascot[] = [
     link: '/frameworks/express',
     line: 'No permission, no passage. I check every request on the server.',
     accent: '#00c2e0',
+    description:
+      'Rin stands at every route. Middleware and guards for Express, Fastify, Hono, NestJS and Next.js answer 401 for guests and 403 for missing access, before your handler runs.',
+    topic: 'guards',
   },
   {
     id: 'scroll-keeper',
@@ -40,6 +50,9 @@ export const mascots: Mascot[] = [
     link: '/basic-usage/direct-permissions',
     line: 'Each scroll is one permission. Roles are just bundles of scrolls!',
     accent: '#a07bff',
+    description:
+      'Mei keeps the library of technique scrolls. Create permissions, give them straight to a user or bundle them into roles, and use wildcards like articles.* when one scroll should cover many.',
+    topic: 'permissions',
   },
   {
     id: 'twins',
@@ -49,6 +62,9 @@ export const mascots: Mascot[] = [
     link: '/basic-usage/teams',
     line: 'Same sect, different branches — roles stay inside their team.',
     accent: '#ff5c74',
+    description:
+      'The twins guard the branches of the sect. Turn on teams and the same user can be an elder in the east branch and a plain disciple in the west: every role is scoped to its team.',
+    topic: 'teams',
   },
   {
     id: 'disciple',
@@ -58,6 +74,9 @@ export const mascots: Mascot[] = [
     link: '/guide/quick-start',
     line: 'Lv.1 → first role assigned in five minutes. Let’s go!',
     accent: '#ff8a1f',
+    description:
+      'Tao just joined the sect. Follow the quick start: install the core, create a permission and a role, assign it, and check can(). All in memory, no database needed.',
+    topic: 'the quick start',
   },
   {
     id: 'weaver',
@@ -67,6 +86,9 @@ export const mascots: Mascot[] = [
     link: '/adapters/overview',
     line: 'Prisma, Drizzle, Kysely, Mongoose — I bind them all to the same five tables.',
     accent: '#ffc21a',
+    description:
+      'Lan weaves the formation that stores everything. Adapters for Prisma, Drizzle, Kysely and Mongoose keep the same five tables as spatie on PostgreSQL, MySQL, SQLite, SQL Server and MongoDB.',
+    topic: 'adapters',
   },
   {
     id: 'alchemist',
@@ -76,6 +98,9 @@ export const mascots: Mascot[] = [
     link: '/advanced/cache',
     line: 'Refined once, served many times. Change a role and I brew a fresh batch.',
     accent: '#3ddc6e',
+    description:
+      'Xia brews every lookup once and serves it many times. The cache keeps can() fast and is cleared automatically on every change; plug in Redis or any store you like.',
+    topic: 'the cache',
   },
   {
     id: 'messenger',
@@ -85,6 +110,9 @@ export const mascots: Mascot[] = [
     link: '/advanced/events',
     line: 'role.attached! permission.detached! I announce every change.',
     accent: '#3d8bff',
+    description:
+      'Feng carries word of every change. Listen to role and permission events to write audit logs, sync another system or notify an admin.',
+    topic: 'events',
   },
   {
     id: 'spirit-fox',
@@ -94,6 +122,9 @@ export const mascots: Mascot[] = [
     link: '/guide/introduction',
     line: 'Kyu? Lost your way? Follow my tails back home.',
     accent: '#d29bff',
+    description:
+      'Kitsu wanders the grounds and finds lost travellers. Whenever a page goes missing, the fox leads you back to the guide.',
+    topic: 'the guide',
   },
 ]
 

@@ -11,6 +11,21 @@ test.describe('Docs site', () => {
     expect(errors).toEqual([])
   })
 
+  test('Meet the Sect switches guardians and art style', async ({ page }) => {
+    await page.goto('./')
+    const roster = page.locator('.roster')
+    await expect(roster.locator('.info .name')).toHaveText('Yue')
+    await roster.getByRole('button', { name: 'Next guardian' }).click()
+    await expect(roster.locator('.info .name')).toHaveText('Rin')
+    await roster.getByRole('button', { name: 'Kitsu, Spirit Fox' }).click()
+    await expect(roster.locator('.info .name')).toHaveText('Kitsu')
+    await expect(roster.getByRole('button', { name: 'Kitsu, Spirit Fox' })).toHaveAttribute('aria-pressed', 'true')
+    await roster.getByRole('button', { name: 'Show 3D art' }).click()
+    await expect(roster.locator('img.figure')).toHaveAttribute('src', /spirit-fox-3d\.webp$/)
+    await roster.getByRole('button', { name: 'Previous guardian' }).click()
+    await expect(roster.locator('.info .name')).toHaveText('Feng')
+  })
+
   test('install command can be copied', async ({ page, context, browserName }) => {
     test.skip(browserName !== 'chromium', 'clipboard permissions are Chromium-only here')
     await context.grantPermissions(['clipboard-read', 'clipboard-write'])
