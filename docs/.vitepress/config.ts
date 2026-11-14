@@ -70,6 +70,8 @@ export default defineConfig({
           { text: 'Overview', link: '/adapters/overview' },
           { text: 'Prisma', link: '/adapters/prisma' },
           { text: 'Drizzle', link: '/adapters/drizzle' },
+          { text: 'Kysely', link: '/adapters/kysely' },
+          { text: 'Mongoose (MongoDB)', link: '/adapters/mongoose' },
           { text: 'Memory', link: '/adapters/memory' },
           { text: 'Custom adapter', link: '/adapters/custom' },
         ],
