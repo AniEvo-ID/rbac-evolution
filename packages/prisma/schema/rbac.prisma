@@ -1,0 +1,77 @@
+// rbac-evolution — Prisma models
+// Copy these models into your schema.prisma (or into a file of a multi-file
+// `prismaSchemaFolder` schema). Table and column names mirror spatie/laravel-permission.
+//
+// Conventions:
+// - role / permission ids are autoincrement Int
+// - subjects (users, API clients, ...) are stored as `subject_type` + `subject_id` (text),
+//   so any primary key type works (number, UUID, cuid, ...)
+// - `team_id` is NOT NULL text; '' (empty string) means "global / no team"
+
+model RbacPermission {
+  id        Int      @id @default(autoincrement())
+  name      String
+  guardName String   @map("guard_name")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  roles    RbacRoleHasPermission[]
+  subjects RbacModelHasPermission[]
+
+  @@unique([name, guardName])
+  @@map("permissions")
+}
+
+model RbacRole {
+  id        Int      @id @default(autoincrement())
+  teamId    String   @default("") @map("team_id")
+  name      String
+  guardName String   @map("guard_name")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  permissions RbacRoleHasPermission[]
+  subjects    RbacModelHasRole[]
+
+  @@unique([name, guardName, teamId])
+  @@index([teamId])
+  @@map("roles")
+}
+
+model RbacRoleHasPermission {
+  permissionId Int @map("permission_id")
+  roleId       Int @map("role_id")
+
+  permission RbacPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role       RbacRole       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_has_permissions")
+}
+
+model RbacModelHasRole {
+  roleId      Int    @map("role_id")
+  subjectType String @map("subject_type")
+  subjectId   String @map("subject_id")
+  teamId      String @default("") @map("team_id")
+
+  role RbacRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, subjectType, subjectId, teamId])
+  @@index([subjectType, subjectId, teamId])
+  @@map("model_has_roles")
+}
+
+model RbacModelHasPermission {
+  permissionId Int    @map("permission_id")
+  subjectType  String @map("subject_type")
+  subjectId    String @map("subject_id")
+  teamId       String @default("") @map("team_id")
+
+  permission RbacPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([permissionId, subjectType, subjectId, teamId])
+  @@index([subjectType, subjectId, teamId])
+  @@map("model_has_permissions")
+}
