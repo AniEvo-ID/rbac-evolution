@@ -1,5 +1,13 @@
 # @anievo-id/rbac-evolution-vue
 
+## 0.1.1
+
+### Patch Changes
+
+- 6b7fef7: Add `author`, `homepage`, `bugs` and `engines` metadata to every package, so npm links to the right README, issue tracker and supported Node.js versions. First release published through npm Trusted Publishing with provenance.
+- Updated dependencies [6b7fef7]
+  - @anievo-id/rbac-evolution@0.1.1
+
 ## 0.1.0
 
 ### Minor Changes
