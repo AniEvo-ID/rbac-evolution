@@ -12,16 +12,16 @@
 <p align="center">
   <a href="https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/ci.yml"><img src="https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://www.npmjs.com/package/@anievo-id/rbac-evolution"><img src="https://img.shields.io/npm/v/@anievo-id/rbac-evolution?color=3b82f6&label=npm" alt="npm"></a>
-  <a href="https://anievo-id.github.io/rbac-evolution/quality"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fanievo-id.github.io%2Frbac-evolution%2Freports%2Funit.json&query=%24.totals.passed&suffix=%20passed&label=tests&color=00c896" alt="tests"></a>
-  <a href="https://anievo-id.github.io/rbac-evolution/quality"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fanievo-id.github.io%2Frbac-evolution%2Freports%2Fe2e.json&query=%24.totals.passed&suffix=%20passed&label=e2e&color=00c896" alt="e2e"></a>
+  <a href="https://app.anievo.id/rbac-evolution/quality"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapp.anievo.id%2Frbac-evolution%2Freports%2Funit.json&query=%24.totals.passed&suffix=%20passed&label=tests&color=00c896" alt="tests"></a>
+  <a href="https://app.anievo.id/rbac-evolution/quality"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fapp.anievo.id%2Frbac-evolution%2Freports%2Fe2e.json&query=%24.totals.passed&suffix=%20passed&label=e2e&color=00c896" alt="e2e"></a>
   <a href="https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/release-check.yml"><img src="https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/release-check.yml/badge.svg" alt="release sync"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license"></a>
 </p>
 
 <p align="center">
-  📖 <a href="https://anievo-id.github.io/rbac-evolution/"><b>Documentation</b></a> ·
-  🧪 <a href="https://anievo-id.github.io/rbac-evolution/quality">Test report</a> ·
-  🚀 <a href="https://anievo-id.github.io/rbac-evolution/guide/quick-start">Quick start</a>
+  📖 <a href="https://app.anievo.id/rbac-evolution/"><b>Documentation</b></a> ·
+  🧪 <a href="https://app.anievo.id/rbac-evolution/quality">Test report</a> ·
+  🚀 <a href="https://app.anievo.id/rbac-evolution/guide/quick-start">Quick start</a>
 </p>
 
 > **Status: 🧪 beta.** The API may still change before 1.0. Every release is tested against real PostgreSQL, MySQL
@@ -33,18 +33,18 @@ The docs are guarded by nine original chibi characters. Each one looks after a p
 
 <table align="center">
   <tr>
-    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/basic-usage/super-admin"><img src="docs/public/mascots/sect-master.webp" height="110" alt="Yue, the Sect Master"><br><b>Yue</b></a><br><sub>Super-admin</sub></td>
-    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/frameworks/express"><img src="docs/public/mascots/gatekeeper.webp" height="110" alt="Rin, the Blade Gatekeeper"><br><b>Rin</b></a><br><sub>Guards</sub></td>
-    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/basic-usage/direct-permissions"><img src="docs/public/mascots/scroll-keeper.webp" height="110" alt="Mei, the Scroll Keeper"><br><b>Mei</b></a><br><sub>Permissions</sub></td>
-    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/basic-usage/teams"><img src="docs/public/mascots/twins.webp" height="110" alt="Hana and Sora, the Branch Twins"><br><b>Hana &amp; Sora</b></a><br><sub>Teams</sub></td>
-    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/guide/quick-start"><img src="docs/public/mascots/disciple.webp" height="110" alt="Tao, the New Disciple"><br><b>Tao</b></a><br><sub>Quick start</sub></td>
+    <td align="center" width="110"><a href="https://app.anievo.id/rbac-evolution/basic-usage/super-admin"><img src="docs/public/mascots/sect-master.webp" height="110" alt="Yue, the Sect Master"><br><b>Yue</b></a><br><sub>Super-admin</sub></td>
+    <td align="center" width="110"><a href="https://app.anievo.id/rbac-evolution/frameworks/express"><img src="docs/public/mascots/gatekeeper.webp" height="110" alt="Rin, the Blade Gatekeeper"><br><b>Rin</b></a><br><sub>Guards</sub></td>
+    <td align="center" width="110"><a href="https://app.anievo.id/rbac-evolution/basic-usage/direct-permissions"><img src="docs/public/mascots/scroll-keeper.webp" height="110" alt="Mei, the Scroll Keeper"><br><b>Mei</b></a><br><sub>Permissions</sub></td>
+    <td align="center" width="110"><a href="https://app.anievo.id/rbac-evolution/basic-usage/teams"><img src="docs/public/mascots/twins.webp" height="110" alt="Hana and Sora, the Branch Twins"><br><b>Hana &amp; Sora</b></a><br><sub>Teams</sub></td>
+    <td align="center" width="110"><a href="https://app.anievo.id/rbac-evolution/guide/quick-start"><img src="docs/public/mascots/disciple.webp" height="110" alt="Tao, the New Disciple"><br><b>Tao</b></a><br><sub>Quick start</sub></td>
   </tr>
   <tr>
-    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/adapters/overview"><img src="docs/public/mascots/weaver.webp" height="110" alt="Lan, the Formation Weaver"><br><b>Lan</b></a><br><sub>Adapters</sub></td>
-    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/advanced/cache"><img src="docs/public/mascots/alchemist.webp" height="110" alt="Xia, the Pill Alchemist"><br><b>Xia</b></a><br><sub>Cache</sub></td>
-    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/advanced/events"><img src="docs/public/mascots/messenger.webp" height="110" alt="Feng, the Spirit Messenger"><br><b>Feng</b></a><br><sub>Events</sub></td>
-    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/guide/introduction"><img src="docs/public/mascots/spirit-fox.webp" height="110" alt="Kitsu, the Spirit Fox"><br><b>Kitsu</b></a><br><sub>Hints</sub></td>
-    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/"><img src="docs/public/mascots/sect-master-3d.webp" height="110" alt="Yue as a 3D figure"><br><b>3D</b></a><br><sub>Every guardian has a 3D form</sub></td>
+    <td align="center" width="110"><a href="https://app.anievo.id/rbac-evolution/adapters/overview"><img src="docs/public/mascots/weaver.webp" height="110" alt="Lan, the Formation Weaver"><br><b>Lan</b></a><br><sub>Adapters</sub></td>
+    <td align="center" width="110"><a href="https://app.anievo.id/rbac-evolution/advanced/cache"><img src="docs/public/mascots/alchemist.webp" height="110" alt="Xia, the Pill Alchemist"><br><b>Xia</b></a><br><sub>Cache</sub></td>
+    <td align="center" width="110"><a href="https://app.anievo.id/rbac-evolution/advanced/events"><img src="docs/public/mascots/messenger.webp" height="110" alt="Feng, the Spirit Messenger"><br><b>Feng</b></a><br><sub>Events</sub></td>
+    <td align="center" width="110"><a href="https://app.anievo.id/rbac-evolution/guide/introduction"><img src="docs/public/mascots/spirit-fox.webp" height="110" alt="Kitsu, the Spirit Fox"><br><b>Kitsu</b></a><br><sub>Hints</sub></td>
+    <td align="center" width="110"><a href="https://app.anievo.id/rbac-evolution/"><img src="docs/public/mascots/sect-master-3d.webp" height="110" alt="Yue as a 3D figure"><br><b>3D</b></a><br><sub>Every guardian has a 3D form</sub></td>
   </tr>
 </table>
 
@@ -85,7 +85,7 @@ app.put('/articles/:id', requirePermission('edit articles'), handler) // 401 for
 
 The API follows [spatie/laravel-permission](https://spatie.be/docs/laravel-permission/v8/introduction) v8
 (November 2026). If you know it, you already know this package:
-[side-by-side mapping](https://anievo-id.github.io/rbac-evolution/guide/coming-from-laravel).
+[side-by-side mapping](https://app.anievo.id/rbac-evolution/guide/coming-from-laravel).
 
 | spatie/laravel-permission v8 | RBAC Evolution |
 | --- | --- |
@@ -97,12 +97,12 @@ The API follows [spatie/laravel-permission](https://spatie.be/docs/laravel-permi
 | Super-admin with `Gate::before` | ✅ `superAdminRoles` and a `before()` hook |
 | Events (`RoleAttachedEvent`, … including detach events on sync, v8.2) | ✅ `role.attached`, `permission.detached`, … |
 | Cache and `permission:cache-reset` | ✅ pluggable cache store, `rbac-evolution cache-reset` |
-| Artisan `permission:create-role`, `create-permission`, `assign-role`, `show` | ✅ [CLI](https://anievo-id.github.io/rbac-evolution/basic-usage/cli) with the same commands |
+| Artisan `permission:create-role`, `create-permission`, `assign-role`, `show` | ✅ [CLI](https://app.anievo.id/rbac-evolution/basic-usage/cli) with the same commands |
 | Database seeding | ✅ declarative `rbac.sync()` / `rbac-evolution sync` |
 | `User::role('writer')`, `User::permission('edit')` | ✅ `subjectsWithRole()`, `subjectsWithPermission()` |
 | `role`, `permission`, `role_or_permission` middleware | ✅ Express, Fastify, Hono, NestJS, Next.js, Nuxt |
 | Route-group authorization (v8.4) | ✅ router-level middleware in every integration |
-| Backed enums for role and permission names (v8.0) | ✅ [typed names](https://anievo-id.github.io/rbac-evolution/basic-usage/typed-names): unions or TypeScript string enums |
+| Backed enums for role and permission names (v8.0) | ✅ [typed names](https://app.anievo.id/rbac-evolution/basic-usage/typed-names): unions or TypeScript string enums |
 | `@can`, `@role` Blade directives | ✅ `<Can>`, `useCan()`, `v-can`, `v-role` |
 | `canAny()` / `canAll()` route macros (v8.5) | ✅ `canAny()` / `canAll()` in Express, Fastify, Hono and Nuxt; `@CanAny` / `@CanAll` in NestJS; `{ all: true }` rules in Next.js |
 | `Role::syncModels()` (v7.4) | ✅ `rbac.role('writer').syncSubjects('user', ids)` |
@@ -130,7 +130,7 @@ All packages share one version and run on **Node.js 20+** and **Bun**.
 
 ## Quality
 
-Every push to `main` refreshes the public [Test report](https://anievo-id.github.io/rbac-evolution/quality):
+Every push to `main` refreshes the public [Test report](https://app.anievo.id/rbac-evolution/quality):
 
 - **Unit and integration tests** for all 14 packages, with code coverage, including the adapter suites against real
   PostgreSQL 16, MySQL 8 and MongoDB 7 servers.
