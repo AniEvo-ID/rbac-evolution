@@ -1,6 +1,6 @@
 # Introduction
 
-`rbac-evolution` adds roles and permissions to JavaScript and TypeScript apps. You define permissions, group them into roles, assign roles (or individual permissions) to your users, and then ask a simple question anywhere in your code:
+RBAC Evolution adds roles and permissions to JavaScript and TypeScript apps. You define permissions, group them into roles, assign roles (or individual permissions) to your users, and then ask a simple question anywhere in your code:
 
 ```ts
 await rbac.for(user).can('edit articles') // true / false
@@ -9,14 +9,14 @@ await rbac.for(user).can('edit articles') // true / false
 It is a port of [spatie/laravel-permission](https://github.com/spatie/laravel-permission) to the JS ecosystem. If you have used that package in Laravel, the concepts and most method names will feel familiar. Huge thanks to [Spatie](https://spatie.be) for the original design.
 
 ::: warning Status
-`rbac-evolution` is at version **0.2.0** and in early development. The API may still change before 1.0.
+RBAC Evolution is at version **0.2.0** and in early development. The API may still change before 1.0.
 :::
 
 ## Why
 
 Laravel developers have a de-facto standard for roles and permissions. In JavaScript, authorization is usually rebuilt per project, or tied to one ORM or one framework.
 
-`rbac-evolution` keeps the logic in one framework-agnostic core and moves the rest into small packages:
+RBAC Evolution keeps the logic in one framework-agnostic core and moves the rest into small packages:
 
 - an **adapter** decides where roles and permissions are stored (Prisma, Drizzle, memory, or your own),
 - an **integration** connects the engine to your framework (Next.js, Express, React, Vue).
@@ -58,4 +58,4 @@ The React and Vue packages only decide what the UI shows. Always enforce permiss
 
 - [Install the packages](/guide/installation)
 - [Follow the quick start](/guide/quick-start)
-- [Coming from Laravel?](/guide/coming-from-laravel) See how spatie's API maps to `rbac-evolution`.
+- [Coming from Laravel?](/guide/coming-from-laravel) See how spatie's API maps to RBAC Evolution.

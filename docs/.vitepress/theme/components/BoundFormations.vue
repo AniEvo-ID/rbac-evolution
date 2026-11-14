@@ -6,6 +6,7 @@ const rows = [
 </script>
 
 <template>
+  <div class="hazard" aria-hidden="true" />
   <section class="bound" aria-label="Supported frameworks, runtimes and databases">
     <p class="label"><span class="pulse" />Formation bound to</p>
     <div v-for="(row, r) in rows" :key="r" class="lane" :class="{ reverse: r === 1 }">
@@ -21,6 +22,11 @@ const rows = [
 </template>
 
 <style scoped>
+.hazard {
+  height: 18px;
+  margin-bottom: 24px;
+  background: repeating-linear-gradient(-55deg, var(--sect-yellow) 0 14px, var(--sect-ink) 14px 28px);
+}
 .bound {
   padding: 8px 0 40px;
   overflow: hidden;
@@ -33,8 +39,8 @@ const rows = [
   justify-content: center;
   gap: 10px;
   margin: 0 0 14px;
-  font-family: var(--vp-font-family-mono);
-  font-size: 12px;
+  font-family: var(--sect-font-label);
+  font-size: 13px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--vp-c-text-3);
@@ -42,16 +48,20 @@ const rows = [
 .pulse {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
+  rotate: 45deg;
   background: var(--sect-jade);
-  box-shadow: 0 0 0 0 var(--sect-jade-glow);
-  animation: pulse 2s ease-out infinite;
+  animation: pulse 1.6s steps(2) infinite;
 }
 .lane {
   display: flex;
   width: max-content;
   margin-bottom: 10px;
   animation: belt 40s linear infinite;
+}
+.lane.reverse li {
+  background: var(--sect-ink);
+  color: var(--sect-yellow);
+  border-color: var(--sect-ink);
 }
 .lane.reverse {
   animation-direction: reverse;
@@ -69,19 +79,19 @@ const rows = [
 }
 .belt li {
   padding: 6px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--vp-c-divider);
-  background: color-mix(in srgb, var(--vp-c-bg-soft) 80%, transparent);
-  font-family: var(--vp-font-family-mono);
-  font-size: 13px;
-  color: var(--vp-c-text-2);
+  border-radius: 2px;
+  border: 2px solid var(--vp-c-text-1);
+  background: var(--vp-c-bg);
+  font-family: var(--sect-font-label);
+  font-size: 15px;
+  color: var(--vp-c-text-1);
   white-space: nowrap;
 }
 @keyframes belt {
   to { transform: translateX(-50%); }
 }
 @keyframes pulse {
-  to { box-shadow: 0 0 0 10px transparent; }
+  to { opacity: 0.2; }
 }
 @media (prefers-reduced-motion: reduce) {
   .lane, .pulse { animation: none; }

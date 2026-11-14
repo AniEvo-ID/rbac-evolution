@@ -34,26 +34,25 @@ async function copy() {
   gap: 8px;
   margin: 0 0 18px;
   padding: 5px 12px;
-  border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--sect-jade) 40%, transparent);
-  background: color-mix(in srgb, var(--vp-c-bg) 60%, transparent);
-  backdrop-filter: blur(6px);
-  font-family: var(--vp-font-family-mono);
+  border-radius: 2px;
+  border-left: 4px solid var(--sect-line);
+  background: var(--sect-ink);
+  font-family: var(--sect-font-label);
   font-size: 11px;
   letter-spacing: 0.12em;
   white-space: nowrap;
-  color: var(--vp-c-text-2);
+  color: #ededed;
 }
 .dot {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
+  border-radius: 0;
+  rotate: 45deg;
   background: var(--sect-jade);
-  box-shadow: 0 0 8px var(--sect-jade-glow);
   animation: blink 2.4s ease-in-out infinite;
 }
 .sep {
-  color: var(--sect-gold);
+  color: var(--sect-yellow);
 }
 .opt {
   display: contents;
@@ -64,10 +63,9 @@ async function copy() {
   gap: 10px;
   margin-top: 20px;
   padding: 6px 6px 6px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--vp-c-divider);
-  background: color-mix(in srgb, var(--vp-c-bg-soft) 75%, transparent);
-  backdrop-filter: blur(6px);
+  border-radius: 2px;
+  border: 2px solid var(--vp-c-text-1);
+  background: var(--vp-c-bg);
   max-width: 100%;
 }
 .sect-install code {
@@ -80,22 +78,23 @@ async function copy() {
   text-overflow: ellipsis;
 }
 .prompt {
-  color: var(--sect-gold);
+  color: var(--sect-jade);
 }
 .copy {
   flex: none;
   min-height: 32px;
   padding: 0 10px;
-  border-radius: 8px;
-  font-family: var(--vp-font-family-mono);
+  border-radius: 2px;
+  font-family: var(--sect-font-label);
   font-size: 11px;
   letter-spacing: 0.1em;
-  color: var(--vp-c-brand-1);
-  border: 1px solid color-mix(in srgb, var(--sect-jade) 45%, transparent);
+  color: var(--sect-ink);
+  background: var(--sect-yellow);
+  border: 0;
   cursor: var(--cursor-copy);
 }
 .copy:hover {
-  background: var(--vp-c-brand-soft);
+  background: var(--sect-jade);
 }
 .sr-only {
   position: absolute;

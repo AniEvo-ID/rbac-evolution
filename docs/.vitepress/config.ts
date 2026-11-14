@@ -3,21 +3,19 @@ import { defineConfig } from 'vitepress'
 const repo = 'https://github.com/AniEvo-ID/rbac-evolution'
 
 export default defineConfig({
-  title: 'rbac-evolution',
+  title: 'RBAC Evolution',
   description: 'Role & permission management (RBAC) for JavaScript & TypeScript — inspired by spatie/laravel-permission.',
   lang: 'en-US',
   // served from https://anievo-id.github.io/rbac-evolution/
   base: '/rbac-evolution/',
   cleanUrls: true,
-  // three.js is lazy-loaded on the home page only (~130 kB gzip)
-  vite: { build: { chunkSizeWarningLimit: 600 } },
   lastUpdated: true,
   head: [
-    ['meta', { name: 'theme-color', content: '#0b1020' }],
+    ['meta', { name: 'theme-color', content: '#141414' }],
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/rbac-evolution/brand/favicon.svg' }],
     ['link', { rel: 'apple-touch-icon', href: '/rbac-evolution/brand/apple-touch-icon.png' }],
     ['meta', { property: 'og:type', content: 'website' }],
-    ['meta', { property: 'og:title', content: 'rbac-evolution — roles & permissions, cultivated' }],
+    ['meta', { property: 'og:title', content: 'RBAC Evolution — roles & permissions, cultivated' }],
     ['meta', { property: 'og:image', content: 'https://anievo-id.github.io/rbac-evolution/brand/og-image.png' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
@@ -26,13 +24,13 @@ export default defineConfig({
       'link',
       {
         rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Serif+JP:wght@600;700&family=Space+Grotesk:wght@300;500;700&display=swap',
+        href: 'https://fonts.googleapis.com/css2?family=Anton&family=Changa+One&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Yellowtail&display=swap',
       },
     ],
   ],
 
   themeConfig: {
-    logo: { light: '/brand/mark-light.svg', dark: '/brand/mark-dark.svg', alt: 'rbac-evolution' },
+    logo: { src: '/brand/mark.svg', alt: 'RBAC Evolution' },
     nav: [
       { text: 'Guide', link: '/guide/introduction' },
       { text: 'Frameworks', link: '/frameworks/react' },

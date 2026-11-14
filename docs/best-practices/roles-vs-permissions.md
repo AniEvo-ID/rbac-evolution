@@ -1,6 +1,6 @@
 # Roles vs permissions
 
-rbac-evolution gives you two building blocks: **permissions** (what can be done) and **roles** (named bundles of
+RBAC Evolution gives you two building blocks: **permissions** (what can be done) and **roles** (named bundles of
 permissions given to people). The short version of this page:
 
 > Check **permissions** in your code. Use **roles** to hand those permissions out.

@@ -1,6 +1,6 @@
 # Multiple guards
 
-A guard is a separate namespace for roles and permissions. Laravel uses guards for different authentication systems, and `rbac-evolution` borrows the idea: for example, people signing in to your web app (`web`) and machine clients calling your API (`api`) can each have their own roles and permissions, even with the same names.
+A guard is a separate namespace for roles and permissions. Laravel uses guards for different authentication systems, and RBAC Evolution borrows the idea: for example, people signing in to your web app (`web`) and machine clients calling your API (`api`) can each have their own roles and permissions, even with the same names.
 
 If your app has only one kind of access, you can ignore guards completely. Everything uses the default guard, `web`.
 

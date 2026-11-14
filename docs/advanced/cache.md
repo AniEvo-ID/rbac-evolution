@@ -83,7 +83,7 @@ Methods may be synchronous or return promises. The contract:
 
 - **`get`** returns the stored value, or **`undefined`** on a miss. Return `undefined`, not `null`: any value other than `undefined` counts as a hit.
 - **`set`** stores the value for `ttlMs` milliseconds. The value is a plain object made of arrays of `Role` and `Permission` objects, so `JSON.stringify` / `JSON.parse` round-trip it.
-- **`clear`** removes **every** rbac-evolution entry. It is called after every change, so the store should be dedicated to rbac-evolution or namespaced by your implementation. Don't flush a shared database.
+- **`clear`** removes **every** RBAC Evolution entry. It is called after every change, so the store should be dedicated to RBAC Evolution or namespaced by your implementation. Don't flush a shared database.
 
 ### Redis example
 

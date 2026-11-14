@@ -1,15 +1,14 @@
 <script setup lang="ts">
 /**
- * Site-wide motion: home intro + scroll reveals, magnetic buttons, tilt cards,
- * a qi cursor trail and a reading-progress bar. Everything is skipped when the
- * visitor prefers reduced motion; the trail is skipped on touch screens.
+ * Site-wide motion: home intro + scroll reveals, magnetic buttons, tilt cards
+ * and a reading-progress bar. Everything is skipped when the visitor prefers
+ * reduced motion.
  */
 import { useRoute } from 'vitepress'
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 const route = useRoute()
 const bar = ref<HTMLElement>()
-const trail = ref<HTMLCanvasElement>()
 let gsapMod: typeof import('../motion/gsap') | undefined
 let pageCtx: { revert(): void } | undefined
 const offs: (() => void)[] = []
@@ -33,64 +32,6 @@ function progressBar() {
     }
   })
   update()
-}
-
-function cursorTrail(canvas: HTMLCanvasElement) {
-  const ctx = canvas.getContext('2d')
-  if (!ctx) return
-  const dpr = Math.min(window.devicePixelRatio || 1, 2)
-  const resize = () => {
-    canvas.width = window.innerWidth * dpr
-    canvas.height = window.innerHeight * dpr
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-  }
-  resize()
-  on('resize', resize)
-  const sparks: { x: number; y: number; vx: number; vy: number; life: number; gold: boolean }[] = []
-  let raf = 0
-  let lx = 0
-  let ly = 0
-  const tick = () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
-    const dark = document.documentElement.classList.contains('dark')
-    ctx.globalCompositeOperation = dark ? 'lighter' : 'source-over'
-    for (let i = sparks.length - 1; i >= 0; i--) {
-      const s = sparks[i]!
-      s.life -= 0.022
-      if (s.life <= 0) {
-        sparks.splice(i, 1)
-        continue
-      }
-      s.x += s.vx
-      s.y += s.vy
-      s.vy -= 0.02 // qi rises
-      const r = 1 + s.life * 2.6
-      ctx.beginPath()
-      ctx.fillStyle = s.gold
-        ? `rgba(${dark ? '231,183,95' : '176,122,31'},${s.life * 0.8})`
-        : `rgba(${dark ? '52,211,166' : '11,127,98'},${s.life * 0.8})`
-      ctx.arc(s.x, s.y, r, 0, Math.PI * 2)
-      ctx.fill()
-    }
-    raf = sparks.length ? requestAnimationFrame(tick) : 0
-  }
-  on('pointermove', (e) => {
-    if (e.pointerType !== 'mouse') return
-    const dist = Math.hypot(e.clientX - lx, e.clientY - ly)
-    lx = e.clientX
-    ly = e.clientY
-    if (dist < 6 || sparks.length > 60) return
-    sparks.push({
-      x: e.clientX,
-      y: e.clientY,
-      vx: (Math.random() - 0.5) * 0.6,
-      vy: (Math.random() - 0.5) * 0.6,
-      life: 1,
-      gold: Math.random() > 0.75,
-    })
-    if (!raf) raf = requestAnimationFrame(tick)
-  })
-  offs.push(() => cancelAnimationFrame(raf))
 }
 
 function magnetic(el: HTMLElement, gsap: typeof import('gsap').gsap) {
@@ -196,7 +137,6 @@ async function animatePage() {
 onMounted(async () => {
   progressBar()
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  if (trail.value && window.matchMedia('(pointer: fine)').matches) cursorTrail(trail.value)
   gsapMod = await import('../motion/gsap')
   document.documentElement.classList.add('motion-ready')
   animatePage()
@@ -212,7 +152,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="bar" class="qi-progress" aria-hidden="true" />
-  <canvas ref="trail" class="qi-trail" aria-hidden="true" />
 </template>
 
 <style scoped>
@@ -220,20 +159,11 @@ onBeforeUnmount(() => {
   --p: 0;
   position: fixed;
   inset: 0 0 auto;
-  height: 2px;
+  height: 4px;
   z-index: 100;
   transform: scaleX(var(--p));
   transform-origin: left;
-  background: linear-gradient(90deg, var(--sect-jade), var(--sect-gold));
-  box-shadow: 0 0 10px var(--sect-jade-glow);
-  pointer-events: none;
-}
-.qi-trail {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 99;
+  background: var(--sect-yellow);
   pointer-events: none;
 }
 </style>

@@ -122,7 +122,7 @@ onBeforeUnmount(() => {
 <template>
   <section ref="root" class="evo" aria-labelledby="evo-title">
     <div class="head">
-      <p class="eyebrow">[ Cultivation path ]</p>
+      <p class="eyebrow">The cultivation path</p>
       <h2 id="evo-title">From disciple to Sect Master</h2>
       <p class="lede">Four realms, four ideas. Each one builds on the last, exactly like spatie/laravel-permission.</p>
       <ol class="meter" aria-hidden="true">
@@ -168,17 +168,17 @@ onBeforeUnmount(() => {
   padding: 0 24px;
 }
 .eyebrow {
-  font-family: var(--vp-font-family-mono);
-  font-size: 13px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--sect-gold);
-  margin: 0 0 8px;
+  font-family: var(--sect-font-script);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--sect-jade);
+  margin: 0 0 6px;
 }
 h2 {
   font-family: var(--sect-font-display);
-  font-size: clamp(28px, 4.4vw, 44px);
-  line-height: 1.15;
+  font-weight: 400;
+  font-size: clamp(40px, 6vw, 72px);
+  line-height: 1;
   margin: 0 0 12px;
 }
 .lede {
@@ -199,17 +199,16 @@ h2 {
 .fill {
   content: '';
   position: absolute;
-  top: 7px;
+  top: 6px;
   left: 7px;
   right: 7px;
-  height: 2px;
+  height: 4px;
   background: var(--vp-c-divider);
 }
 .fill {
   right: auto;
   width: calc((100% - 14px) * var(--progress));
-  background: linear-gradient(90deg, var(--sect-jade), var(--sect-gold));
-  box-shadow: 0 0 12px var(--sect-jade-glow);
+  background: var(--sect-line);
 }
 .meter li {
   position: relative;
@@ -218,8 +217,8 @@ h2 {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  font-family: var(--vp-font-family-mono);
-  font-size: 12px;
+  font-family: var(--sect-font-label);
+  font-size: 14px;
   color: var(--vp-c-text-3);
   transition: color 0.3s;
 }
@@ -233,9 +232,8 @@ h2 {
 }
 .meter li.on { color: var(--vp-c-text-1); }
 .meter li.on .dot {
-  border-color: var(--sect-jade);
-  background: var(--sect-jade);
-  box-shadow: 0 0 12px var(--sect-jade-glow);
+  border-color: var(--sect-ink);
+  background: var(--sect-yellow);
 }
 .viewport {
   padding: 0 24px;
@@ -255,20 +253,20 @@ h2 {
 .card {
   position: relative;
   height: 100%;
-  border-radius: 18px;
+  border-radius: 2px;
   padding: 22px;
   border: 1px solid var(--vp-c-divider);
   background:
-    radial-gradient(90% 60% at 100% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%),
-    color-mix(in srgb, var(--vp-c-bg-soft) 88%, transparent);
-  backdrop-filter: blur(6px);
-  transition: border-color 0.4s, box-shadow 0.4s;
+    linear-gradient(var(--accent), var(--accent)) top left / 100% 6px no-repeat,
+    var(--vp-c-bg-soft);
+  border-width: 2px;
+  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%);
+  transition: border-color 0.3s;
 }
 .current .card,
 .stage:hover .card,
 .stage:focus-within .card {
-  border-color: color-mix(in srgb, var(--accent) 70%, transparent);
-  box-shadow: 0 24px 60px -30px var(--accent);
+  border-color: var(--vp-c-text-1);
 }
 header {
   display: flex;
@@ -276,18 +274,17 @@ header {
   align-items: center;
   gap: 12px;
   margin-bottom: 14px;
-  font-family: var(--vp-font-family-mono);
-  font-size: 11px;
+  font-family: var(--sect-font-label);
+  font-size: 13px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 .realm { color: var(--vp-c-text-3); }
 .concept {
   padding: 2px 8px;
-  border-radius: 6px;
-  color: var(--vp-c-text-1);
-  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border-radius: 2px;
+  color: var(--sect-ink);
+  background: var(--accent);
 }
 .body {
   display: grid;
@@ -298,7 +295,6 @@ header {
 .body img {
   width: 110px;
   height: auto;
-  filter: drop-shadow(0 10px 14px rgba(5, 10, 25, 0.3));
   /* Only the art dims on inactive realms; text keeps full contrast. */
   opacity: 0.55;
   transition: opacity 0.4s;
@@ -309,8 +305,9 @@ header {
   opacity: 1;
 }
 h3 {
-  font-family: var(--sect-font-display);
-  font-size: 22px;
+  font-family: var(--sect-font-label);
+  font-weight: 400;
+  font-size: 24px;
   margin: 0 0 6px;
 }
 h3 small {
@@ -335,7 +332,8 @@ h3 small {
 pre {
   margin: 16px 0 0;
   padding: 14px 16px;
-  border-radius: 12px;
+  border-radius: 2px;
+  border-left: 4px solid var(--accent) !important;
   overflow-x: auto;
   background: var(--vp-code-block-bg);
   border: 1px solid var(--vp-c-divider);

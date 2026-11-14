@@ -1,6 +1,6 @@
 # Adapters
 
-The rbac-evolution engine does not talk to a database itself. Every read and write goes through an **adapter**: an object that implements the `RbacAdapter` interface from `@anievo-id/rbac-evolution`. You pass it to `createRbac()` once, and the rest of your code only uses the engine API.
+The RBAC Evolution engine does not talk to a database itself. Every read and write goes through an **adapter**: an object that implements the `RbacAdapter` interface from `@anievo-id/rbac-evolution`. You pass it to `createRbac()` once, and the rest of your code only uses the engine API.
 
 ```ts
 import { createRbac } from '@anievo-id/rbac-evolution'

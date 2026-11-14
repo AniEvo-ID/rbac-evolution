@@ -1,6 +1,6 @@
 # Fastify
 
-`@anievo-id/rbac-evolution-fastify` adds rbac-evolution to [Fastify](https://fastify.dev) apps: a plugin that
+`@anievo-id/rbac-evolution-fastify` adds RBAC Evolution to [Fastify](https://fastify.dev) apps: a plugin that
 resolves the current user's access into `request.rbac`, and `preHandler` guards — `requirePermission`,
 `requireRole` and `requireRoleOrPermission` — that mirror spatie/laravel-permission's `permission`, `role` and
 `role_or_permission` middleware. Guards behave exactly like the [Express](/frameworks/express) ones and return the
@@ -224,7 +224,7 @@ await app.register(rbacPlugin, {
 
 ::: warning
 The team id usually comes from user input (a header, a URL segment, the session). Make sure the user actually
-belongs to that team — rbac-evolution only checks roles and permissions **within** the team you give it. See
+belongs to that team — RBAC Evolution only checks roles and permissions **within** the team you give it. See
 [Teams](/basic-usage/teams).
 :::
 

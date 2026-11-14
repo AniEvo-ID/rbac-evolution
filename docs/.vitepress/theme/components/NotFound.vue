@@ -26,20 +26,23 @@ import { withBase } from 'vitepress'
 img {
   width: min(280px, 70vw);
   height: auto;
-  filter: drop-shadow(0 14px 22px rgba(5, 10, 25, 0.3));
   animation: bob 4s ease-in-out infinite;
 }
 .code {
   margin: 20px 0 6px;
-  font-family: var(--vp-font-family-mono);
-  font-size: 14px;
-  letter-spacing: 0.08em;
-  color: var(--vp-c-brand-1);
+  display: inline-block;
+  padding: 2px 10px;
+  font-family: var(--sect-font-label);
+  font-size: 15px;
+  letter-spacing: 0.06em;
+  color: var(--sect-ink);
+  background: var(--sect-yellow);
 }
 h1 {
   font-family: var(--sect-font-display);
-  font-size: clamp(24px, 4vw, 34px);
-  line-height: 1.25;
+  font-weight: 400;
+  font-size: clamp(32px, 5vw, 52px);
+  line-height: 1.05;
   max-width: 640px;
   margin: 0;
 }
@@ -59,9 +62,10 @@ h1 {
   align-items: center;
   min-height: 44px;
   padding: 0 20px;
-  border-radius: 999px;
-  border: 1px solid var(--vp-c-divider);
-  font-weight: 600;
+  border-radius: 2px;
+  border: 2px solid var(--vp-c-text-1);
+  font-family: var(--sect-font-label);
+  font-weight: 400;
   text-decoration: none;
   color: var(--vp-c-text-1);
   background: var(--vp-c-bg-soft);
