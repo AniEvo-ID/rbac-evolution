@@ -9,9 +9,9 @@ import type {
   Subject,
   TeamId,
 } from '@anievo-id/rbac-evolution'
-import { type AnyColumn, type SQL, type Table, and, eq, inArray } from 'drizzle-orm'
+import { type AnyColumn, type SQL, type Table, and, eq, inArray, sql } from 'drizzle-orm'
 
-/** Structural shape shared by the PostgreSQL and SQLite schemas. */
+/** Structural shape shared by the PostgreSQL, SQLite and MySQL schemas. */
 export interface RbacTables {
   permissions: Table & { id: AnyColumn; name: AnyColumn; guardName: AnyColumn }
   roles: Table & { id: AnyColumn; name: AnyColumn; guardName: AnyColumn; teamId: AnyColumn }
@@ -26,13 +26,20 @@ export interface RbacTables {
 }
 
 /**
- * The PostgreSQL and SQLite query builders expose the same chainable API
- * (`select/insert/delete`, `returning`, `onConflictDoNothing`, `selectDistinct`) but have
- * incompatible static types. The public factories (`drizzlePgAdapter`, `drizzleSqliteAdapter`)
- * are strictly typed; internally the builder is used untyped and every row is mapped explicitly.
+ * The PostgreSQL, SQLite and MySQL query builders expose the same chainable API
+ * (`select/insert/delete`, `selectDistinct`) but have incompatible static types. The public factories
+ * (`drizzlePgAdapter`, `drizzleSqliteAdapter`, `drizzleMysqlAdapter`) are strictly typed; internally the
+ * builder is used untyped and every row is mapped explicitly.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export type UntypedDb = any
+
+/**
+ * SQL dialect of the Drizzle database. It only changes how inserts are written:
+ * - `'pg'` / `'sqlite'`: `INSERT ... RETURNING` and `ON CONFLICT DO NOTHING`
+ * - `'mysql'`: `$returningId()` (no `RETURNING` in MySQL) and a no-op `ON DUPLICATE KEY UPDATE`
+ */
+export type DrizzleDialect = 'pg' | 'sqlite' | 'mysql'
 
 interface PermissionRow {
   id: number
@@ -80,21 +87,24 @@ type SubjectTable = RbacTables['modelHasRoles'] | RbacTables['modelHasPermission
 
 /**
  * Dialect-agnostic Drizzle implementation of `RbacAdapter`.
- * Use `drizzlePgAdapter()` or `drizzleSqliteAdapter()` to construct it.
+ * Use `drizzlePgAdapter()`, `drizzleSqliteAdapter()` or `drizzleMysqlAdapter()` to construct it.
  */
 export class DrizzleRbacAdapter implements RbacAdapter {
   constructor(
     private readonly db: UntypedDb,
     private readonly t: RbacTables,
+    private readonly dialect: DrizzleDialect = 'pg',
   ) {}
 
   // ---------------------------------------------------------------- permissions
 
   async createPermission(data: { name: string; guardName: string }): Promise<Permission> {
     const { permissions: p } = this.t
+    const values = { name: data.name, guardName: data.guardName }
+    if (this.dialect === 'mysql') return { id: await this.insertReturningId(p, values), ...values }
     const rows: PermissionRow[] = await this.db
       .insert(p)
-      .values({ name: data.name, guardName: data.guardName })
+      .values(values)
       .returning({ id: p.id, name: p.name, guardName: p.guardName })
     return toPermission(DrizzleRbacAdapter.first(rows))
   }
@@ -135,9 +145,11 @@ export class DrizzleRbacAdapter implements RbacAdapter {
 
   async createRole(data: { name: string; guardName: string; teamId: TeamId }): Promise<Role> {
     const { roles: r } = this.t
+    const values = { name: data.name, guardName: data.guardName, teamId: teamKey(data.teamId) }
+    if (this.dialect === 'mysql') return toRole({ id: await this.insertReturningId(r, values), ...values })
     const rows: RoleRow[] = await this.db
       .insert(r)
-      .values({ name: data.name, guardName: data.guardName, teamId: teamKey(data.teamId) })
+      .values(values)
       .returning({ id: r.id, name: r.name, guardName: r.guardName, teamId: r.teamId })
     return toRole(DrizzleRbacAdapter.first(rows))
   }
@@ -194,10 +206,13 @@ export class DrizzleRbacAdapter implements RbacAdapter {
     const rid = toIntId(roleId)
     const ids = toIntIds(permissionIds)
     if (rid === null || ids.length === 0) return
-    await this.db
-      .insert(this.t.roleHasPermissions)
-      .values(ids.map((permissionId) => ({ roleId: rid, permissionId })))
-      .onConflictDoNothing()
+    const { roleHasPermissions: l } = this.t
+    await this.insertIgnoringDuplicates(
+      l,
+      ids.map((permissionId) => ({ roleId: rid, permissionId })),
+      'roleId',
+      l.roleId,
+    )
   }
 
   async detachRolePermissions(roleId: Id, permissionIds?: readonly Id[]): Promise<void> {
@@ -271,6 +286,31 @@ export class DrizzleRbacAdapter implements RbacAdapter {
     return row
   }
 
+  /** MySQL has no `INSERT ... RETURNING`: insert, then read the generated auto-increment id. */
+  private async insertReturningId(table: Table, values: Record<string, unknown>): Promise<number> {
+    const rows: { id: number }[] = await this.db.insert(table).values(values).$returningId()
+    return Number(DrizzleRbacAdapter.first(rows).id)
+  }
+
+  /**
+   * Idempotent multi-row insert into a link table (every column is part of the primary key).
+   * PostgreSQL / SQLite: `ON CONFLICT DO NOTHING`. MySQL: `ON DUPLICATE KEY UPDATE col = col`, a no-op
+   * update that — unlike `INSERT IGNORE` — still reports foreign-key and other errors.
+   */
+  private async insertIgnoringDuplicates(
+    table: Table,
+    rows: Record<string, unknown>[],
+    keyProperty: string,
+    keyColumn: AnyColumn,
+  ): Promise<void> {
+    const insert = this.db.insert(table).values(rows)
+    if (this.dialect === 'mysql') {
+      await insert.onDuplicateKeyUpdate({ set: { [keyProperty]: sql`${sql.identifier(keyColumn.name)}` } })
+    } else {
+      await insert.onConflictDoNothing()
+    }
+  }
+
   private static subjectWhere(table: SubjectTable, subject: Subject, teamId: TeamId): SQL[] {
     return [
       eq(table.subjectType, subject.type),
@@ -297,10 +337,12 @@ export class DrizzleRbacAdapter implements RbacAdapter {
     const ids = toIntIds(targetIds)
     if (ids.length === 0) return
     const base = { subjectType: subject.type, subjectId: String(subject.id), teamId: teamKey(teamId) }
-    await this.db
-      .insert(table)
-      .values(ids.map((id) => ({ ...base, [targetKey]: id })))
-      .onConflictDoNothing()
+    await this.insertIgnoringDuplicates(
+      table,
+      ids.map((id) => ({ ...base, [targetKey]: id })),
+      'subjectType',
+      table.subjectType,
+    )
   }
 
   private async detach(

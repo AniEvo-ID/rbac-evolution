@@ -18,6 +18,7 @@ The engine handles the logic: name validation, guards, teams, wildcards, caching
 | [`PrismaAdapter`](/adapters/prisma) | `@anievo-id/rbac-evolution-prisma` | `import { PrismaAdapter } from '@anievo-id/rbac-evolution-prisma'` | PostgreSQL, MySQL, MariaDB, SQLite, SQL Server, CockroachDB |
 | [`drizzlePgAdapter`](/adapters/drizzle) | `@anievo-id/rbac-evolution-drizzle` | `import { drizzlePgAdapter } from '@anievo-id/rbac-evolution-drizzle/pg'` | PostgreSQL (node-postgres, postgres.js, Neon, PGlite, ...) |
 | [`drizzleSqliteAdapter`](/adapters/drizzle) | `@anievo-id/rbac-evolution-drizzle` | `import { drizzleSqliteAdapter } from '@anievo-id/rbac-evolution-drizzle/sqlite'` | SQLite (libsql/Turso, better-sqlite3, D1, Bun, ...) |
+| [`drizzleMysqlAdapter`](/adapters/drizzle) | `@anievo-id/rbac-evolution-drizzle` | `import { drizzleMysqlAdapter } from '@anievo-id/rbac-evolution-drizzle/mysql'` | MySQL 8, MariaDB (mysql2, PlanetScale, ...) |
 | [Your own](/adapters/custom) | — | `implements RbacAdapter` | Anything |
 
 ::: tip Which one should I pick?
@@ -50,7 +51,7 @@ The Prisma and Drizzle adapters follow the same conventions, so their data looks
 
 ### Subjects as `subject_type` + `subject_id` text
 
-A [subject](/basic-usage/basic-usage) is any `{ type, id }` pair: a user, an API client, a service account. Laravel calls the same columns `model_type` and `model_id`. Both columns are `text`:
+A [subject](/basic-usage/basic-usage) is any `{ type, id }` pair: a user, an API client, a service account. Laravel calls the same columns `model_type` and `model_id`. Both columns are text (`text`, or a bounded `varchar` on MySQL, which can't index a whole `TEXT` column):
 
 - Any primary key works: auto-increment numbers, UUIDs, cuids, ObjectId strings.
 - `{ type: 'user', id: 1 }` and `{ type: 'user', id: '1' }` are the same subject.
@@ -58,7 +59,7 @@ A [subject](/basic-usage/basic-usage) is any `{ type, id }` pair: a user, an API
 
 ### `team_id = ''` means global
 
-With [teams](/basic-usage/teams) enabled, roles and links can belong to a team. `team_id` is `text NOT NULL`, and the empty string `''` stands for "no team" (global).
+With [teams](/basic-usage/teams) enabled, roles and links can belong to a team. `team_id` is a `NOT NULL` text column, and the empty string `''` stands for "no team" (global).
 
 A `NULL` would be simpler, but `NULL`s never compare equal. They would break the composite primary keys and the `(name, guard_name, team_id)` unique index, and the same global role could be inserted twice. The adapters convert the value both ways:
 
@@ -81,8 +82,20 @@ Never use `''` as a real team id. It is reserved for global data.
 | Prisma | `DateTime` (`updatedAt` uses `@updatedAt`) |
 | Drizzle, PostgreSQL | `timestamp with time zone DEFAULT now()` |
 | Drizzle, SQLite | `integer` unix seconds, exposed as `Date` by Drizzle (`mode: 'timestamp'`) |
+| Drizzle, MySQL | `timestamp DEFAULT CURRENT_TIMESTAMP` |
 
 The engine never reads these columns. They are there for auditing and for your own admin screens.
+
+### Which databases are tested
+
+Every SQL adapter runs the shared [conformance suite](/adapters/custom) (`runAdapterTests`) in CI:
+
+| Adapter | Always (embedded, every CI run and locally) | Real servers (CI `databases` job) |
+| --- | --- | --- |
+| Prisma | SQLite | PostgreSQL 16, MySQL 8 |
+| Drizzle | PostgreSQL via PGlite, SQLite via libsql | PostgreSQL 16 (node-postgres), MySQL 8 (mysql2) |
+
+The real-server suites run when `PG_URL` / `MYSQL_URL` are set and are reported as skipped otherwise.
 
 ## What the engine checks
 

@@ -22,5 +22,5 @@ export function drizzleSqliteAdapter(
   db: BaseSQLiteDatabase<'sync' | 'async', any, any, any>,
   schema: SqliteRbacSchema = sqliteRbacSchema(),
 ): RbacAdapter {
-  return new DrizzleRbacAdapter(db, schema)
+  return new DrizzleRbacAdapter(db, schema, 'sqlite')
 }

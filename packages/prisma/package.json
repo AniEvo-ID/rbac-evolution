@@ -51,7 +51,7 @@
     "typecheck": "node test/prepare.mjs --generate-only && tsc --noEmit",
     "test:db": "node test/prepare.mjs",
     "test": "node test/prepare.mjs && vitest run",
-    "clean": "rm -rf dist .turbo test/generated test/.tmp"
+    "clean": "rm -rf dist .turbo test/generated test/generated-pg test/generated-mysql test/.tmp"
   },
   "dependencies": {
     "@anievo-id/rbac-evolution": "workspace:^"

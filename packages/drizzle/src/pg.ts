@@ -22,5 +22,5 @@ export function drizzlePgAdapter(
   db: PgDatabase<PgQueryResultHKT, any, any>,
   schema: PgRbacSchema = pgRbacSchema(),
 ): RbacAdapter {
-  return new DrizzleRbacAdapter(db, schema)
+  return new DrizzleRbacAdapter(db, schema, 'pg')
 }
