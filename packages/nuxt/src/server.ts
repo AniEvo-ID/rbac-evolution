@@ -5,9 +5,22 @@
  */
 
 import type { Rbac, RbacSnapshot, Subject, SubjectRbac, TeamId } from '@anievo-id/rbac-evolution'
-import { MESSAGES, requirementGroups, type RequirementKind, type RequirementNames, UNAUTHENTICATED_MESSAGE } from './requirements'
+import {
+  permissionRequirement,
+  type PermissionRequirementOptions,
+  type RbacRequirement,
+  type RequirementKind,
+  type RequirementNames,
+  REQUIREMENT_MESSAGES,
+  roleOrPermissionRequirement,
+  roleRequirement,
+  type RoleRequirementOptions,
+  satisfiesRequirement,
+  splitRequirementArgs,
+  UNAUTHENTICATED_MESSAGE,
+} from '@anievo-id/rbac-evolution'
 
-export type { RequirementKind, RequirementNames } from './requirements'
+export type { PermissionRequirementOptions, RequirementKind, RequirementNames, RoleRequirementOptions } from '@anievo-id/rbac-evolution'
 
 type MaybePromise<T> = T | Promise<T>
 
@@ -27,16 +40,6 @@ export interface RbacServerOptions<E extends RbacEvent = RbacEvent> {
   team?: (event: E) => MaybePromise<TeamId | undefined>
   /** Include the required roles/permissions in the 403 body (`required`). Default: `false`. */
   exposeRequirements?: boolean
-}
-
-export interface PermissionRequirementOptions {
-  /** Pass when the subject has ANY of the permissions (instead of all). Default: `false`. */
-  any?: boolean
-}
-
-export interface RoleRequirementOptions {
-  /** Require ALL of the roles (instead of any). Default: `false`. */
-  all?: boolean
 }
 
 /** The JSON body of a failed check — identical to `@anievo-id/rbac-evolution-express`. */
@@ -101,20 +104,6 @@ export interface RbacServer<E extends RbacEvent = RbacEvent> {
 
 const CONTEXT_KEY = 'rbac'
 
-function parseArgs<O extends object>(args: readonly (RequirementNames | O)[]): { names: RequirementNames[]; options: O | undefined } {
-  const last = args[args.length - 1]
-  if (last !== undefined && typeof last === 'object' && !Array.isArray(last)) {
-    return { names: args.slice(0, -1) as RequirementNames[], options: last as O }
-  }
-  return { names: args as RequirementNames[], options: undefined }
-}
-
-async function passes(rbac: SubjectRbac, kind: RequirementKind, group: string[]): Promise<boolean> {
-  if (kind === 'permission') return rbac.canAny(group)
-  if (kind === 'role') return rbac.hasAnyRole(group)
-  return (await rbac.hasAnyRole(group)) || rbac.canAny(group)
-}
-
 /**
  * Creates request helpers for Nitro event handlers.
  *
@@ -158,21 +147,18 @@ export function createRbacServer<E extends RbacEvent = RbacEvent>(options: RbacS
     return result
   }
 
-  async function enforce(event: E, kind: RequirementKind, requirements: string[][]): Promise<SubjectRbac> {
-    if (requirements.length === 0) {
-      throw new TypeError(`[rbac-evolution] A ${kind} requirement needs at least one name.`)
-    }
+  // Async so an empty requirement (TypeError) rejects the returned promise instead of throwing synchronously.
+  async function enforce(event: E, build: () => RbacRequirement): Promise<SubjectRbac> {
+    const requirement = build()
     const subject = await resolve(event)
     if (subject === null) throw new RbacHttpError({ error: 'UNAUTHENTICATED', message: UNAUTHENTICATED_MESSAGE })
-    for (const group of requirements) {
-      if (!(await passes(subject, kind, group))) {
-        throw new RbacHttpError({
-          error: 'FORBIDDEN',
-          reason: kind,
-          message: MESSAGES[kind],
-          ...(exposeRequirements && { required: requirements }),
-        })
-      }
+    if (!(await satisfiesRequirement(subject, requirement))) {
+      throw new RbacHttpError({
+        error: 'FORBIDDEN',
+        reason: requirement.kind,
+        message: REQUIREMENT_MESSAGES[requirement.kind],
+        ...(exposeRequirements && { required: requirement.requirements }),
+      })
     }
     return subject
   }
@@ -184,21 +170,21 @@ export function createRbacServer<E extends RbacEvent = RbacEvent>(options: RbacS
       return subject ? subject.snapshot() : null
     },
     requirePermission(event, ...args) {
-      const { names, options: opts } = parseArgs<PermissionRequirementOptions>(args)
-      return enforce(event, 'permission', requirementGroups('permission', names, { any: opts?.any }))
+      const { names, options } = splitRequirementArgs<PermissionRequirementOptions>(args)
+      return enforce(event, () => permissionRequirement(names, options))
     },
     requireRole(event, ...args) {
-      const { names, options: opts } = parseArgs<RoleRequirementOptions>(args)
-      return enforce(event, 'role', requirementGroups('role', names, { all: opts?.all }))
+      const { names, options } = splitRequirementArgs<RoleRequirementOptions>(args)
+      return enforce(event, () => roleRequirement(names, options))
     },
     requireRoleOrPermission(event, ...names) {
-      return enforce(event, 'role_or_permission', requirementGroups('role_or_permission', names))
+      return enforce(event, () => roleOrPermissionRequirement(names))
     },
     canAny(event, ...names) {
-      return enforce(event, 'permission', requirementGroups('permission', names, { any: true }))
+      return enforce(event, () => permissionRequirement(names, { any: true }))
     },
     canAll(event, ...names) {
-      return enforce(event, 'permission', requirementGroups('permission', names))
+      return enforce(event, () => permissionRequirement(names))
     },
   }
 }

@@ -1,5 +1,4 @@
 import 'reflect-metadata'
-import type { SubjectRbac } from '@anievo-id/rbac-evolution'
 import { applyDecorators, createParamDecorator, type ExecutionContext, UseGuards } from '@nestjs/common'
 import { getRbac } from './context'
 import { RbacGuard } from './guard'
@@ -11,7 +10,9 @@ import {
   roleOrPermissionRequirement,
   roleRequirement,
   type RoleRequirementOptions,
-} from './requirements'
+  splitRequirementArgs,
+  type SubjectRbac,
+} from '@anievo-id/rbac-evolution'
 import { RBAC_REQUIREMENTS } from './tokens'
 
 type ClassOrMethodDecorator = <T>(
@@ -41,7 +42,8 @@ const requirementDecorator = (requirement: RbacRequirement) =>
  * - `@RequirePermissions('a', 'b', { any: true })` — any of them
  */
 export function RequirePermissions(...args: (RequirementNames | PermissionRequirementOptions)[]) {
-  return requirementDecorator(permissionRequirement(args))
+  const { names, options } = splitRequirementArgs<PermissionRequirementOptions>(args)
+  return requirementDecorator(permissionRequirement(names, options))
 }
 
 /**
@@ -69,7 +71,8 @@ export function CanAll(...names: RequirementNames[]) {
  * - `@RequireRoles('admin', 'editor', { all: true })` — all of them
  */
 export function RequireRoles(...args: (RequirementNames | RoleRequirementOptions)[]) {
-  return requirementDecorator(roleRequirement(args))
+  const { names, options } = splitRequirementArgs<RoleRequirementOptions>(args)
+  return requirementDecorator(roleRequirement(names, options))
 }
 
 /**
