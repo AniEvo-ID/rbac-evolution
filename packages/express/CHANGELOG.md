@@ -1,5 +1,21 @@
 # @anievo-id/rbac-evolution-express
 
+## 0.4.0
+
+### Minor Changes
+
+- 5812866: spatie v8 parity:
+
+  - `canAny()` / `canAll()` route guards in Express, Fastify and Hono, `@CanAny` / `@CanAll` decorators in NestJS, and `canAny` / `canAll` server helpers in Nuxt (spatie v8.5 route macros).
+  - `rbac.role(name).syncSubjects(subjectType, ids)` makes the given subjects the role's only holders of that type (spatie `Role::syncModels()`).
+
+### Patch Changes
+
+- Updated dependencies [9f8a114]
+- Updated dependencies [5812866]
+- Updated dependencies [ed88963]
+  - @anievo-id/rbac-evolution@0.4.0
+
 ## 0.3.1
 
 ### Patch Changes
