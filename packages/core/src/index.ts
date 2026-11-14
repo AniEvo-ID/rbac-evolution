@@ -58,6 +58,23 @@ export type { RbacErrorCode } from './errors'
 
 export { parseWildcardPermission, wildcardImplies } from './wildcard'
 
+export {
+  permissionRequirement,
+  REQUIREMENT_MESSAGES,
+  roleOrPermissionRequirement,
+  roleRequirement,
+  satisfiesRequirement,
+  splitRequirementArgs,
+  UNAUTHENTICATED_MESSAGE,
+} from './requirements'
+export type {
+  PermissionRequirementOptions,
+  RbacRequirement,
+  RequirementKind,
+  RequirementNames,
+  RoleRequirementOptions,
+} from './requirements'
+
 export type {
   DefaultRbacTypes,
   Id,
