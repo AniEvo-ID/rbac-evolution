@@ -9,9 +9,11 @@ export default defineConfig({
   // served from https://anievo-id.github.io/rbac-evolution/
   base: '/rbac-evolution/',
   cleanUrls: true,
+  // dark only: no light theme, no theme switch
+  appearance: 'force-dark',
   lastUpdated: true,
   head: [
-    ['meta', { name: 'theme-color', content: '#141414' }],
+    ['meta', { name: 'theme-color', content: '#0a0c0e' }],
     ['link', { rel: 'icon', type: 'image/svg+xml', href: '/rbac-evolution/brand/favicon.svg' }],
     ['link', { rel: 'apple-touch-icon', href: '/rbac-evolution/brand/apple-touch-icon.png' }],
     ['meta', { property: 'og:type', content: 'website' }],
@@ -24,7 +26,7 @@ export default defineConfig({
       'link',
       {
         rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css2?family=Anton&family=Changa+One&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Yellowtail&display=swap',
+        href: 'https://fonts.googleapis.com/css2?family=Changa+One&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Yellowtail&display=swap',
       },
     ],
   ],

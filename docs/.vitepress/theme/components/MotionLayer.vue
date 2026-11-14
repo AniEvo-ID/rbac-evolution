@@ -91,28 +91,22 @@ async function animatePage() {
 
   const ctx = gsap.context(() => {
     if (isHome) {
-      // Split the tagline headline into words so it can rise word by word.
-      const text = document.querySelector<HTMLElement>('.VPHero .text')
-      if (text && !text.dataset.split) {
-        text.dataset.split = '1'
-        text.innerHTML = (text.textContent ?? '')
-          .trim()
-          .split(/\s+/)
-          .map((w) => `<span class="w"><span>${w}</span></span>`)
-          .join(' ')
-      }
+      // Hero: the title rises letter group by group, then the rest fades up in order.
       const tl = gsap.timeline({ defaults: { ease: 'expo.out' } })
-      tl.from('.VPHero .sect-status', { y: -16, opacity: 0, duration: 0.8 })
-        .fromTo('.VPHero .name', { clipPath: 'inset(0 100% 0 0)', filter: 'blur(8px)' }, { clipPath: 'inset(0 0% 0 0)', filter: 'blur(0px)', duration: 1.4, clearProps: 'clipPath,filter' }, '<0.1')
-        .from('.VPHero .text .w > span', { yPercent: 110, opacity: 0, rotate: 4, duration: 1, stagger: 0.06 }, '<0.35')
-        .from('.VPHero .tagline', { y: 20, opacity: 0, duration: 0.9 }, '<0.3')
-        .from('.VPHero .actions .action, .VPHero .sect-install', { y: 24, opacity: 0, duration: 0.8, stagger: 0.08 }, '<0.2')
+      tl.from('.home-hero .sect-status', { y: -16, opacity: 0, duration: 0.8 })
+        .fromTo('.home-hero .title', { y: 40, opacity: 0, filter: 'blur(10px)' }, { y: 0, opacity: 1, filter: 'blur(0px)', duration: 1.2, clearProps: 'filter' }, '<0.1')
+        .from('.home-hero .script', { y: 16, opacity: 0, duration: 0.8 }, '<0.35')
+        .from('.home-hero .lede, .home-hero .sect-install, .home-hero .actions .btn', { y: 22, opacity: 0, duration: 0.8, stagger: 0.07 }, '<0.15')
+        .from('.home-hero .guardians li', { y: 30, opacity: 0, duration: 0.8, stagger: 0.08, ease: 'back.out(1.5)' }, '<0.2')
 
-      ScrollTrigger.batch('.VPFeature', {
-        start: 'top 88%',
-        once: true,
-        onEnter: (els) => gsap.from(els, { y: 60, opacity: 0, scale: 0.96, duration: 0.9, ease: 'power3.out', stagger: 0.1 }),
+      // Feature rows: copy slides in from its side, the code panel from the other.
+      gsap.utils.toArray<HTMLElement>('.rows .row').forEach((row) => {
+        const flip = row.classList.contains('flip')
+        const st = { trigger: row, start: 'top 82%' }
+        gsap.from(row.querySelector('.copy'), { x: flip ? 40 : -40, opacity: 0, duration: 0.9, ease: 'power3.out', scrollTrigger: st })
+        gsap.from(row.querySelector('.panel'), { x: flip ? -40 : 40, opacity: 0, duration: 0.9, ease: 'power3.out', scrollTrigger: st })
       })
+      gsap.from('.cta', { y: 40, opacity: 0, duration: 0.9, ease: 'power3.out', scrollTrigger: { trigger: '.cta', start: 'top 88%' } })
       ScrollTrigger.batch('.roster .card', {
         start: 'top 90%',
         once: true,
@@ -121,8 +115,8 @@ async function animatePage() {
       gsap.from('.roster-inner > :not(.cards)', { y: 30, opacity: 0, duration: 0.8, stagger: 0.1, ease: 'power3.out', scrollTrigger: { trigger: '.roster', start: 'top 80%' } })
 
       if (finePointer) {
-        document.querySelectorAll<HTMLElement>('.VPHero .actions .VPButton').forEach((b) => undo.push(magnetic(b, gsap)))
-        document.querySelectorAll<HTMLElement>('.VPFeature, .roster .card-link').forEach((c) => undo.push(tilt(c, gsap)))
+        document.querySelectorAll<HTMLElement>('.home-hero .actions .btn').forEach((b) => undo.push(magnetic(b, gsap)))
+        document.querySelectorAll<HTMLElement>('.rows .panel, .roster .card-link').forEach((c) => undo.push(tilt(c, gsap)))
       }
     } else {
       // Docs stay calm: a short rise for the first blocks of the page.
@@ -163,7 +157,7 @@ onBeforeUnmount(() => {
   z-index: 100;
   transform: scaleX(var(--p));
   transform-origin: left;
-  background: var(--sect-yellow);
+  background: var(--sect-accent);
   pointer-events: none;
 }
 </style>

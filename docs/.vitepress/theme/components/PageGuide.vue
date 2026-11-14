@@ -40,7 +40,7 @@ const mascot = computed(() => mascotForPath(route.path))
 .bubble {
   position: relative;
   padding: 10px 12px;
-  border-radius: 2px;
+  border-radius: 10px;
   border: 2px solid var(--vp-c-text-1);
   border-top: 6px solid var(--accent);
   background: var(--vp-c-bg-soft);

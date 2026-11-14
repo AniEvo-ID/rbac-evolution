@@ -1,7 +1,7 @@
 // Generates the RBAC Evolution brand assets (mark, favicon, wordmarks, og image).
 // Text is converted to outlines, so the SVGs render the same everywhere (GitHub, npm).
 // Usage (repo root):
-//   FONTS=<dir with Anton-Regular.ttf, ChangaOne-Regular.ttf, PlusJakartaSans.ttf, Yellowtail-Regular.ttf> \
+//   FONTS=<dir with ChangaOne-Regular.ttf, PlusJakartaSans.ttf, Yellowtail-Regular.ttf> \
 //   OPENTYPE=<path to opentype.js package> SHARP=<path to sharp package> \
 //   node docs/scripts/brand.cjs docs/public/brand
 const fs = require('fs')
@@ -10,11 +10,11 @@ const opentype = require(process.env.OPENTYPE)
 const sharp = require(process.env.SHARP)
 const out = process.argv[2]
 const font = (f) => opentype.loadSync(path.join(process.env.FONTS, f))
-const anton = font('Anton-Regular.ttf')
+const display = font('ChangaOne-Regular.ttf')
 const jakarta = font('PlusJakartaSans.ttf')
 const script = font('Yellowtail-Regular.ttf')
 
-const C = { yellow: '#FFF000', jade: '#00C896', ink: '#141414', paper: '#EDEDED', grey: '#8A8A8A' }
+const C = { accent: '#3B82F6', jade: '#00C896', ink: '#0A0C0E', paper: '#EDEDED', grey: '#8A8A8A' }
 
 /** Text as an outlined path; returns { d, width }. letterSpacing in em. */
 function text(f, str, x, y, size, letterSpacing = 0) {
@@ -28,7 +28,7 @@ function text(f, str, x, y, size, letterSpacing = 0) {
   return { d, width: cx - x }
 }
 
-/** 64×64 mark: chamfered yellow badge, ink key with a hexagon bow, jade core, three realm bars. */
+/** 64×64 mark: chamfered blue badge, ink key with a hexagon bow, jade core, three realm bars. */
 function mark() {
   const hex = [0, 60, 120, 180, 240, 300]
     .map((a) => {
@@ -36,7 +36,7 @@ function mark() {
       return `${(32 + 9 * Math.cos(r)).toFixed(2)},${(21 + 9 * Math.sin(r)).toFixed(2)}`
     })
     .join(' ')
-  return `<path d="M12 2H62V52L52 62H2V12Z" fill="${C.yellow}"/>
+  return `<path d="M12 2H62V52L52 62H2V12Z" fill="${C.accent}"/>
   <polygon points="${hex}" fill="none" stroke="${C.ink}" stroke-width="4" stroke-linejoin="miter"/>
   <circle cx="32" cy="21" r="3" fill="${C.jade}"/>
   <path d="M30 29.5H34V54H30Z M34 42H41V46H34Z M34 49H39V53H34Z" fill="${C.ink}"/>
@@ -52,7 +52,7 @@ fs.writeFileSync(path.join(out, 'mark.svg'), svg(64, 64, mark()))
 fs.writeFileSync(path.join(out, 'favicon.svg'), svg(64, 64, mark()))
 
 function wordmark(textColor) {
-  const name = text(anton, 'RBAC Evolution', 92, 58, 56)
+  const name = text(display, 'RBAC Evolution', 92, 56, 46)
   const tag = text(jakarta, 'ROLES · PERMISSIONS · CULTIVATED', 94, 88, 12, 0.32)
   const w = Math.ceil(Math.max(name.width, tag.width) + 104)
   return svg(
@@ -61,7 +61,7 @@ function wordmark(textColor) {
     `<g transform="translate(4 14) scale(1.1)">${mark()}</g>
   <path d="${name.d}" fill="${textColor}"/>
   <path d="${tag.d}" fill="${C.grey}"/>
-  <path d="M94 96H${w - 18}V99H94Z" fill="${C.yellow}"/>
+  <path d="M94 96H${w - 18}V99H94Z" fill="${C.accent}"/>
   <path d="M${w - 12} 91.5L${w - 5} 97.5L${w - 12} 103.5L${w - 19} 97.5Z" fill="${C.jade}" transform="translate(0 -1)"/>`,
   )
 }
@@ -73,8 +73,8 @@ const contours = Array.from({ length: 9 }, (_, i) => {
   const r = 60 + i * 46
   return `<path d="M${980 - r} 300 C ${980 - r} ${300 - r * 0.9}, ${980 + r * 0.8} ${300 - r * 1.05}, ${980 + r} 290 S ${980 + r * 0.2} ${300 + r * 1.1}, ${980 - r} 300Z" fill="none" stroke="#2A2A2A" stroke-width="2"/>`
 }).join('')
-const stripes = Array.from({ length: 40 }, (_, i) => `<path d="M${i * 36 - 40} 630L${i * 36} 582H${i * 36 + 18}L${i * 36 - 22} 630Z" fill="${C.yellow}"/>`).join('')
-const ogName = text(anton, 'RBAC Evolution', 400, 300, 132)
+const stripes = Array.from({ length: 40 }, (_, i) => `<path d="M${i * 36 - 40} 630L${i * 36} 582H${i * 36 + 18}L${i * 36 - 22} 630Z" fill="${C.accent}"/>`).join('')
+const ogName = text(display, 'RBAC Evolution', 400, 290, 96)
 const ogScript = text(script, 'roles & permissions, cultivated.', 404, 380, 58)
 const ogLine = text(jakarta, 'Node.js & Bun  ·  every framework  ·  every database', 406, 450, 26)
 const og = svg(
@@ -88,7 +88,7 @@ const og = svg(
   <path d="${ogName.d}" fill="${C.paper}"/>
   <path d="${ogScript.d}" fill="${C.jade}"/>
   <path d="${ogLine.d}" fill="${C.grey}"/>
-  <g fill="${C.yellow}"><path d="M40 40H96V46H46V96H40Z"/><path d="M1160 40H1104V46H1154V96H1160Z"/></g>`,
+  <g fill="${C.accent}"><path d="M40 40H96V46H46V96H40Z"/><path d="M1160 40H1104V46H1154V96H1160Z"/></g>`,
 )
 sharp(Buffer.from(og))
   .png()

@@ -6,7 +6,6 @@ const rows = [
 </script>
 
 <template>
-  <div class="hazard" aria-hidden="true" />
   <section class="bound" aria-label="Supported frameworks, runtimes and databases">
     <p class="label"><span class="pulse" />Formation bound to</p>
     <div v-for="(row, r) in rows" :key="r" class="lane" :class="{ reverse: r === 1 }">
@@ -22,11 +21,6 @@ const rows = [
 </template>
 
 <style scoped>
-.hazard {
-  height: 18px;
-  margin-bottom: 24px;
-  background: repeating-linear-gradient(-55deg, var(--sect-yellow) 0 14px, var(--sect-ink) 14px 28px);
-}
 .bound {
   padding: 8px 0 40px;
   overflow: hidden;
@@ -59,9 +53,8 @@ const rows = [
   animation: belt 40s linear infinite;
 }
 .lane.reverse li {
-  background: var(--sect-ink);
-  color: var(--sect-yellow);
-  border-color: var(--sect-ink);
+  color: var(--sect-accent-text);
+  border-color: rgba(59, 130, 246, 0.35);
 }
 .lane.reverse {
   animation-direction: reverse;
@@ -79,9 +72,9 @@ const rows = [
 }
 .belt li {
   padding: 6px 14px;
-  border-radius: 2px;
-  border: 2px solid var(--vp-c-text-1);
-  background: var(--vp-c-bg);
+  border-radius: 8px;
+  border: 1px solid var(--vp-c-border);
+  background: rgba(17, 20, 24, 0.85);
   font-family: var(--sect-font-label);
   font-size: 15px;
   color: var(--vp-c-text-1);
