@@ -37,6 +37,7 @@ These codes are thrown as plain `RbacError` instances. Use `error.code` to tell 
 | `TEAMS_NOT_ENABLED` | A `team` option (other than `null`/`undefined`) is passed while `createRbac({ teams: true })` is not set. |
 | `TEAM_DOES_NOT_MATCH` | A `Role` **object** from another team is used in a team scope. Global roles (`teamId: null`) are always allowed. |
 | `INVALID_NAME` | A role or permission name is empty or only whitespace. Names are trimmed before use. |
+| `INVALID_SYNC_DEFINITION` | The definition passed to [`rbac.sync()`](/advanced/seeding) is malformed (wrong shape, empty names, a role listed twice in one scope). Thrown before anything is written. |
 
 The `RbacErrorCode` type is the union of all nine codes.
 

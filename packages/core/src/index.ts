@@ -8,6 +8,15 @@ import { version } from '../package.json'
 
 export { createRbac, Rbac, RoleRbac, SubjectRbac } from './rbac'
 export type { BeforeContext, BeforeHook, GuardOptions, RbacOptions, ScopeOptions } from './rbac'
+export type {
+  SyncDefinition,
+  SyncOptions,
+  SyncPermissionChange,
+  SyncResult,
+  SyncRoleChange,
+  SyncRolePermissions,
+  SyncRoleUpdate,
+} from './sync'
 
 export type {
   PermissionAttachedEvent,

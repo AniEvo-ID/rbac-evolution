@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { isAbsolute, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import type { Rbac } from '@anievo-id/rbac-evolution'
+import type { Rbac, SyncDefinition } from '@anievo-id/rbac-evolution'
 import { CliError } from './errors'
 
 export interface RbacCliConfig {
@@ -12,6 +12,11 @@ export interface RbacCliConfig {
   rbac: Rbac | (() => Rbac | Promise<Rbac>)
   /** Default subject type for `assign-role` / `give-permission` (spatie's user model). Default: `user`. */
   subjectType?: string
+  /**
+   * Roles & permissions for `rbac-evolution sync` — the same shape as `rbac.sync()`:
+   * one definition, or an array of definitions (one per guard / team).
+   */
+  seed?: SyncDefinition | readonly SyncDefinition[]
   /** Called after every command, e.g. to close the database connection. */
   teardown?: () => void | Promise<void>
 }
@@ -39,6 +44,13 @@ export function findConfigFile(cwd: string, explicit?: string): string | undefin
   return CONFIG_FILES.map((name) => join(cwd, name)).find((file) => existsSync(file))
 }
 
+/** Imports a TS/JS module with jiti and returns its default export. */
+export async function importModule(file: string): Promise<unknown> {
+  const { createJiti } = await import('jiti')
+  const jiti = createJiti(pathToFileURL(file).href, { interopDefault: true })
+  return jiti.import(file, { default: true })
+}
+
 /** Loads `rbac.config.*` (TypeScript supported via jiti). */
 export async function loadConfig(cwd: string, explicit?: string): Promise<RbacCliConfig> {
   const file = findConfigFile(cwd, explicit)
@@ -46,9 +58,7 @@ export async function loadConfig(cwd: string, explicit?: string): Promise<RbacCl
     throw new CliError('No rbac.config.ts found in this directory. Run `rbac-evolution init` to create one.')
   }
 
-  const { createJiti } = await import('jiti')
-  const jiti = createJiti(pathToFileURL(file).href, { interopDefault: true })
-  const loaded: unknown = await jiti.import(file, { default: true })
+  const loaded = await importModule(file)
 
   if (!isConfig(loaded)) {
     throw new CliError(`${file} must default-export defineConfig({ rbac }).`)

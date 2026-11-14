@@ -75,6 +75,7 @@ export default defineConfig({
       {
         text: 'Advanced',
         items: [
+          { text: 'Seeding (sync)', link: '/advanced/seeding' },
           { text: 'Cache', link: '/advanced/cache' },
           { text: 'Events', link: '/advanced/events' },
           { text: 'Querying subjects', link: '/advanced/querying-subjects' },

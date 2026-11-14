@@ -9,6 +9,7 @@ import {
   RoleDoesNotExist,
 } from './errors'
 import { RbacEmitter, type RbacEventListener, type RbacEventName } from './events'
+import { type SyncDefinition, type SyncOptions, type SyncResult, syncDefinition } from './sync'
 import type {
   DefaultRbacTypes,
   Id,
@@ -279,6 +280,35 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     await this.adapter.deleteRole(resolved.id)
     await this.forgetCachedPermissions()
     await this.#events.emit({ event: 'role.deleted', role: resolved, teamId: resolved.teamId })
+  }
+
+  // ------------------------------------------------------------------------- sync
+
+  /**
+   * Declaratively seeds roles & permissions (spatie's "Database Seeding"): creates missing
+   * permissions and roles, and syncs each role's permissions to exactly the given list.
+   * Idempotent — running it again changes nothing. Uses the regular engine methods, so the
+   * usual events fire.
+   *
+   * ```ts
+   * await rbac.sync({
+   *   permissions: ['edit articles', 'delete articles'],
+   *   roles: { admin: '*', writer: ['edit articles'] },
+   * })
+   * ```
+   *
+   * - `'*'` gives a role every permission of its guard (after the sync).
+   * - Pass an array of definitions (each with its own `guard` / `team`) to sync several scopes.
+   * - `prune: true` deletes roles & permissions of the synced scopes that aren't in the definition.
+   * - `dryRun: true` returns the plan without writing anything.
+   *
+   * Not atomic: adapters have no transactions, so a failure midway leaves the earlier changes.
+   */
+  async sync(
+    definition: SyncDefinition<T> | readonly SyncDefinition<T>[],
+    options: SyncOptions = {},
+  ): Promise<SyncResult> {
+    return syncDefinition(this, definition, options)
   }
 
   // ---------------------------------------------------------------------- queries
