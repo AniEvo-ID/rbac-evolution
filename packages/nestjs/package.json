@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-nestjs",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "NestJS module, guard & decorators for rbac-evolution.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
