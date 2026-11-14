@@ -1,0 +1,100 @@
+# Adapters
+
+The rbac-evolution engine does not talk to a database itself. Every read and write goes through an **adapter**: an object that implements the `RbacAdapter` interface from `@anievo-id/rbac-evolution`. You pass it to `createRbac()` once, and the rest of your code only uses the engine API.
+
+```ts
+import { createRbac } from '@anievo-id/rbac-evolution'
+
+const rbac = createRbac({ adapter: /* any RbacAdapter */ })
+```
+
+The engine handles the logic: name validation, guards, teams, wildcards, caching and events. The adapter only stores and loads rows. Because of this split, switching from the in-memory adapter to a real database doesn't change any of your permission checks.
+
+## Available adapters
+
+| Adapter | Package | Import | Databases |
+| --- | --- | --- | --- |
+| [`MemoryAdapter`](/adapters/memory) | `@anievo-id/rbac-evolution` | `import { MemoryAdapter } from '@anievo-id/rbac-evolution'` | None (in process) |
+| [`PrismaAdapter`](/adapters/prisma) | `@anievo-id/rbac-evolution-prisma` | `import { PrismaAdapter } from '@anievo-id/rbac-evolution-prisma'` | PostgreSQL, MySQL, MariaDB, SQLite, SQL Server, CockroachDB |
+| [`drizzlePgAdapter`](/adapters/drizzle) | `@anievo-id/rbac-evolution-drizzle` | `import { drizzlePgAdapter } from '@anievo-id/rbac-evolution-drizzle/pg'` | PostgreSQL (node-postgres, postgres.js, Neon, PGlite, ...) |
+| [`drizzleSqliteAdapter`](/adapters/drizzle) | `@anievo-id/rbac-evolution-drizzle` | `import { drizzleSqliteAdapter } from '@anievo-id/rbac-evolution-drizzle/sqlite'` | SQLite (libsql/Turso, better-sqlite3, D1, Bun, ...) |
+| [Your own](/adapters/custom) | — | `implements RbacAdapter` | Anything |
+
+::: tip Which one should I pick?
+- Already using Prisma or Drizzle? Use the matching adapter.
+- Writing tests, a prototype, or an app whose roles never change at runtime? Use `MemoryAdapter`.
+- Using another ORM or database (TypeORM, Kysely, Mongoose, a REST API)? [Write a custom adapter](/adapters/custom) and check it with the shared conformance tests.
+:::
+
+## The five tables
+
+The SQL adapters use the same five-table layout as spatie/laravel-permission, so anyone who knows that package will recognise the schema right away.
+
+| Table | Holds | Key columns |
+| --- | --- | --- |
+| `permissions` | One row per permission and guard | `id`, `name`, `guard_name`. Unique on `(name, guard_name)` |
+| `roles` | One row per role, guard and team | `id`, `name`, `guard_name`, `team_id`. Unique on `(name, guard_name, team_id)` |
+| `role_has_permissions` | Which permissions a role grants | `role_id`, `permission_id` |
+| `model_has_roles` | Which roles a subject holds | `role_id`, `subject_type`, `subject_id`, `team_id` |
+| `model_has_permissions` | Direct permissions of a subject | `permission_id`, `subject_type`, `subject_id`, `team_id` |
+
+The three link tables use composite primary keys, so each link exists only once. Link rows reference `roles` and `permissions` with `ON DELETE CASCADE`, but the adapters also delete the links themselves before they delete a role or permission. Cleanup still works when foreign keys are off (SQLite's default) or when Prisma runs with `relationMode = "prisma"`.
+
+## Storage conventions
+
+The Prisma and Drizzle adapters follow the same conventions, so their data looks the same in either ORM.
+
+### Integer ids for roles and permissions
+
+`permissions.id` and `roles.id` are auto-increment integers. The adapters return them as `number`. Numeric strings such as `'42'` are also accepted wherever the engine passes an id.
+
+### Subjects as `subject_type` + `subject_id` text
+
+A [subject](/basic-usage/basic-usage) is any `{ type, id }` pair: a user, an API client, a service account. Laravel calls the same columns `model_type` and `model_id`. Both columns are `text`:
+
+- Any primary key works: auto-increment numbers, UUIDs, cuids, ObjectId strings.
+- `{ type: 'user', id: 1 }` and `{ type: 'user', id: '1' }` are the same subject.
+- Reverse lookups ([`subjectsWithRole` / `subjectsWithPermission`](/advanced/querying-subjects)) return subject ids as **strings** in the SQL adapters, because that is how they are stored.
+
+### `team_id = ''` means global
+
+With [teams](/basic-usage/teams) enabled, roles and links can belong to a team. `team_id` is `text NOT NULL`, and the empty string `''` stands for "no team" (global).
+
+A `NULL` would be simpler, but `NULL`s never compare equal. They would break the composite primary keys and the `(name, guard_name, team_id)` unique index, and the same global role could be inserted twice. The adapters convert the value both ways:
+
+| Engine value (`TeamId`) | Stored `team_id` | Returned as `Role.teamId` |
+| --- | --- | --- |
+| `null` (global) | `''` | `null` |
+| `42` | `'42'` | `'42'` (a string) |
+| `'acme'` | `'acme'` | `'acme'` |
+
+::: warning
+Never use `''` as a real team id. It is reserved for global data.
+:::
+
+### Timestamps
+
+`permissions` and `roles` have `created_at` and `updated_at` columns, which default to the current time. The link tables have no timestamps.
+
+| Adapter | Column type |
+| --- | --- |
+| Prisma | `DateTime` (`updatedAt` uses `@updatedAt`) |
+| Drizzle, PostgreSQL | `timestamp with time zone DEFAULT now()` |
+| Drizzle, SQLite | `integer` unix seconds, exposed as `Date` by Drizzle (`mode: 'timestamp'`) |
+
+The engine never reads these columns. They are there for auditing and for your own admin screens.
+
+## What the engine checks
+
+Adapters stay small because the engine does most of the validation before it calls them:
+
+- **Name uniqueness.** `createPermission` and `createRole` look for an existing row first and throw `PermissionAlreadyExists` or `RoleAlreadyExists`. The unique indexes in the SQL schemas back this up when two requests race.
+- **Existence and guards.** Names are resolved to rows, and unknown names throw `RoleDoesNotExist` or `PermissionDoesNotExist` before the adapter writes anything. See [Errors](/advanced/errors).
+- **Caching.** Each subject's resolved roles and permissions are cached by the engine, not by the adapter. See [Cache](/advanced/cache).
+
+## Next steps
+
+- [Prisma adapter](/adapters/prisma)
+- [Drizzle adapter](/adapters/drizzle)
+- [Memory adapter](/adapters/memory)
+- [Writing a custom adapter](/adapters/custom)

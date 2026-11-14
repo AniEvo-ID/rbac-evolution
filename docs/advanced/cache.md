@@ -1,0 +1,155 @@
+# Cache
+
+A permission check needs several adapter queries: the subject's roles, its direct permissions, and the permissions of those roles. To avoid running them on every `can()`, the engine caches each subject's **resolved state** and clears the cache whenever something changes.
+
+## Defaults
+
+With no extra options, you get an in-process `MemoryCache` with a 24-hour TTL:
+
+```ts
+import { createRbac } from '@anievo-id/rbac-evolution'
+
+const rbac = createRbac({ adapter }) // cache: new MemoryCache(), cacheTtl: 24h
+```
+
+| Option | Type | Default | Description |
+| --- | --- | --- | --- |
+| `cache` | `CacheStore \| false` | `new MemoryCache()` | Where the resolved state is stored. `false` turns caching off. |
+| `cacheTtl` | `number` (ms) | `86_400_000` (24 h) | How long each entry lives. Passed to `CacheStore.set()`. |
+
+### What is cached
+
+There is one entry per **subject + guard + team**. It holds that subject's roles, direct permissions, and permissions inherited from its roles. Every read on `rbac.for(subject)` goes through it: `hasRole`, `can`, `hasPermissionTo`, `getRoleNames`, `getAllPermissions`, `snapshot()`, and the rest.
+
+Other calls are **not** cached and always reach the adapter:
+
+- `findPermission`, `findRole`, `getRoles`, `getPermissions`, `rbac.role(...).getPermissions()`.
+- Resolving names to rows when you assign or revoke.
+- [`subjectsWithRole` / `subjectsWithPermission`](/advanced/querying-subjects).
+- The existence check in `hasPermissionTo()` and `can()`. With `wildcard` off, the engine looks up the permission name once per check to confirm it exists.
+
+### When the cache is cleared
+
+The cache is cleared as a whole after **every** change made through the engine: creating or deleting roles and permissions, assigning, removing or syncing roles, and giving, revoking or syncing permissions. It happens right after the adapter write and before any [event listeners](/advanced/events) run.
+
+Changes are rare compared to checks, so clearing everything is simple and safe: no entry can stay stale after a change.
+
+## Changing the TTL
+
+```ts
+const rbac = createRbac({ adapter, cacheTtl: 5 * 60_000 }) // 5 minutes
+```
+
+The TTL limits how long stale data can survive when the cache is **not** cleared for you, for example when another process changes the database. See [Multiple processes](#multiple-processes).
+
+::: info MemoryCache housekeeping
+`MemoryCache` deletes an expired entry when it is next read. It has no size limit and no background sweep. The cache is cleared on every change, so this is rarely a problem, but a long-running process that checks many different subjects without changes will keep their entries until the TTL expires and they are read again.
+:::
+
+## Turning the cache off
+
+```ts
+const rbac = createRbac({ adapter, cache: false })
+```
+
+Every check then reads from the adapter. This is useful in tests, inside short-lived [transaction instances](/adapters/drizzle#transactions), and in multi-process setups that have no shared cache.
+
+## Clearing the cache manually
+
+```ts
+await rbac.forgetCachedPermissions()
+```
+
+Call it when the data changed **without** going through this `rbac` instance:
+
+- you edited the tables with raw SQL, a migration, or a database admin tool,
+- a seed script or another service wrote to the same database,
+- you used a second `createRbac` instance (for example one bound to a transaction).
+
+## Custom store
+
+To share the cache between processes, or to keep it in Redis, Valkey, Memcached or a KV store, implement `CacheStore`:
+
+```ts
+interface CacheStore {
+  get(key: string): unknown | Promise<unknown>
+  set(key: string, value: unknown, ttlMs: number): void | Promise<void>
+  clear(): void | Promise<void>
+}
+```
+
+Methods may be synchronous or return promises. The contract:
+
+- **`get`** returns the stored value, or **`undefined`** on a miss. Return `undefined`, not `null`: any value other than `undefined` counts as a hit.
+- **`set`** stores the value for `ttlMs` milliseconds. The value is a plain object made of arrays of `Role` and `Permission` objects, so `JSON.stringify` / `JSON.parse` round-trip it.
+- **`clear`** removes **every** rbac-evolution entry. It is called after every change, so the store should be dedicated to rbac-evolution or namespaced by your implementation. Don't flush a shared database.
+
+### Redis example
+
+This store uses [ioredis](https://github.com/redis/ioredis). Keys are namespaced with a prefix, so `clear()` only deletes rbac entries:
+
+```ts
+// rbac-cache.ts
+import type { CacheStore } from '@anievo-id/rbac-evolution'
+import type { Redis } from 'ioredis'
+
+export class RedisCache implements CacheStore {
+  constructor(
+    private readonly redis: Redis,
+    private readonly prefix = 'rbac-cache:',
+  ) {}
+
+  async get(key: string): Promise<unknown> {
+    const raw = await this.redis.get(this.prefix + key)
+    return raw === null ? undefined : JSON.parse(raw) // miss → undefined, never null
+  }
+
+  async set(key: string, value: unknown, ttlMs: number): Promise<void> {
+    await this.redis.set(this.prefix + key, JSON.stringify(value), 'PX', ttlMs)
+  }
+
+  async clear(): Promise<void> {
+    let cursor = '0'
+    do {
+      const [next, keys] = await this.redis.scan(cursor, 'MATCH', `${this.prefix}*`, 'COUNT', 500)
+      cursor = next
+      if (keys.length > 0) await this.redis.del(...keys)
+    } while (cursor !== '0')
+  }
+}
+```
+
+```ts
+import { Redis } from 'ioredis'
+import { createRbac } from '@anievo-id/rbac-evolution'
+import { RedisCache } from './rbac-cache'
+
+const redis = new Redis(process.env.REDIS_URL!)
+
+export const rbac = createRbac({
+  adapter,
+  cache: new RedisCache(redis),
+  cacheTtl: 60 * 60_000, // 1 hour
+})
+```
+
+::: tip Cheaper `clear()` for large caches
+`SCAN` + `DEL` costs more as the number of cached subjects grows. Another approach is a **generation counter**: put a version number in every key (`rbac-cache:v12:...`), read it in `get`/`set`, and make `clear()` a single `INCR` of that number. The old keys are never read again and expire through their TTL.
+:::
+
+## Multiple processes
+
+`MemoryCache` lives inside one process. When you run several instances (a cluster, several containers, serverless functions), a change made in process A clears **only A's** cache. Process B keeps serving its cached state until the TTL expires.
+
+Choose one of these:
+
+| Approach | Trade-off |
+| --- | --- |
+| **Shared store** (Redis, as above) | Every process sees the same entries, and `clear()` affects all of them. Recommended for production clusters. |
+| **Short `cacheTtl`** (for example 30–60 s) | Simple, no extra infrastructure. Changes may take up to the TTL to show up in other processes. |
+| **`cache: false`** | Always correct. Costs a few adapter queries per check. |
+| **Broadcast a clear** | Publish a message after each change (for example from an [event listener](/advanced/events)) and call `rbac.forgetCachedPermissions()` in every process that receives it. |
+
+::: warning Revoking access
+Leftover cached data in other processes can let a user keep a permission you just revoked until the TTL runs out. For sensitive permissions in a multi-process deployment, use a shared store or a short TTL.
+:::

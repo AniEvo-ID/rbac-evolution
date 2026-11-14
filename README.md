@@ -3,7 +3,7 @@
 > Role & permission management (RBAC) for the JavaScript / TypeScript ecosystem.
 > Inspired by [spatie/laravel-permission](https://github.com/spatie/laravel-permission), built for JS.
 
-**Status: 🚧 early development — not ready for production yet.**
+**Status: 🧪 beta — the API may still change before 1.0.**
 
 ## Why
 
@@ -11,6 +11,10 @@ Laravel developers have `spatie/laravel-permission`: assign roles, give permissi
 The JS ecosystem has no equivalent that works the same way across ORMs and frameworks.
 `rbac-evolution` aims to fill that gap — one framework-agnostic core, with adapters for your database
 and integrations for your framework.
+
+## Documentation
+
+📖 **https://anievo-id.github.io/rbac-evolution/**
 
 ## Packages
 
@@ -20,7 +24,7 @@ and integrations for your framework.
 | [`@anievo-id/rbac-evolution-prisma`](./packages/prisma) | Prisma storage adapter | 🧪 beta |
 | [`@anievo-id/rbac-evolution-drizzle`](./packages/drizzle) | Drizzle storage adapter | 🧪 beta |
 | [`@anievo-id/rbac-evolution-next`](./packages/next) | Next.js middleware, server helpers & action guards | 🧪 beta |
-| [`@anievo-id/rbac-evolution-react`](./packages/react) | `<Can>`, `useCan()`, `useRole()` | 🧪 beta |
+| [`@anievo-id/rbac-evolution-react`](./packages/react) | `<Can>`, `useCan()`, `useHasRole()` | 🧪 beta |
 | [`@anievo-id/rbac-evolution-vue`](./packages/vue) | `v-can` directive & composables | 🧪 beta |
 | [`@anievo-id/rbac-evolution-express`](./packages/express) | Express / Node HTTP middleware | 🧪 beta |
 | [`@anievo-id/rbac-evolution-cli`](./packages/cli) | CLI like `php artisan permission:*` | 🧪 beta |
@@ -66,7 +70,7 @@ See the [core package README](./packages/core#readme) for guards, wildcards, tea
 - [x] Next.js, React, Vue, Express integrations
 - [x] CLI (like `php artisan permission:*`)
 - [ ] MySQL support for Drizzle
-- [ ] Documentation site
+- [x] Documentation site
 
 ## Contributing
 

@@ -47,7 +47,8 @@ Use `rbac.for(subject)` to work with it:
 | `hasDirectPermission(p)` | Check direct permissions only |
 | `hasAnyPermission(...)` / `hasAllPermissions(...)` | Data check for several permissions, never throws |
 | `hasExactRoles(...roles)` | Has all of these roles and no others |
-| `getRoleNames()` / `getPermissionNames()` / `getAllPermissions()` | Read access |
+| `getRoles()` / `getRoleNames()` | Read roles |
+| `getDirectPermissions()` / `getPermissionsViaRoles()` / `getAllPermissions()` / `getPermissionNames()` | Read permissions |
 | `snapshot()` | `{ roles, permissions }` — serializable, for the client |
 
 All methods accept names or objects, and either `fn('a', 'b')` or `fn(['a', 'b'])`.
@@ -231,7 +232,7 @@ createRbac({ adapter, cache: false })                      // disable
 
 ## Adapters
 
-`MemoryAdapter` is built in. Prisma, Drizzle and others are planned as separate packages.
+`MemoryAdapter` is built in. For databases use [`@anievo-id/rbac-evolution-prisma`](https://www.npmjs.com/package/@anievo-id/rbac-evolution-prisma) or [`@anievo-id/rbac-evolution-drizzle`](https://www.npmjs.com/package/@anievo-id/rbac-evolution-drizzle).
 To support another database, implement the `RbacAdapter` interface.
 
 > ⚠️ Client-side checks are for UI only. Always enforce permissions on the server.
