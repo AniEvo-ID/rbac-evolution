@@ -1,5 +1,7 @@
 # @anievo-id/rbac-evolution
 
+## 0.6.5
+
 ## 0.6.4
 
 ### Patch Changes
