@@ -2,7 +2,7 @@
 
 📖 **[Documentation](https://app.anievo.id/rbac-evolution/adapters/prisma)**
 
-[Prisma](https://www.prisma.io) storage adapter for [rbac-evolution](../../README.md), a TypeScript port of spatie/laravel-permission.
+[Prisma](https://www.prisma.io) storage adapter for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution), a TypeScript port of spatie/laravel-permission.
 
 It stores roles and permissions in the same five tables spatie uses: `permissions`, `roles`, `role_has_permissions`, `model_has_roles` and `model_has_permissions`.
 

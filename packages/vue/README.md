@@ -2,12 +2,12 @@
 
 📖 **[Documentation](https://app.anievo.id/rbac-evolution/frameworks/vue)**
 
-Vue 3 bindings for [rbac-evolution](../core): a `v-can` / `v-role` directive, `<Can>` / `<HasRole>` components,
+Vue 3 bindings for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution): a `v-can` / `v-role` directive, `<Can>` / `<HasRole>` components,
 composables and template helpers — the Vue counterpart of spatie/laravel-permission's `@can` / `@role` Blade directives.
 
 > **Security note:** everything in this package runs in the browser and only decides what the UI *shows*.
 > A user can always edit client-side state. **Always enforce authorization on the server**
-> (e.g. with [`@anievo-id/rbac-evolution-express`](../express)).
+> (e.g. with [`@anievo-id/rbac-evolution-express`](https://www.npmjs.com/package/@anievo-id/rbac-evolution-express)).
 
 ```bash
 npm i @anievo-id/rbac-evolution @anievo-id/rbac-evolution-vue

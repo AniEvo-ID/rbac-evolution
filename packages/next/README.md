@@ -2,7 +2,7 @@
 
 📖 **[Documentation](https://app.anievo.id/rbac-evolution/frameworks/nextjs)**
 
-Next.js (App Router) helpers for [rbac-evolution](../core): guards for server components, server actions and route
+Next.js (App Router) helpers for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution): guards for server components, server actions and route
 handlers, plus route protection in `middleware.ts` — the Next.js counterpart of spatie/laravel-permission's
 `permission`, `role` and `role_or_permission` middleware.
 
