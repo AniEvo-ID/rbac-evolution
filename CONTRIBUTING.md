@@ -18,7 +18,7 @@ pnpm test
 
 ```
 packages/
-  core/        @rbac-evolution/core — framework-agnostic engine
+  core/        @anievo-id/rbac-evolution — framework-agnostic engine
   ...          adapters & framework integrations
 examples/      example apps (Next.js, Vue, ...)
 ```

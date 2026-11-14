@@ -23,7 +23,7 @@ Steps or a minimal code snippet / repo to reproduce:
 
 ## Environment
 
-- Package(s) & version(s): (e.g. `@rbac-evolution/core@0.1.0`)
+- Package(s) & version(s): (e.g. `@anievo-id/rbac-evolution@0.1.0`)
 - Framework: (e.g. Next.js 15, Vue 3, Express 5)
 - ORM / adapter: (e.g. Prisma 6)
 - Node.js version:

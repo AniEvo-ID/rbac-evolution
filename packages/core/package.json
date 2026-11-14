@@ -1,5 +1,5 @@
 {
-  "name": "@rbac-evolution/core",
+  "name": "@anievo-id/rbac-evolution",
   "version": "0.0.0",
   "description": "Framework-agnostic RBAC engine for rbac-evolution — roles, permissions, guards.",
   "license": "MIT",

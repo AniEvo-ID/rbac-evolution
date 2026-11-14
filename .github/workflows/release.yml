@@ -1,8 +1,12 @@
 name: Release
 
+# Publishing is paused until the npm org and NPM_TOKEN secret are set up.
+# Runs only when triggered manually from the Actions tab.
+# To re-enable automatic releases, add back:
+#   push:
+#     branches: [main]
 on:
-  push:
-    branches: [main]
+  workflow_dispatch:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 

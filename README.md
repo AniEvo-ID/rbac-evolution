@@ -16,18 +16,18 @@ and integrations for your framework.
 
 | Package | Description | Status |
 | --- | --- | --- |
-| [`@rbac-evolution/core`](./packages/core) | Framework-agnostic RBAC engine | 🚧 in progress |
-| `@rbac-evolution/prisma` | Prisma storage adapter | 📋 planned |
-| `@rbac-evolution/drizzle` | Drizzle storage adapter | 📋 planned |
-| `@rbac-evolution/next` | Next.js middleware, server helpers & action guards | 📋 planned |
-| `@rbac-evolution/react` | `<Can>`, `useCan()`, `useRole()` | 📋 planned |
-| `@rbac-evolution/vue` | `v-can` directive & composables | 📋 planned |
-| `@rbac-evolution/express` | Express / Node HTTP middleware | 📋 planned |
+| [`@anievo-id/rbac-evolution`](./packages/core) | Framework-agnostic RBAC engine | 🚧 in progress |
+| `@anievo-id/rbac-evolution-prisma` | Prisma storage adapter | 📋 planned |
+| `@anievo-id/rbac-evolution-drizzle` | Drizzle storage adapter | 📋 planned |
+| `@anievo-id/rbac-evolution-next` | Next.js middleware, server helpers & action guards | 📋 planned |
+| `@anievo-id/rbac-evolution-react` | `<Can>`, `useCan()`, `useRole()` | 📋 planned |
+| `@anievo-id/rbac-evolution-vue` | `v-can` directive & composables | 📋 planned |
+| `@anievo-id/rbac-evolution-express` | Express / Node HTTP middleware | 📋 planned |
 
 Install only what you need — e.g. for a Next.js + Prisma app:
 
 ```bash
-npm i @rbac-evolution/core @rbac-evolution/prisma @rbac-evolution/next @rbac-evolution/react
+npm i @anievo-id/rbac-evolution @anievo-id/rbac-evolution-prisma @anievo-id/rbac-evolution-next @anievo-id/rbac-evolution-react
 ```
 
 ## Planned API (preview)
