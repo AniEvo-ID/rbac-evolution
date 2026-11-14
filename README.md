@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/public/brand/wordmark-dark.svg">
-    <img src="docs/public/brand/wordmark-light.svg" alt="RBAC Evolution" width="460">
-  </picture>
+  <img src="docs/public/brand/logo.png" alt="RBAC Evolution logo" width="180">
 </p>
 
 # RBAC Evolution

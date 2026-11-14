@@ -17,7 +17,7 @@ export default defineConfig({
   lastUpdated: true,
   head: [
     ['meta', { name: 'theme-color', content: '#0a0c0e' }],
-    ['link', { rel: 'icon', type: 'image/svg+xml', href: '/rbac-evolution/brand/favicon.svg' }],
+    ['link', { rel: 'icon', type: 'image/png', href: '/rbac-evolution/brand/favicon.png' }],
     ['link', { rel: 'apple-touch-icon', href: '/rbac-evolution/brand/apple-touch-icon.png' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'RBAC Evolution — roles & permissions, cultivated' }],
@@ -35,7 +35,7 @@ export default defineConfig({
   ],
 
   themeConfig: {
-    logo: { src: '/brand/mark.svg', alt: 'RBAC Evolution' },
+    logo: { src: '/brand/logo.webp', alt: 'RBAC Evolution' },
     nav: [
       { text: 'Guide', link: '/guide/introduction' },
       { text: 'Frameworks', link: '/frameworks/react' },
