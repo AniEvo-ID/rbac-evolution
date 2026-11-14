@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-cli",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Command-line tool for rbac-evolution — create roles & permissions, assign roles, show the permission matrix (like `php artisan permission:*`).",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
