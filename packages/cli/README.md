@@ -56,7 +56,8 @@ Spatie-style names work too: `rbac-evolution permission:create-role writer`.
 | `--type <type>` | Subject type for `assign-role` / `give-permission` (default: `subjectType` or `user`) |
 | `--json` | JSON output for `show` |
 | `-c, --config <file>` | Config file |
-| `-h, --help` / `-v, --version` | Help / version |
+| `--force` | Overwrite an existing `rbac.config.ts` (`init`) |
+| `-h, --help` / `-v, --version` | Help / version — `rbac-evolution help <command>` shows a command's usage |
 
 ### Examples
 
