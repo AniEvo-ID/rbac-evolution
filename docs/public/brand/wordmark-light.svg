@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 112" width="500" height="112"><g transform="translate(8 8) scale(1.5)">
+  
+  <circle cx="32" cy="32" r="21" fill="#f2efe4" stroke="#cfe3da" stroke-width="0.8"/>
+  <g stroke="#cfe3da" stroke-width="0.6"><line x1="13" y1="24" x2="51" y2="24" opacity="0.5"/><line x1="13" y1="28" x2="51" y2="28" opacity="0.5"/><line x1="13" y1="32" x2="51" y2="32" opacity="0.5"/><line x1="13" y1="36" x2="51" y2="36" opacity="0.5"/><line x1="13" y1="40" x2="51" y2="40" opacity="0.5"/></g>
+  <polygon points="46.29 40.25 32.00 48.50 17.71 40.25 17.71 23.75 32.00 15.50 46.29 23.75" fill="none" stroke="#0b7f62" stroke-width="1.4" stroke-linejoin="round"/>
+  <g stroke="#0b7f62" stroke-width="0.8" opacity="0.7"><line x1="32" y1="32" x2="46.29" y2="40.25"/><line x1="32" y1="32" x2="32" y2="48.5"/><line x1="32" y1="32" x2="17.71" y2="40.25"/><line x1="32" y1="32" x2="17.71" y2="23.75"/><line x1="32" y1="32" x2="32" y2="15.5"/><line x1="32" y1="32" x2="46.29" y2="23.75"/></g>
+  <g fill="#0b7f62"><circle cx="46.29" cy="40.25" r="1.6"/><circle cx="32" cy="48.5" r="1.6"/><circle cx="17.71" cy="40.25" r="1.6"/><circle cx="17.71" cy="23.75" r="1.6"/><circle cx="32" cy="15.5" r="1.6"/><circle cx="46.29" cy="23.75" r="1.6"/></g>
+  <path d="M22.26 56.11 A26 26 0 1 1 44.21 9.04" fill="none" stroke="#0b7f62" stroke-width="4" stroke-linecap="round"/>
+  <polygon points="48.62 11.39 45.12 4.77 41.18 12.19" fill="#0b7f62" stroke="#0b7f62" stroke-width="1" stroke-linejoin="round"/>
+  <path d="M52.49 15.99 A26 26 0 0 1 41.74 56.11" fill="none" stroke="#b07a1f" stroke-width="4" stroke-linecap="round"/>
+  <rect x="29.4" y="55.4" width="5.2" height="5.2" transform="rotate(45 32 58)" fill="#b07a1f"/>
+  <g fill="none" stroke="#b07a1f" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="32" cy="23.5" r="5.2"/>
+    <path d="M32 28.7V46.5M32 41.5h4.6M32 45.6h3.4"/>
+  </g>
+  <circle cx="32" cy="23.5" r="1.6" fill="#0b7f62"/></g>
+  <text x="118" y="70" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="52" font-weight="300" fill="none" stroke="#b07a1f" stroke-width="1.6" letter-spacing="1">rbac</text>
+  <text x="232" y="70" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="52" font-weight="700" fill="#0b7f62">evolution</text>
+  <text x="120" y="96" font-family="'JetBrains Mono',Menlo,monospace" font-size="12" letter-spacing="4.2" fill="#4b5563">ROLES · PERMISSIONS · CULTIVATED</text>
+  <line x1="120" y1="106" x2="470" y2="106" stroke="#0b7f62" stroke-width="1" opacity="0.5"/>
+  <rect x="472" y="103" width="6" height="6" transform="rotate(45 475 106)" fill="#b07a1f"/>
+</svg>

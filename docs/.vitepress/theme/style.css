@@ -102,10 +102,28 @@
 }
 
 /* ---------- page atmosphere ---------- */
+/* The hero backdrop (HeroBackdrop.vue) sits behind everything on the home page. */
 .VPHome {
-  background:
-    radial-gradient(60% 40% at 85% 0%, color-mix(in srgb, var(--sect-jade) 12%, transparent), transparent 70%),
-    radial-gradient(50% 35% at 0% 30%, color-mix(in srgb, var(--sect-gold) 10%, transparent), transparent 70%);
+  position: relative;
+  isolation: isolate;
+}
+
+/* glass nav bar */
+.VPNavBar .content-body,
+.VPNavBar .divider-line {
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+}
+.VPNavBar:not(.home.top) .content-body {
+  background: color-mix(in srgb, var(--vp-c-bg) 78%, transparent) !important;
+}
+.VPNavBar.home.top .content-body {
+  background: transparent !important;
+  backdrop-filter: none;
+}
+.VPNavBarTitle .logo {
+  height: 30px;
+  filter: drop-shadow(0 0 6px var(--sect-jade-glow));
 }
 
 /* VitePress pulls the hero image down over the title on narrow screens; our cast is taller. */
@@ -131,6 +149,19 @@
 .VPHero .name {
   font-weight: 700;
 }
+.VPHero .name.clip {
+  filter: drop-shadow(0 0 22px color-mix(in srgb, var(--sect-jade) 30%, transparent));
+}
+.VPHero .text .w {
+  display: inline-block;
+  overflow: hidden;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+  vertical-align: top;
+}
+.VPHero .text .w > span {
+  display: inline-block;
+}
 .VPHero .tagline {
   max-width: 560px;
 }
@@ -145,20 +176,67 @@
   margin-top: 10px;
   border-radius: 3px;
   background: linear-gradient(90deg, var(--sect-jade), var(--sect-gold));
+  box-shadow: 0 0 10px var(--sect-jade-glow);
+}
+.vp-doc h3::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 0 10px 0 2px;
+  rotate: 45deg;
+  vertical-align: 0.18em;
+  background: var(--sect-gold);
+}
+
+/* sidebar: active scroll glows */
+.VPSidebarItem.is-active > .item .text {
+  text-shadow: 0 0 14px var(--sect-jade-glow);
+}
+.VPSidebarItem.is-active > .item > .indicator {
+  box-shadow: 0 0 10px var(--sect-jade-glow);
 }
 .vp-doc a {
   text-underline-offset: 3px;
 }
 
-/* ---------- home features ("technique cards") ---------- */
+/* ---------- home features ("technique cards"): glass HUD panels ---------- */
 .VPFeature {
+  --mx: 50%;
+  --my: 0%;
+  position: relative;
   border-radius: 18px !important;
+  background:
+    radial-gradient(420px circle at var(--mx) var(--my), color-mix(in srgb, var(--sect-jade) 14%, transparent), transparent 60%),
+    color-mix(in srgb, var(--vp-c-bg-soft) 82%, transparent) !important;
+  backdrop-filter: blur(8px);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.VPFeature::before,
+.VPFeature::after {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border: 0 solid var(--sect-jade);
+  opacity: 0;
+  transition: opacity 0.25s ease, inset 0.25s ease;
+  pointer-events: none;
+}
+.VPFeature::before { top: 10px; left: 10px; border-top-width: 2px; border-left-width: 2px; }
+.VPFeature::after { bottom: 10px; right: 10px; border-bottom-width: 2px; border-right-width: 2px; border-color: var(--sect-gold); }
+.VPFeature:hover::before,
+.VPFeature:hover::after { opacity: 0.9; }
+.VPFeature:hover {
+  border-color: var(--vp-c-brand-2) !important;
+  box-shadow: 0 18px 40px -20px var(--sect-jade-glow);
+}
+/* Without JS motion, keep the simple lift. */
+html:not(.motion-ready) .VPFeature {
   transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
 }
-.VPFeature:hover {
+html:not(.motion-ready) .VPFeature:hover {
   transform: translateY(-3px);
-  border-color: var(--vp-c-brand-2) !important;
-  box-shadow: 0 14px 34px -18px var(--sect-jade-glow);
 }
 /* mascot portraits used as feature icons */
 .VPFeature .VPImage {
@@ -189,6 +267,13 @@
 .dark .vp-doc div[class*='language-'] {
   border-color: #1b2540;
 }
+.vp-doc div[class*='language-'] {
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.vp-doc div[class*='language-']:hover {
+  border-color: color-mix(in srgb, var(--sect-jade) 45%, transparent);
+  box-shadow: 0 10px 30px -20px var(--sect-jade-glow);
+}
 
 /* ---------- custom blocks ---------- */
 .custom-block {
@@ -206,8 +291,8 @@
 
 /* ---------- motion ---------- */
 @media (prefers-reduced-motion: reduce) {
-  .VPFeature { transition: none; }
-  .VPFeature:hover { transform: none; }
+  .VPFeature, .vp-doc div[class*='language-'] { transition: none !important; }
+  .VPFeature:hover { transform: none !important; }
 }
 
 /* ==========================================================================
