@@ -1,5 +1,12 @@
 # @anievo-id/rbac-evolution-express
 
+## 0.6.5
+
+### Patch Changes
+
+- 2a54f67: README links that pointed at sibling folders (`../core`, `../vue`, `../express`, `../../README.md`) and broke on npm now point to the GitHub repository and the npm package pages. No code changes.
+  - @anievo-id/rbac-evolution@0.6.5
+
 ## 0.6.4
 
 ### Patch Changes

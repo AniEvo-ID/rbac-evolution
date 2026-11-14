@@ -1,5 +1,11 @@
 # @anievo-id/rbac-evolution-kysely
 
+## 0.6.5
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@0.6.5
+
 ## 0.6.4
 
 ### Patch Changes
