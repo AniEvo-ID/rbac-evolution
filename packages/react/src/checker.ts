@@ -16,7 +16,7 @@ export interface RbacChecker {
   readonly permissions: readonly string[]
   /** `true` if the subject has one of the configured `superAdminRoles`. */
   readonly isSuperAdmin: boolean
-  /** `true` while the snapshot is still being fetched (the `loading` option). Checks return `false` meanwhile. */
+  /** `true` while the snapshot is still being fetched (the `loading` option). Every check, `cannot` included, returns `false` meanwhile. */
   readonly loading: boolean
   can(permission: string): boolean
   cannot(permission: string): boolean
@@ -61,24 +61,27 @@ export function createRbacChecker(
   const roleSet = new Set(roles)
   const permissionSet = new Set(permissions)
   const wildcard = options.wildcard ?? false
-  const isSuperAdmin = (options.superAdminRoles ?? []).some((r) => roleSet.has(r))
+  // While loading, every check (`cannot` too) is false: neither a stale grant nor "no access" UI shows.
+  const loading = options.loading ?? false
+  const isSuperAdmin = !loading && (options.superAdminRoles ?? []).some((r) => roleSet.has(r))
 
   const can = (permission: string): boolean => {
+    if (loading) return false
     if (isSuperAdmin) return true
     const name = permission.trim()
     if (name === '') return false
     if (permissionSet.has(name)) return true
     return wildcard && permissions.some((granted) => safeImplies(granted, name))
   }
-  const hasOne = (role: string): boolean => roleSet.has(role.trim())
+  const hasOne = (role: string): boolean => !loading && roleSet.has(role.trim())
 
   return {
     roles,
     permissions,
     isSuperAdmin,
-    loading: options.loading ?? false,
+    loading,
     can,
-    cannot: (permission) => !can(permission),
+    cannot: (permission) => !loading && !can(permission),
     canAny: (...list) => flatten(list).some(can),
     canAll: (...list) => {
       const wanted = flatten(list)

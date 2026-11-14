@@ -358,4 +358,17 @@ describe('role.syncSubjects (spatie Role::syncModels)', () => {
     expect(await rbac.subjectsWithRole('user', 'writer')).toHaveLength(0)
     expect(await rbac.for(carol).hasRole('writer')).toBe(false)
   })
+
+  it('concurrent syncs never leave the role without holders', async () => {
+    const rbac = createRbac({ adapter: new MemoryAdapter(), cache: false })
+    await seed(rbac)
+    await rbac.for({ type: 'user', id: 9 }).assignRole('writer')
+
+    await Promise.all([rbac.role('writer').syncSubjects('user', [1]), rbac.role('writer').syncSubjects('user', [2])])
+
+    // Either sync may win, or both holders stay; an empty role is the one wrong outcome.
+    const holders = (await rbac.subjectsWithRole('user', 'writer')).map(String).sort()
+    expect(holders.length).toBeGreaterThan(0)
+    expect(holders).not.toContain('9')
+  })
 })
