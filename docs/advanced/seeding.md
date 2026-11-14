@@ -205,7 +205,8 @@ export default defineConfig({
 ```bash
 npx rbac-evolution sync --dry-run   # print the plan
 npx rbac-evolution sync             # apply it
-npx rbac-evolution sync --prune     # also delete what's not in the seed
+npx rbac-evolution sync --prune --dry-run  # preview what pruning would delete
+npx rbac-evolution sync --prune --yes      # also delete what's not in the seed
 ```
 
 ```
@@ -233,7 +234,8 @@ npx rbac-evolution sync --file seed/roles.ts --guard api --team 7
 | Option | Description |
 | --- | --- |
 | `-f, --file <file>` | Seed file (`.json`, `.ts`, `.js`, …). Default: `seed` in the config. |
-| `--prune` | Delete roles & permissions that are not in the seed. |
+| `--prune` | Delete roles & permissions that are not in the seed. Needs `--yes` (or `--dry-run` to preview). |
+| `-y`, `--yes` | Confirm the deletions of `--prune`. |
 | `--dry-run` | Print the plan without writing anything. |
 | `-g, --guard` / `-t, --team` | Default guard / team for definitions that don't set one. |
 | `--json` | Print the summary as JSON. |

@@ -60,10 +60,27 @@ describe('sync command', () => {
     expect(await rbac.getPermissions()).toEqual([])
   })
 
-  it('--prune deletes what is not in the seed', async () => {
+  it('--prune refuses to delete without --yes, and writes nothing', async () => {
+    await rbac.createRole('old')
+    const { code, err } = await exec('sync', '--prune')
+    expect(code).not.toBe(0)
+    expect(err).toContain('--yes')
+    expect(await rbac.findRole('old')).not.toBeNull()
+    expect(await rbac.getPermissions()).toEqual([])
+  })
+
+  it('--prune --dry-run previews without --yes', async () => {
+    await rbac.createRole('old')
+    const { code, out } = await exec('sync', '--prune', '--dry-run')
+    expect(code).toBe(0)
+    expect(out).toContain('- role `old` (guard web)')
+    expect(await rbac.findRole('old')).not.toBeNull()
+  })
+
+  it('--prune --yes deletes what is not in the seed', async () => {
     await rbac.createRole('old')
     await rbac.createPermission('legacy')
-    const { out } = await exec('sync', '--prune')
+    const { out } = await exec('sync', '--prune', '--yes')
     expect(out).toContain('- role `old` (guard web)')
     expect(out).toContain('- permission `legacy` (guard web)')
     expect(await rbac.findRole('old')).toBeNull()
@@ -130,7 +147,7 @@ export default [{ permissions: ['read', 'write'], roles }, { guard: 'api', roles
 
   it('documents sync in the help', async () => {
     expect((await exec('help')).out).toMatch(/sync\s+Create & sync roles and permissions/)
-    expect((await exec('help', 'sync')).out).toContain('Usage: rbac-evolution sync [--file roles.json] [--prune] [--dry-run]')
+    expect((await exec('help', 'sync')).out).toContain('Usage: rbac-evolution sync [--file roles.json] [--prune --yes] [--dry-run]')
   })
 })
 
