@@ -17,6 +17,13 @@ import { RBAC_MODULE_OPTIONS, RBAC_REQUIREMENTS } from './tokens'
 const enforced = new WeakMap<object, Set<unknown>>()
 
 /**
+ * Only HTTP requests and RPC messages get a fresh key object per call. A WebSocket client or a
+ * GraphQL context lives across many calls, so caching or skipping checks by it would let a denied
+ * client through on its next message.
+ */
+const isPerCall = (context: ExecutionContext): boolean => ['http', 'rpc'].includes(context.getType<string>())
+
+/**
  * Resolves the current subject (once per request) and enforces the `@RequirePermissions()`,
  * `@RequireRoles()` and `@RequireRoleOrPermission()` metadata of the class and the handler.
  *
@@ -35,14 +42,11 @@ export class RbacGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const key = requestKey(context)
-    const rbac = await this.resolve(context, key)
+    const perCall = isPerCall(context)
+    const rbac = await this.resolve(context, key, perCall)
 
     const handler = context.getHandler()
-    if (key !== undefined) {
-      const done = enforced.get(key) ?? new Set<unknown>()
-      if (done.has(handler)) return true
-      enforced.set(key, done.add(handler))
-    }
+    if (perCall && key !== undefined && enforced.get(key)?.has(handler)) return true
 
     const requirements = [
       ...(this.reflector.get<RbacRequirement[] | undefined>(RBAC_REQUIREMENTS, context.getClass()) ?? []),
@@ -64,11 +68,13 @@ export class RbacGuard implements CanActivate {
         })
       }
     }
+    // Mark as enforced only once every requirement passed.
+    if (perCall && key !== undefined) enforced.set(key, (enforced.get(key) ?? new Set<unknown>()).add(handler))
     return true
   }
 
-  private async resolve(context: ExecutionContext, key: object | undefined): Promise<SubjectRbac | null> {
-    if (key !== undefined && hasResolved(key)) return getResolved(key) ?? null
+  private async resolve(context: ExecutionContext, key: object | undefined, perCall: boolean): Promise<SubjectRbac | null> {
+    if (perCall && key !== undefined && hasResolved(key)) return getResolved(key) ?? null
 
     const { rbac, getSubject, guard, team } = this.options
     const subject = await getSubject(context)
