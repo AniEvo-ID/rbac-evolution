@@ -25,7 +25,7 @@ features:
     details: Prisma and Drizzle (PostgreSQL & SQLite) adapters, an in-memory adapter, or write your own.
   - icon: ⚛️
     title: React, Next.js, Vue, Express
-    details: <Can>, useCan(), v-can, route guards, server action guards and middleware.
+    details: "&lt;Can&gt;, useCan(), v-can, route guards, server action guards and middleware."
   - icon: 🌐
     title: Guards, teams & wildcards
     details: Separate web/api guards, multi-tenant teams and wildcard permissions like articles.*.
