@@ -62,7 +62,7 @@ let alive = true
 
 onMounted(async () => {
   if (!root.value || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
-  const { gsap } = await import('../motion/gsap')
+  const { gsap, ScrollTrigger } = await import('../motion/gsap')
   if (!alive) return
   const el = root.value
   const mm = gsap.matchMedia()
@@ -79,6 +79,8 @@ onMounted(async () => {
         start: 'top top',
         end: () => `+=${distance()}`,
         pin: true,
+        // Measure the pin before triggers further down the page (roster reveals).
+        refreshPriority: 1,
         scrub: 0.6,
         invalidateOnRefresh: true,
         onUpdate: (self) => {
@@ -106,6 +108,8 @@ onMounted(async () => {
     ease: 'power3.out',
     scrollTrigger: { trigger: el, start: 'top 75%' },
   }))
+  // The pin is created after other triggers; re-measure them with its spacing.
+  ScrollTrigger.refresh()
   cleanup = () => mm.revert()
 })
 
@@ -258,12 +262,11 @@ h2 {
     radial-gradient(90% 60% at 100% 0%, color-mix(in srgb, var(--accent) 18%, transparent), transparent 70%),
     color-mix(in srgb, var(--vp-c-bg-soft) 88%, transparent);
   backdrop-filter: blur(6px);
-  transition: border-color 0.4s, box-shadow 0.4s, opacity 0.4s;
-  opacity: 0.55;
+  transition: border-color 0.4s, box-shadow 0.4s;
 }
 .current .card,
-.stage:hover .card {
-  opacity: 1;
+.stage:hover .card,
+.stage:focus-within .card {
   border-color: color-mix(in srgb, var(--accent) 70%, transparent);
   box-shadow: 0 24px 60px -30px var(--accent);
 }
@@ -296,6 +299,14 @@ header {
   width: 110px;
   height: auto;
   filter: drop-shadow(0 10px 14px rgba(5, 10, 25, 0.3));
+  /* Only the art dims on inactive realms; text keeps full contrast. */
+  opacity: 0.55;
+  transition: opacity 0.4s;
+}
+.current .body img,
+.stage:hover .body img,
+.stage:focus-within .body img {
+  opacity: 1;
 }
 h3 {
   font-family: var(--sect-font-display);
@@ -339,7 +350,7 @@ pre code {
   .evo { padding: 72px 0 48px; }
   .track { flex-direction: column; width: auto; padding: 0; }
   .stage { width: auto; }
-  .card { opacity: 1; }
+  .body img { opacity: 1; }
   .meter { display: none; }
 }
 @media (max-width: 520px) {
@@ -349,7 +360,8 @@ pre code {
 @media (prefers-reduced-motion: reduce) {
   .track { flex-direction: column; width: auto; padding: 0; max-width: 1152px; margin: 0 auto; }
   .stage { width: auto; }
-  .card { opacity: 1; transition: none; }
+  .card { transition: none; }
+  .body img { opacity: 1; transition: none; }
   .evo { --progress: 1; }
 }
 </style>
