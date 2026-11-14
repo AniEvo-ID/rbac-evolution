@@ -1,5 +1,12 @@
 # @anievo-id/rbac-evolution-cli
 
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies [7cef7cb]
+  - @anievo-id/rbac-evolution@0.6.0
+
 ## 0.5.0
 
 ### Patch Changes

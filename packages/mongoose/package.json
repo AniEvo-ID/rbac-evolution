@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-mongoose",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Mongoose (MongoDB) storage adapter for rbac-evolution.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
