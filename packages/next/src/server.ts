@@ -2,7 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import type { Many, Rbac, RbacSnapshot, ScopeOptions, Subject, TeamId } from '@anievo-id/rbac-evolution'
 import { RbacUnauthorizedError } from './errors'
 import { forbiddenResponse, unauthenticatedResponse } from './responses'
-import type { FailureReason, MaybePromise, Requirement } from './types'
+import { checkRequirement, type FailureReason, type MaybePromise, type Requirement } from './types'
 
 export interface NextRbacOptions {
   /** Your `createRbac(...)` instance. */
@@ -23,6 +23,8 @@ export interface NextRbacOptions {
 
 /** Per-call options for `require*()`. */
 export interface RequireOptions extends ScopeOptions {
+  /** `requirePermission` / `requireRole`: require EVERY listed name instead of any (spatie v8.5 `canAll()`). */
+  all?: boolean
   loginUrl?: string
   onUnauthenticated?: () => never
   onUnauthorized?: () => never
@@ -80,10 +82,7 @@ export function createNextRbac(options: NextRbacOptions) {
 
   async function satisfies(subject: Subject, requirement: Requirement, scope?: ScopeOptions): Promise<boolean> {
     const s = await forSubject(subject, scope)
-    if (requirement.permission !== undefined) return s.canAny(requirement.permission)
-    if (requirement.role !== undefined) return s.hasAnyRole(requirement.role)
-    const items = requirement.roleOrPermission
-    return (await s.hasAnyRole(items)) || (await s.canAny(items))
+    return checkRequirement(requirement, (n) => s.can(n), (n) => s.hasRole(n))
   }
 
   /** Non-throwing check: who is the user and do they meet the requirement? */
@@ -173,12 +172,12 @@ export function createNextRbac(options: NextRbacOptions) {
      * Guests: `redirect(loginUrl)` or `notFound()`. Missing permission: `notFound()`. Both configurable.
      */
     requirePermission(permission: Many<string>, opts?: RequireOptions): Promise<Subject> {
-      return enforce({ permission }, opts)
+      return enforce({ permission, ...(opts?.all && { all: true }) }, opts)
     },
 
     /** Ensures the user has the role (or ANY of the roles). Returns the subject. */
     requireRole(role: Many<string>, opts?: RequireOptions): Promise<Subject> {
-      return enforce({ role }, opts)
+      return enforce({ role, ...(opts?.all && { all: true }) }, opts)
     },
 
     /** Ensures the user has ANY of the given roles or permissions. Returns the subject. */

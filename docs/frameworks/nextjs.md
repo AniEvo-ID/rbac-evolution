@@ -232,8 +232,9 @@ export async function publishArticle(id: string) {
 ## Route handlers
 
 `withRbac(handler, options)` wraps a route handler and answers with JSON when access is denied. Pass exactly one of
-`permission`, `role` or `roleOrPermission` (each a name or a list meaning "any of"), plus optional `guard` and
-`team`.
+`permission`, `role` or `roleOrPermission` (each a name, a `'a|b'` string or a list meaning "any of"), plus optional
+`all`, `guard` and `team`. With `all: true`, every listed permission or role is required (spatie v8.5 `canAll()`); a
+`'a|b'` entry still means "a or b" within that entry.
 
 ```ts
 // app/api/articles/[id]/route.ts
@@ -322,8 +323,10 @@ export const config = {
 
 - `matcher` accepts `/exact`, `:param` (one segment), `:path*` (zero or more), `:path+` (one or more), `:param?`
   (optional), a `RegExp`, or an array of these. Trailing slashes are ignored.
-- A rule may set `permission`, `role` and/or `roleOrPermission`; each accepts a name or a list ("any of"). If a
-  rule sets several, all of them must hold. A rule with none only requires a signed-in user.
+- A rule may set `permission`, `role` and/or `roleOrPermission`; each accepts a name, a `'a|b'` string or a list
+  ("any of"). Add `all: true` to require every listed permission or role instead. If a rule sets several, all of
+  them must hold. A rule with none only requires a signed-in user.
+- Paths are matched both as received and percent-decoded, so `/%61dmin` is covered by a rule for `/admin`.
 - Every matching rule must pass. Requests that match no rule pass through untouched.
 
 **Responses**

@@ -198,6 +198,9 @@ definePageMeta({
 When several keys are set, all of them must pass. These are the same semantics as the Express guards and the
 NestJS decorators.
 
+A key that is present but `undefined` (for example `permission: config.missingName`) fails closed: guests get a
+401 and everyone else a 403, instead of the page silently becoming public.
+
 When the check fails:
 
 - **guests** go to `guestRedirect` (per route) or the module's `unauthenticatedRedirect`; without one, navigation is

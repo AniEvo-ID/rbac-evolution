@@ -98,7 +98,9 @@ export default async function AdminPage() {
 ```
 
 `requirePermission(permission | permissions[], opts?)`, `requireRole(role | roles[], opts?)` and
-`requireRoleOrPermission(items, opts?)` — arrays mean "any of" (like spatie's `permission:a|b`).
+`requireRoleOrPermission(items, opts?)` — arrays and `'a|b'` strings mean "any of" (like spatie's
+`permission:a|b` and `canAny()`). Pass `{ all: true }` to `requirePermission` / `requireRole` (or `all: true` in a
+`withRbac` option or middleware rule) to require every entry, like spatie v8.5's `canAll()`.
 
 On failure (both configurable per factory or per call):
 

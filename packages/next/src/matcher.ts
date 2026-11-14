@@ -44,9 +44,26 @@ export function compilePathPattern(pattern: string): RegExp {
 
 export type PathMatcher = string | RegExp | readonly (string | RegExp)[]
 
-/** `true` if the pathname matches the pattern (or any of the patterns). */
-export function matchPath(matcher: PathMatcher, pathname: string): boolean {
+function testOne(matcher: string | RegExp, pathname: string): boolean {
   if (typeof matcher === 'string') return compilePathPattern(matcher).test(pathname || '/')
-  if (matcher instanceof RegExp) return matcher.test(pathname)
-  return matcher.some((m) => matchPath(m, pathname))
+  matcher.lastIndex = 0 // a /g or /y RegExp keeps state between test() calls
+  return matcher.test(pathname)
+}
+
+const decode = (pathname: string): string => {
+  try {
+    return decodeURI(pathname)
+  } catch {
+    return pathname
+  }
+}
+
+/**
+ * `true` if the pathname matches the pattern (or any of the patterns). Both the raw and the
+ * percent-decoded pathname are tried, so `/%61dmin` is protected by a rule for `/admin`.
+ */
+export function matchPath(matcher: PathMatcher, pathname: string): boolean {
+  const candidates = [pathname, decode(pathname)]
+  const list = typeof matcher === 'string' || matcher instanceof RegExp ? [matcher] : matcher
+  return list.some((m) => candidates.some((p) => testOne(m, p)))
 }

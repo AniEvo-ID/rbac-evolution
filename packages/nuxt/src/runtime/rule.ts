@@ -4,11 +4,11 @@ import { MESSAGES, requirementGroups, type RequirementKind, type RequirementName
 /** `definePageMeta({ rbac: { ... } })` — same semantics as the Express / Nest guards. */
 export interface RbacRouteRule {
   /** Every name is required; `'a|b'` = any of them. With `any: true`, any of all the names. */
-  permission?: RequirementNames
+  permission?: RequirementNames | undefined
   /** Any of the roles; with `all: true`, all of them. `'a|b'` is supported. */
-  role?: RequirementNames
+  role?: RequirementNames | undefined
   /** Any of the names, as a role OR as a permission. */
-  roleOrPermission?: RequirementNames
+  roleOrPermission?: RequirementNames | undefined
   /** Permissions: pass with ANY of them instead of all. */
   any?: boolean
   /** Roles: require ALL of them instead of any. */
@@ -33,13 +33,15 @@ const list = (names: RequirementNames | undefined): RequirementNames[] =>
  */
 export function evaluateRouteRule(rbac: VueRbac, rule: RbacRouteRule, isGuest: boolean): RouteRuleResult {
   const checks: [RequirementKind, string[][]][] = []
-  if (rule.permission !== undefined) {
+  // A key that is present but undefined (e.g. `permission: config.missing`) is a requirement nobody meets:
+  // fail closed instead of silently opening the page. A rule without any requirement key still passes.
+  if ('permission' in rule) {
     checks.push(['permission', requirementGroups('permission', list(rule.permission), { any: rule.any })])
   }
-  if (rule.role !== undefined) {
+  if ('role' in rule) {
     checks.push(['role', requirementGroups('role', list(rule.role), { all: rule.all })])
   }
-  if (rule.roleOrPermission !== undefined) {
+  if ('roleOrPermission' in rule) {
     checks.push(['role_or_permission', requirementGroups('role_or_permission', list(rule.roleOrPermission))])
   }
   if (checks.length === 0) return { ok: true }

@@ -1,6 +1,6 @@
 import { wildcardImplies } from '@anievo-id/rbac-evolution'
 import type { Many, RbacSnapshot } from '@anievo-id/rbac-evolution'
-import type { Requirement } from './types'
+import { type Requirement, requirementGroups } from './types'
 
 export interface SnapshotCheckOptions {
   /** Treat granted permissions as wildcard patterns. */
@@ -9,7 +9,6 @@ export interface SnapshotCheckOptions {
   superAdminRoles?: readonly string[]
 }
 
-const toList = (value: Many<string>): readonly string[] => (typeof value === 'string' ? [value] : value)
 
 function safeImplies(granted: string, required: string): boolean {
   try {
@@ -36,8 +35,10 @@ export function snapshotSatisfies(
     return (options.wildcard ?? false) && snapshot.permissions.some((g) => safeImplies(g, name))
   }
 
-  if (requirement.permission !== undefined) return toList(requirement.permission).some(can)
-  if (requirement.role !== undefined) return toList(requirement.role).some(hasRole)
-  const items = toList(requirement.roleOrPermission)
+  const all = (groups: string[][], fn: (n: string) => boolean) =>
+    groups.length > 0 && groups.every((group) => group.some(fn))
+  if (requirement.permission !== undefined) return all(requirementGroups(requirement.permission, requirement.all), can)
+  if (requirement.role !== undefined) return all(requirementGroups(requirement.role, requirement.all), hasRole)
+  const [items = []] = requirementGroups(requirement.roleOrPermission, false)
   return items.some(hasRole) || items.some(can)
 }
