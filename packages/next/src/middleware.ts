@@ -3,7 +3,7 @@ import { matchPath } from './matcher'
 import type { PathMatcher } from './matcher'
 import { forbiddenResponse, unauthenticatedResponse } from './responses'
 import { snapshotSatisfies, type SnapshotCheckOptions } from './snapshot'
-import type { MaybePromise, Requirement } from './types'
+import { checkRequirement, type MaybePromise, type Requirement } from './types'
 
 export interface RbacMiddlewareRule {
   /** Path pattern(s): `/admin`, `/users/:id`, `/admin/:path*`, or a RegExp. */
@@ -14,6 +14,8 @@ export interface RbacMiddlewareRule {
   role?: Many<string>
   /** Requires ANY of the given roles or permissions. */
   roleOrPermission?: Many<string>
+  /** Require EVERY listed permission / role instead of any (spatie v8.5 `canAll()`). */
+  all?: boolean
   // A rule with none of the above only requires an authenticated user.
 }
 
@@ -58,8 +60,8 @@ export type RbacMiddlewareOptions<Req extends MiddlewareRequest = MiddlewareRequ
 
 function ruleRequirements(rule: RbacMiddlewareRule): Requirement[] {
   const out: Requirement[] = []
-  if (rule.permission !== undefined) out.push({ permission: rule.permission })
-  if (rule.role !== undefined) out.push({ role: rule.role })
+  if (rule.permission !== undefined) out.push({ permission: rule.permission, ...(rule.all && { all: true }) })
+  if (rule.role !== undefined) out.push({ role: rule.role, ...(rule.all && { all: true }) })
   if (rule.roleOrPermission !== undefined) out.push({ roleOrPermission: rule.roleOrPermission })
   return out
 }
@@ -100,12 +102,7 @@ export function createRbacMiddleware<Req extends MiddlewareRequest = MiddlewareR
     const team = typeof options.team === 'function' ? await options.team(req) : options.team
     if (team !== undefined && team !== null) scope.team = team
     const s = options.rbac.for(subject, scope)
-    return async (requirement) => {
-      if (requirement.permission !== undefined) return s.canAny(requirement.permission)
-      if (requirement.role !== undefined) return s.hasAnyRole(requirement.role)
-      const items = requirement.roleOrPermission
-      return (await s.hasAnyRole(items)) || (await s.canAny(items))
-    }
+    return (requirement) => checkRequirement(requirement, (n) => s.can(n), (n) => s.hasRole(n))
   }
 
   return async (req: Req): Promise<Response | undefined> => {

@@ -53,6 +53,14 @@ describe('evaluateRouteRule', () => {
     expect(evaluateRouteRule(writer, { roleOrPermission: 'writer' }, false).ok).toBe(true)
   })
 
+  it('fails closed when a requirement key is present but undefined', () => {
+    const missing = undefined as string | undefined
+    expect(evaluateRouteRule(writer, { permission: missing }, true)).toMatchObject({ ok: false, status: 401 })
+    expect(evaluateRouteRule(writer, { permission: missing }, false)).toMatchObject({ ok: false, status: 403 })
+    expect(evaluateRouteRule(writer, { role: missing }, false).ok).toBe(false)
+    expect(evaluateRouteRule(writer, { roleOrPermission: missing }, false).ok).toBe(false)
+  })
+
   it('requires every key and denies empty names', () => {
     expect(evaluateRouteRule(editor, { permission: 'publish articles', role: 'admin' }, false)).toMatchObject({
       ok: false,
