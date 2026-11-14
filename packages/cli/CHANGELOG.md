@@ -1,5 +1,11 @@
 # @anievo-id/rbac-evolution-cli
 
+## 0.4.1
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@0.4.1
+
 ## 0.4.0
 
 ### Minor Changes
