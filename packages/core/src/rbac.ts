@@ -115,6 +115,12 @@ function filterByIds<T extends { id: Id }>(items: readonly T[], ids: readonly Id
   return items.filter((item) => set.has(idKey(item.id)) === keep)
 }
 
+/** Ids in `ids` that are not in `remove`. */
+function filterIds(ids: readonly Id[], remove: readonly Id[]): Id[] {
+  const set = new Set(remove.map(idKey))
+  return ids.filter((id) => !set.has(idKey(id)))
+}
+
 function normalizeName(name: string): string {
   const trimmed = name.trim()
   if (trimmed === '') throw new RbacError('INVALID_NAME', 'Role and permission names must not be empty.')
@@ -145,6 +151,8 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   readonly #before: BeforeHook<T> | undefined
   readonly #superAdminRoles: readonly string[]
   readonly #events = new RbacEmitter()
+  /** Bumped on every change, so a lookup that started before the change never caches its stale result. */
+  #generation = 0
 
   constructor(options: RbacOptions<T>) {
     this.adapter = options.adapter
@@ -363,6 +371,7 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
 
   /** Clears every cached role/permission lookup. Called automatically after each change. */
   async forgetCachedPermissions(): Promise<void> {
+    this.#generation++
     await this.#cache?.clear()
   }
 
@@ -371,8 +380,11 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     if (!this.#cache) return compute()
     const hit = await this.#cache.get(key)
     if (hit !== undefined) return hit as V
+    const generation = this.#generation
     const value = await compute()
-    await this.#cache.set(key, value, this.#cacheTtl)
+    // shortcut: the counter is per process; a cache shared between processes can still get a stale
+    // entry from another process's in-flight lookup (bounded by cacheTtl). Use a versioned store if that matters.
+    if (generation === this.#generation) await this.#cache.set(key, value, this.#cacheTtl)
     return value
   }
 
@@ -536,11 +548,13 @@ export class RoleRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     const resolved = await this.rbac.resolvePermissions(flatten(permissions), role.guardName)
     const track = this.rbac.events.has('permission.attached') || this.rbac.events.has('permission.detached')
     const current = track ? await this.getPermissions() : []
-    await this.rbac.adapter.detachRolePermissions(role.id)
-    await this.rbac.adapter.attachRolePermissions(role.id, resolved.map((p) => p.id))
+    const newIds = resolved.map((p) => p.id)
+    // Attach first, then detach the rest: a failure midway leaves extra permissions, never none.
+    await this.rbac.adapter.attachRolePermissions(role.id, newIds)
+    const staleIds = filterIds(await this.currentPermissionIds(role), newIds)
+    if (staleIds.length > 0) await this.rbac.adapter.detachRolePermissions(role.id, staleIds)
     await this.rbac.forgetCachedPermissions()
     if (track) {
-      const newIds = resolved.map((p) => p.id)
       await this.emit('permission.detached', role, filterByIds(current, newIds, false))
       await this.emit('permission.attached', role, filterByIds(resolved, current.map((p) => p.id), false))
     }
@@ -627,8 +641,11 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   async syncRoles(...roles: Many<RoleInput<RoleName<T>>>[]): Promise<this> {
     const resolved = await this.rbac.resolveRoles(flatten(roles), this.guardName, this.teamId)
     const current = (await this.state()).roles
-    await this.rbac.adapter.detachSubjectRoles(this.subject, current.map((r) => r.id), this.teamId)
-    await this.rbac.adapter.attachSubjectRoles(this.subject, resolved.map((r) => r.id), this.teamId)
+    const newIds = resolved.map((r) => r.id)
+    // Attach first, then detach the rest: a failure midway leaves extra roles, never none.
+    await this.rbac.adapter.attachSubjectRoles(this.subject, newIds, this.teamId)
+    const stale = filterByIds(current, newIds, false)
+    if (stale.length > 0) await this.rbac.adapter.detachSubjectRoles(this.subject, stale.map((r) => r.id), this.teamId)
     await this.rbac.forgetCachedPermissions()
     await this.emitRoles('role.detached', filterByIds(current, resolved.map((r) => r.id), false))
     await this.emitRoles('role.attached', filterByIds(resolved, current.map((r) => r.id), false))
@@ -698,8 +715,13 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   async syncPermissions(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<this> {
     const resolved = await this.rbac.resolvePermissions(flatten(permissions), this.guardName)
     const current = (await this.state()).direct
-    await this.rbac.adapter.detachSubjectPermissions(this.subject, current.map((p) => p.id), this.teamId)
-    await this.rbac.adapter.attachSubjectPermissions(this.subject, resolved.map((p) => p.id), this.teamId)
+    const newIds = resolved.map((p) => p.id)
+    // Attach first, then detach the rest: a failure midway leaves extra permissions, never none.
+    await this.rbac.adapter.attachSubjectPermissions(this.subject, newIds, this.teamId)
+    const stale = filterByIds(current, newIds, false)
+    if (stale.length > 0) {
+      await this.rbac.adapter.detachSubjectPermissions(this.subject, stale.map((p) => p.id), this.teamId)
+    }
     await this.rbac.forgetCachedPermissions()
     await this.emitPermissions('permission.detached', filterByIds(current, resolved.map((p) => p.id), false))
     await this.emitPermissions('permission.attached', filterByIds(resolved, current.map((p) => p.id), false))
