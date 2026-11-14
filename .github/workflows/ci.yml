@@ -77,3 +77,22 @@ jobs:
       - run: pnpm build
       # PG_URL / MYSQL_URL / MONGO_URL are declared in turbo.json, so turbo passes them to the test tasks.
       - run: pnpm test
+
+  bun:
+    # Runs the built packages under the Bun runtime: core + the shared adapter conformance
+    # suite, Drizzle on bun:sqlite, Hono on Bun.serve, and the CLI via `bun`.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build --filter=./packages/*
+      - run: bun --version
+      - run: pnpm --filter rbac-evolution-bun-tests test:bun

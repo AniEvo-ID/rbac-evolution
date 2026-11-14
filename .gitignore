@@ -13,3 +13,4 @@ coverage/
 !.vscode/extensions.json
 docs/.vitepress/cache/
 docs/.vitepress/dist/
+tests/bun/.tmp-cli-*/

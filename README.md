@@ -16,6 +16,8 @@ and integrations for your framework.
 
 📖 **https://anievo-id.github.io/rbac-evolution/**
 
+Runs on **Node.js** (20+) and **Bun** — both tested in CI. See [Runtimes](https://anievo-id.github.io/rbac-evolution/guide/runtimes).
+
 ## Packages
 
 | Package | Description | Status |

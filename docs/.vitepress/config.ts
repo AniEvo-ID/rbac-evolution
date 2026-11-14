@@ -35,6 +35,7 @@ export default defineConfig({
         items: [
           { text: 'Introduction', link: '/guide/introduction' },
           { text: 'Installation', link: '/guide/installation' },
+          { text: 'Runtimes (Node, Bun)', link: '/guide/runtimes' },
           { text: 'Quick start', link: '/guide/quick-start' },
           { text: 'Coming from Laravel', link: '/guide/coming-from-laravel' },
           { text: 'Example apps', link: '/guide/examples' },
