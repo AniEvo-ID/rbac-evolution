@@ -23,6 +23,8 @@ and integrations for your framework.
 | [`@anievo-id/rbac-evolution`](./packages/core) | Framework-agnostic RBAC engine | 🧪 beta |
 | [`@anievo-id/rbac-evolution-prisma`](./packages/prisma) | Prisma storage adapter | 🧪 beta |
 | [`@anievo-id/rbac-evolution-drizzle`](./packages/drizzle) | Drizzle storage adapter | 🧪 beta |
+| [`@anievo-id/rbac-evolution-kysely`](./packages/kysely) | Kysely adapter (PostgreSQL, MySQL, SQLite, SQL Server) | 🧪 beta |
+| [`@anievo-id/rbac-evolution-mongoose`](./packages/mongoose) | Mongoose adapter (MongoDB) | 🧪 beta |
 | [`@anievo-id/rbac-evolution-next`](./packages/next) | Next.js middleware, server helpers & action guards | 🧪 beta |
 | [`@anievo-id/rbac-evolution-react`](./packages/react) | `<Can>`, `useCan()`, `useHasRole()` | 🧪 beta |
 | [`@anievo-id/rbac-evolution-vue`](./packages/vue) | `v-can` directive & composables | 🧪 beta |
