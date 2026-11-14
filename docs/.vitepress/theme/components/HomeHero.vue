@@ -28,7 +28,7 @@ const guardians = ['sect-master', 'gatekeeper', 'scroll-keeper', 'spirit-fox'].m
     <ul class="guardians">
       <li v-for="m in guardians" :key="m.id" :style="{ '--accent': m.accent }">
         <a :href="withBase(m.link)">
-          <img :src="withBase(`/mascots/${m.id}-3d.webp`)" :alt="`${m.name}, the ${m.title}`" width="96" height="128" />
+          <img :src="withBase(`/mascots/${m.id}.webp`)" :alt="`${m.name}, the ${m.title}`" width="96" height="128" />
           <span class="name">{{ m.title }}</span>
           <span class="role">{{ m.role }}</span>
         </a>
