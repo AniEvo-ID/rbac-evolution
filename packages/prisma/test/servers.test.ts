@@ -36,7 +36,7 @@ function serverSuite(label: string, envVar: string, connect: (url: string) => Se
     })
 
     const reset = async (): Promise<void> => {
-      await prisma.$transaction([
+      await prisma.$transaction!([
         prisma.rbacModelHasPermission.deleteMany({ where: {} }),
         prisma.rbacModelHasRole.deleteMany({ where: {} }),
         prisma.rbacRoleHasPermission.deleteMany({ where: {} }),

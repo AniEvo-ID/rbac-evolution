@@ -51,8 +51,9 @@ function normalizeSnapshot(snapshot: RbacSnapshot | null | undefined): Readonly<
   })
 }
 
-const toList = (value: NameList): string[] =>
-  (typeof value === 'string' ? [value] : [...value]).map((v) => v.trim()).filter((v) => v !== '')
+// `null` / `undefined` (e.g. a typo in a template binding) is an empty list, so every check fails.
+const toList = (value: NameList | null | undefined): string[] =>
+  (value == null ? [] : typeof value === 'string' ? [value] : [...value]).map((v) => v.trim()).filter((v) => v !== '')
 
 /** Like {@link toList}, but also splits spatie-style pipes: `'writer|editor'`. */
 const toRoleList = (value: NameList): string[] => toList(value).flatMap((v) => toList(v.split('|')))
