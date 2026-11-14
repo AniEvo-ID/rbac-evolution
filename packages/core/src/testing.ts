@@ -89,6 +89,14 @@ export function runAdapterTests(
         expect(await adapter.findRoles({ teamIds: [null] })).toHaveLength(2)
       })
 
+      it('only matches ids written exactly as stored', async () => {
+        const role = await adapter.createRole({ name: 'writer', guardName: 'web', teamId: null })
+        // '7.0' or '7e0' must not resolve to role 7 (Number('7.0') === 7).
+        for (const id of [`${role.id}.0`, `${role.id}e0`, ` ${role.id}x`]) {
+          expect(await adapter.findRoles({ ids: [id] })).toEqual([])
+        }
+      })
+
       if (teams) {
         it('filters by team ids including null (global)', async () => {
           await adapter.createRole({ name: 'admin', guardName: 'web', teamId: null })
