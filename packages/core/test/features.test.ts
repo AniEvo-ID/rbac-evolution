@@ -336,3 +336,26 @@ describe('permission existence check', () => {
     await expect(user.hasPermissionTo('nope')).rejects.toThrow('There is no permission named `nope`')
   })
 })
+
+describe('role.syncSubjects (spatie Role::syncModels)', () => {
+  it('makes the given subjects the only holders of the role, per subject type, with events', async () => {
+    const rbac = createRbac({ adapter: new MemoryAdapter(), cache: false })
+    await seed(rbac)
+    await rbac.for(alice).assignRole('writer')
+    await rbac.for(bob).assignRole('writer')
+    await rbac.for(robot).assignRole('writer')
+    const events: string[] = []
+    rbac.on('role.attached', (e) => void events.push(`+${String(e.subject.id)}`))
+    rbac.on('role.detached', (e) => void events.push(`-${String(e.subject.id)}`))
+
+    await rbac.role('writer').syncSubjects('user', [2, 3])
+
+    expect((await rbac.subjectsWithRole('user', 'writer')).map(String).sort()).toEqual(['2', '3'])
+    expect(await rbac.subjectsWithRole('client', 'writer')).toHaveLength(1)
+    expect(events).toEqual(['+3', '-1'])
+
+    await rbac.role('writer').syncSubjects('user', [])
+    expect(await rbac.subjectsWithRole('user', 'writer')).toHaveLength(0)
+    expect(await rbac.for(carol).hasRole('writer')).toBe(false)
+  })
+})

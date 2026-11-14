@@ -113,6 +113,21 @@ describe('createRbacServer', () => {
   })
 })
 
+describe('createRbacServer canAny / canAll (spatie v8.5)', () => {
+  it('canAny needs one of the permissions, canAll every entry', async () => {
+    const s = createRbacServer<ReturnType<typeof fakeEvent>>({
+      rbac: await seededRbac(),
+      getSubject: (event) => (event.user === undefined ? null : { type: 'user', id: event.user }),
+    })
+    // user 1: edit; user 2: edit + publish
+    await expect(s.canAny(fakeEvent(1), 'publish articles', 'edit articles')).resolves.toBeTruthy()
+    await expect(s.canAny(fakeEvent(), 'edit articles')).rejects.toMatchObject({ statusCode: 401 })
+    await expect(s.canAll(fakeEvent(1), 'edit articles', 'publish articles')).rejects.toMatchObject({ statusCode: 403 })
+    await expect(s.canAll(fakeEvent(2), 'edit articles', 'publish articles')).resolves.toBeTruthy()
+    await expect(s.canAll(fakeEvent(1), ['edit articles', 'publish articles|edit articles'])).resolves.toBeTruthy()
+  })
+})
+
 describe('createRbacServer with h3', () => {
   let server: Server
   let url: string

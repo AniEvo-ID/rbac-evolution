@@ -104,8 +104,8 @@ The API follows [spatie/laravel-permission](https://spatie.be/docs/laravel-permi
 | Route-group authorization (v8.4) | ✅ router-level middleware in every integration |
 | Backed enums for role and permission names (v8.0) | ✅ [typed names](https://anievo-id.github.io/rbac-evolution/basic-usage/typed-names): unions or TypeScript string enums |
 | `@can`, `@role` Blade directives | ✅ `<Can>`, `useCan()`, `v-can`, `v-role` |
-| `canAny()` / `canAll()` route macros (v8.5) | 🚧 today as `requirePermission(…, { any: true })`; named helpers coming next |
-| `Role::syncModels()` (v7.4) | 🚧 planned |
+| `canAny()` / `canAll()` route macros (v8.5) | ✅ `canAny()` / `canAll()` in Express, Fastify, Hono and Nuxt; `@CanAny` / `@CanAll` in NestJS; `{ all: true }` rules in Next.js |
+| `Role::syncModels()` (v7.4) | ✅ `rbac.role('writer').syncSubjects('user', ids)` |
 
 ## Packages
 
@@ -148,8 +148,8 @@ Every push to `main` refreshes the public [Test report](https://anievo-id.github
 - [x] Integrations: Express, Fastify, Hono, NestJS, Next.js, Nuxt, React, Vue
 - [x] CLI and declarative seeding
 - [x] Documentation site, test report, E2E tests, verified releases
-- [ ] `canAny()` / `canAll()` guards in every integration (spatie v8.5)
-- [ ] `rbac.role(…).syncSubjects()` (spatie `Role::syncModels()`)
+- [x] `canAny()` / `canAll()` guards in every integration (spatie v8.5)
+- [x] `rbac.role(…).syncSubjects()` (spatie `Role::syncModels()`)
 - [ ] One shared guard implementation for all integrations
 - [ ] 1.0: stable API
 

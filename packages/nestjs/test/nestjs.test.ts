@@ -5,8 +5,11 @@ import { Reflector } from '@nestjs/core'
 import { Test } from '@nestjs/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  CanAll,
+  CanAny,
   CurrentRbac,
   RBAC,
+  RBAC_REQUIREMENTS,
   RbacGuard,
   RbacModule,
   type RbacModuleOptions,
@@ -331,5 +334,25 @@ describe('RbacGuard on long-lived contexts (WebSocket / GraphQL)', () => {
     await expect(guard.canActivate(wsContext(client))).resolves.toBe(true)
     await rbac.for({ type: 'user', id: 8 }).removeRole('writer')
     await expect(guard.canActivate(wsContext(client))).rejects.toMatchObject({ status: 403 })
+  })
+})
+
+describe('CanAny / CanAll (spatie v8.5)', () => {
+  const read = (target: object, key: string) => Reflect.getMetadata(RBAC_REQUIREMENTS, (target as Record<string, object>)[key]!)
+
+  it('store the same requirements as the matching @RequirePermissions form', () => {
+    class C {
+      @CanAny('edit articles', 'publish articles') any() {}
+      @RequirePermissions('edit articles', 'publish articles', { any: true }) anyRef() {}
+      @CanAll('edit articles', 'publish articles|delete articles') all() {}
+      @RequirePermissions('edit articles', 'publish articles|delete articles') allRef() {}
+    }
+    const proto = C.prototype
+    expect(read(proto, 'any')).toEqual(read(proto, 'anyRef'))
+    expect(read(proto, 'all')).toEqual(read(proto, 'allRef'))
+    expect(read(proto, 'any')).toEqual([{ kind: 'permission', requirements: [['edit articles', 'publish articles']] }])
+    expect(read(proto, 'all')).toEqual([
+      { kind: 'permission', requirements: [['edit articles'], ['publish articles', 'delete articles']] },
+    ])
   })
 })

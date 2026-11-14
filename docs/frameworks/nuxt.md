@@ -248,6 +248,7 @@ export default defineEventHandler(async (event) => {
 | Helper                                          | Semantics                                                   |
 | ----------------------------------------------- | ----------------------------------------------------------- |
 | `requirePermission(event, ...names, options?)`  | all arguments; pipes = any; `{ any: true }`                 |
+| `canAny(event, ...names)` / `canAll(...)`       | any of the permissions / every entry (spatie v8.5)          |
 | `requireRole(event, ...names, options?)`        | any of the roles; `{ all: true }`                           |
 | `requireRoleOrPermission(event, ...names)`      | any of the names, as a role or a permission                 |
 | `resolve(event)`                                | the `SubjectRbac` or `null` (cached on `event.context.rbac`) |

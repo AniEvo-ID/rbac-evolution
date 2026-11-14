@@ -13,6 +13,8 @@ export {
   requirePermission,
   requireRole,
   requireRoleOrPermission,
+  canAny,
+  canAll,
 } from './guards'
 export type {
   GuardContext,

@@ -7,6 +7,8 @@ import {
   requirePermission,
   requireRole,
   requireRoleOrPermission,
+  canAny,
+  canAll,
 } from '../src'
 
 type Server = ReturnType<express.Express['listen']>
@@ -240,5 +242,35 @@ describe('error handling', () => {
   it('rejects guards without names', () => {
     expect(() => requirePermission()).toThrow(TypeError)
     expect(() => requireRole({ all: true })).toThrow(TypeError)
+  })
+})
+
+// spatie v8.5 canAny() / canAll(). User 1 is a writer (edit), user 2 a writer + editor (edit, publish).
+const CAN_CASES: [path: string, user: number, status: number][] = [
+  ['/can-any', 1, 200],
+  ['/can-any', 0, 401],
+  ['/can-all', 1, 403],
+  ['/can-all', 2, 200],
+  ['/can-all-pipe', 1, 200], // 'publish|edit' is one entry: either passes it
+]
+
+describe('canAny / canAll (spatie v8.5)', () => {
+  let server: Server
+  let url: string
+  beforeAll(async () => {
+    const rbac = createRbac({ adapter: new MemoryAdapter() })
+    await seed(rbac)
+    const app = express()
+    app.use(rbacMiddleware({ rbac, getSubject: async (req) => userFrom(req) }))
+    app.get('/can-any', canAny('publish articles', 'edit articles'), ok)
+    app.get('/can-all', canAll('edit articles', 'publish articles'), ok)
+    app.get('/can-all-pipe', canAll(['edit articles', 'publish articles|edit articles']), ok)
+    ;({ server, url } = await listen(app))
+  })
+  afterAll(() => new Promise<void>((r) => server.close(() => r())))
+
+  it.each(CAN_CASES)('%s as user %i → %i', async (path, user, status) => {
+    const res = await fetch(url + path, user ? { headers: { 'x-user': String(user) } } : {})
+    expect(res.status).toBe(status)
   })
 })

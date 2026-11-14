@@ -45,6 +45,24 @@ export function RequirePermissions(...args: (RequirementNames | PermissionRequir
 }
 
 /**
+ * spatie v8.5 `canAny()`: passes with ANY of the listed permissions.
+ *
+ * - `@CanAny('edit articles', 'publish articles')`, `@CanAny(['edit articles', 'publish articles'])`
+ */
+export function CanAny(...names: RequirementNames[]) {
+  return RequirePermissions(...names, { any: true })
+}
+
+/**
+ * spatie v8.5 `canAll()`: requires EVERY listed entry. A `'a|b'` entry still means "a or b".
+ *
+ * - `@CanAll('edit articles', 'publish articles')`, `@CanAll(['edit articles', 'publish|review'])`
+ */
+export function CanAll(...names: RequirementNames[]) {
+  return RequirePermissions(...names)
+}
+
+/**
  * Requires roles, like spatie's `role:` middleware.
  *
  * - `@RequireRoles('admin')`, `@RequireRoles('admin|editor')`, `@RequireRoles('admin', 'editor')` — any of them
