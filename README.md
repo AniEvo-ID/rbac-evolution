@@ -2,59 +2,57 @@
   <img src="docs/public/brand/logo.png" alt="RBAC Evolution logo" width="180">
 </p>
 
-# RBAC Evolution
+<h1 align="center">RBAC Evolution</h1>
 
-[![CI](https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/ci.yml/badge.svg)](https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/@anievo-id/rbac-evolution?color=3b82f6&label=npm)](https://www.npmjs.com/package/@anievo-id/rbac-evolution)
-[![tests](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fanievo-id.github.io%2Frbac-evolution%2Freports%2Funit.json&query=%24.totals.passed&suffix=%20passed&label=tests&color=00c896)](https://anievo-id.github.io/rbac-evolution/quality)
-[![e2e](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fanievo-id.github.io%2Frbac-evolution%2Freports%2Fe2e.json&query=%24.totals.passed&suffix=%20passed&label=e2e&color=00c896)](https://anievo-id.github.io/rbac-evolution/quality)
-[![release sync](https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/release-check.yml/badge.svg)](https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/release-check.yml)
-[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+<p align="center">
+  <b>Roles &amp; permissions for JavaScript and TypeScript, the <a href="https://github.com/spatie/laravel-permission">spatie/laravel-permission</a> way.</b><br>
+  One typed core for Node.js and Bun, every framework, every database.
+</p>
 
-> Role & permission management (RBAC) for the JavaScript / TypeScript ecosystem.
-> Inspired by [spatie/laravel-permission](https://github.com/spatie/laravel-permission), built for JS.
+<p align="center">
+  <a href="https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/ci.yml"><img src="https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <a href="https://www.npmjs.com/package/@anievo-id/rbac-evolution"><img src="https://img.shields.io/npm/v/@anievo-id/rbac-evolution?color=3b82f6&label=npm" alt="npm"></a>
+  <a href="https://anievo-id.github.io/rbac-evolution/quality"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fanievo-id.github.io%2Frbac-evolution%2Freports%2Funit.json&query=%24.totals.passed&suffix=%20passed&label=tests&color=00c896" alt="tests"></a>
+  <a href="https://anievo-id.github.io/rbac-evolution/quality"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fanievo-id.github.io%2Frbac-evolution%2Freports%2Fe2e.json&query=%24.totals.passed&suffix=%20passed&label=e2e&color=00c896" alt="e2e"></a>
+  <a href="https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/release-check.yml"><img src="https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/release-check.yml/badge.svg" alt="release sync"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license"></a>
+</p>
 
-**Status: 🧪 beta — the API may still change before 1.0.**
+<p align="center">
+  📖 <a href="https://anievo-id.github.io/rbac-evolution/"><b>Documentation</b></a> ·
+  🧪 <a href="https://anievo-id.github.io/rbac-evolution/quality">Test report</a> ·
+  🚀 <a href="https://anievo-id.github.io/rbac-evolution/guide/quick-start">Quick start</a>
+</p>
 
-## Why
+> **Status: 🧪 beta.** The API may still change before 1.0. Every release is tested against real PostgreSQL, MySQL
+> and MongoDB servers, end-to-end in a browser, and on Node.js and Bun.
 
-Laravel developers have `spatie/laravel-permission`: assign roles, give permissions, check `can()`, done.
-The JS ecosystem has no equivalent that works the same way across ORMs and frameworks.
-`rbac-evolution` aims to fill that gap — one framework-agnostic core, with adapters for your database
-and integrations for your framework.
+## Meet the Sect
 
-## Documentation
+The docs are guarded by nine original chibi characters. Each one looks after a part of the library.
 
-📖 **https://anievo-id.github.io/rbac-evolution/**
-
-Runs on **Node.js** (20+) and **Bun** — both tested in CI. See [Runtimes](https://anievo-id.github.io/rbac-evolution/guide/runtimes).
-
-## Packages
-
-| Package | Description | Status |
-| --- | --- | --- |
-| [`@anievo-id/rbac-evolution`](./packages/core) | Framework-agnostic RBAC engine | 🧪 beta |
-| [`@anievo-id/rbac-evolution-prisma`](./packages/prisma) | Prisma storage adapter | 🧪 beta |
-| [`@anievo-id/rbac-evolution-drizzle`](./packages/drizzle) | Drizzle storage adapter | 🧪 beta |
-| [`@anievo-id/rbac-evolution-kysely`](./packages/kysely) | Kysely adapter (PostgreSQL, MySQL, SQLite, SQL Server) | 🧪 beta |
-| [`@anievo-id/rbac-evolution-mongoose`](./packages/mongoose) | Mongoose adapter (MongoDB) | 🧪 beta |
-| [`@anievo-id/rbac-evolution-next`](./packages/next) | Next.js middleware, server helpers & action guards | 🧪 beta |
-| [`@anievo-id/rbac-evolution-react`](./packages/react) | `<Can>`, `useCan()`, `useHasRole()` | 🧪 beta |
-| [`@anievo-id/rbac-evolution-vue`](./packages/vue) | `v-can` directive & composables | 🧪 beta |
-| [`@anievo-id/rbac-evolution-express`](./packages/express) | Express / Node HTTP middleware | 🧪 beta |
-| [`@anievo-id/rbac-evolution-hono`](./packages/hono) | Hono middleware (Node, Bun, Workers, Edge) | 🧪 beta |
-| [`@anievo-id/rbac-evolution-fastify`](./packages/fastify) | Fastify plugin & preHandler guards | 🧪 beta |
-| [`@anievo-id/rbac-evolution-nestjs`](./packages/nestjs) | NestJS module, guard & decorators | 🧪 beta |
-| [`@anievo-id/rbac-evolution-nuxt`](./packages/nuxt) | Nuxt module (SSR snapshot, page rules, Nitro helpers) | 🧪 beta |
-| [`@anievo-id/rbac-evolution-cli`](./packages/cli) | CLI like `php artisan permission:*` | 🧪 beta |
-
-Install only what you need — e.g. for a Next.js + Prisma app:
-
-```bash
-npm i @anievo-id/rbac-evolution @anievo-id/rbac-evolution-prisma @anievo-id/rbac-evolution-next @anievo-id/rbac-evolution-react
-```
+<table align="center">
+  <tr>
+    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/basic-usage/super-admin"><img src="docs/public/mascots/sect-master.webp" height="110" alt="Yue, the Sect Master"><br><b>Yue</b></a><br><sub>Super-admin</sub></td>
+    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/frameworks/express"><img src="docs/public/mascots/gatekeeper.webp" height="110" alt="Rin, the Blade Gatekeeper"><br><b>Rin</b></a><br><sub>Guards</sub></td>
+    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/basic-usage/direct-permissions"><img src="docs/public/mascots/scroll-keeper.webp" height="110" alt="Mei, the Scroll Keeper"><br><b>Mei</b></a><br><sub>Permissions</sub></td>
+    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/basic-usage/teams"><img src="docs/public/mascots/twins.webp" height="110" alt="Hana and Sora, the Branch Twins"><br><b>Hana &amp; Sora</b></a><br><sub>Teams</sub></td>
+    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/guide/quick-start"><img src="docs/public/mascots/disciple.webp" height="110" alt="Tao, the New Disciple"><br><b>Tao</b></a><br><sub>Quick start</sub></td>
+  </tr>
+  <tr>
+    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/adapters/overview"><img src="docs/public/mascots/weaver.webp" height="110" alt="Lan, the Formation Weaver"><br><b>Lan</b></a><br><sub>Adapters</sub></td>
+    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/advanced/cache"><img src="docs/public/mascots/alchemist.webp" height="110" alt="Xia, the Pill Alchemist"><br><b>Xia</b></a><br><sub>Cache</sub></td>
+    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/advanced/events"><img src="docs/public/mascots/messenger.webp" height="110" alt="Feng, the Spirit Messenger"><br><b>Feng</b></a><br><sub>Events</sub></td>
+    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/guide/introduction"><img src="docs/public/mascots/spirit-fox.webp" height="110" alt="Kitsu, the Spirit Fox"><br><b>Kitsu</b></a><br><sub>Hints</sub></td>
+    <td align="center" width="110"><a href="https://anievo-id.github.io/rbac-evolution/"><img src="docs/public/mascots/sect-master-3d.webp" height="110" alt="Yue as a 3D figure"><br><b>3D</b></a><br><sub>Every guardian has a 3D form</sub></td>
+  </tr>
+</table>
 
 ## Quick start
+
+```bash
+npm i @anievo-id/rbac-evolution
+```
 
 ```ts
 import { createRbac, MemoryAdapter } from '@anievo-id/rbac-evolution'
@@ -68,32 +66,96 @@ await rbac.role('writer').givePermissionTo('edit articles')
 const user = rbac.for({ type: 'user', id: 1 })
 await user.assignRole('writer')
 
-await user.hasRole('writer')               // true
-await user.hasPermissionTo('edit articles') // true
+await user.hasRole('writer') // true
+await user.can('edit articles') // true
 ```
 
-See the [core package README](./packages/core#readme) for guards, wildcards, teams and caching.
+Then pick an adapter for your database and an integration for your framework, for example Express:
 
-> ⚠️ Client-side checks (React/Vue) are for UI only. Always enforce permissions on the server.
+```ts
+import { rbacMiddleware, requirePermission } from '@anievo-id/rbac-evolution-express'
+
+app.use(rbacMiddleware({ rbac, getSubject: (req) => (req.user ? { type: 'user', id: req.user.id } : null) }))
+app.put('/articles/:id', requirePermission('edit articles'), handler) // 401 for guests, 403 without access
+```
+
+> ⚠️ Client-side checks (React, Vue) only decide what the UI shows. Always enforce permissions on the server.
+
+## Coming from spatie/laravel-permission v8
+
+The API follows [spatie/laravel-permission](https://spatie.be/docs/laravel-permission/v8/introduction) v8
+(November 2026). If you know it, you already know this package:
+[side-by-side mapping](https://anievo-id.github.io/rbac-evolution/guide/coming-from-laravel).
+
+| spatie/laravel-permission v8 | RBAC Evolution |
+| --- | --- |
+| `assignRole`, `givePermissionTo`, `hasRole`, `can`, `syncRoles`, `syncPermissions` | ✅ same names on `rbac.for(user)` |
+| Direct permissions, permissions via roles | ✅ |
+| Multiple guards (`web`, `api`) | ✅ |
+| Wildcard permissions (`articles.*`) | ✅ |
+| Teams | ✅ |
+| Super-admin with `Gate::before` | ✅ `superAdminRoles` and a `before()` hook |
+| Events (`RoleAttachedEvent`, … including detach events on sync, v8.2) | ✅ `role.attached`, `permission.detached`, … |
+| Cache and `permission:cache-reset` | ✅ pluggable cache store, `rbac-evolution cache-reset` |
+| Artisan `permission:create-role`, `create-permission`, `assign-role`, `show` | ✅ [CLI](https://anievo-id.github.io/rbac-evolution/basic-usage/cli) with the same commands |
+| Database seeding | ✅ declarative `rbac.sync()` / `rbac-evolution sync` |
+| `User::role('writer')`, `User::permission('edit')` | ✅ `subjectsWithRole()`, `subjectsWithPermission()` |
+| `role`, `permission`, `role_or_permission` middleware | ✅ Express, Fastify, Hono, NestJS, Next.js, Nuxt |
+| Route-group authorization (v8.4) | ✅ router-level middleware in every integration |
+| Backed enums for role and permission names (v8.0) | ✅ [typed names](https://anievo-id.github.io/rbac-evolution/basic-usage/typed-names): unions or TypeScript string enums |
+| `@can`, `@role` Blade directives | ✅ `<Can>`, `useCan()`, `v-can`, `v-role` |
+| `canAny()` / `canAll()` route macros (v8.5) | 🚧 today as `requirePermission(…, { any: true })`; named helpers coming next |
+| `Role::syncModels()` (v7.4) | 🚧 planned |
+
+## Packages
+
+| Package | What it gives you |
+| --- | --- |
+| [`@anievo-id/rbac-evolution`](./packages/core) | The engine: roles, permissions, guards, teams, wildcards, cache, events, seeding |
+| [`@anievo-id/rbac-evolution-prisma`](./packages/prisma) | Prisma adapter (PostgreSQL, MySQL, SQLite, SQL Server) |
+| [`@anievo-id/rbac-evolution-drizzle`](./packages/drizzle) | Drizzle adapter (PostgreSQL, MySQL, SQLite) |
+| [`@anievo-id/rbac-evolution-kysely`](./packages/kysely) | Kysely adapter (PostgreSQL, MySQL, SQLite, SQL Server) |
+| [`@anievo-id/rbac-evolution-mongoose`](./packages/mongoose) | Mongoose adapter (MongoDB) |
+| [`@anievo-id/rbac-evolution-express`](./packages/express) | Express middleware and route guards |
+| [`@anievo-id/rbac-evolution-fastify`](./packages/fastify) | Fastify plugin and preHandler guards |
+| [`@anievo-id/rbac-evolution-hono`](./packages/hono) | Hono middleware (Node.js, Bun, Workers, Edge) |
+| [`@anievo-id/rbac-evolution-nestjs`](./packages/nestjs) | NestJS module, guard and decorators |
+| [`@anievo-id/rbac-evolution-next`](./packages/next) | Next.js middleware, server helpers, server action guards |
+| [`@anievo-id/rbac-evolution-nuxt`](./packages/nuxt) | Nuxt module: SSR snapshot, page rules, Nitro helpers |
+| [`@anievo-id/rbac-evolution-react`](./packages/react) | `<Can>`, `<Cannot>`, `<HasRole>`, `useCan()` |
+| [`@anievo-id/rbac-evolution-vue`](./packages/vue) | `v-can`, `v-role`, `<Can>`, composables |
+| [`@anievo-id/rbac-evolution-cli`](./packages/cli) | CLI like `php artisan permission:*` |
+
+All packages share one version and run on **Node.js 20+** and **Bun**.
+
+## Quality
+
+Every push to `main` refreshes the public [Test report](https://anievo-id.github.io/rbac-evolution/quality):
+
+- **Unit and integration tests** for all 14 packages, with code coverage, including the adapter suites against real
+  PostgreSQL 16, MySQL 8 and MongoDB 7 servers.
+- **End-to-end tests** with Playwright on the two [example apps](./examples) (Vue + Express + Drizzle,
+  Next.js + Prisma) and the docs site: `401` for guests, `403` without access, a revoked role denied on the next
+  request, and the right UI shown per role.
+- **Release sync**: merging the "version packages" pull request publishes to npm with
+  [provenance](https://docs.npmjs.com/generating-provenance-statements), tags the commit and creates the GitHub
+  Releases. A check then confirms npm and GitHub agree for every package, after each release and every day.
 
 ## Roadmap
 
-- [x] Core: roles, permissions, direct user permissions
-- [x] Guards (`web`, `api`, …)
-- [x] Wildcard permissions
-- [x] Caching layer
-- [x] Teams / multi-tenancy
-- [x] In-memory adapter
-- [x] Prisma & Drizzle adapters
-- [x] Super-admin, events, typed names (enums)
-- [x] Next.js, React, Vue, Express integrations
-- [x] CLI (like `php artisan permission:*`)
-- [ ] MySQL support for Drizzle
-- [x] Documentation site
+- [x] Core: roles, permissions, direct permissions, guards, wildcards, teams, cache, events, typed names
+- [x] Adapters: memory, Prisma, Drizzle (PostgreSQL, MySQL, SQLite), Kysely, Mongoose
+- [x] Integrations: Express, Fastify, Hono, NestJS, Next.js, Nuxt, React, Vue
+- [x] CLI and declarative seeding
+- [x] Documentation site, test report, E2E tests, verified releases
+- [ ] `canAny()` / `canAll()` guards in every integration (spatie v8.5)
+- [ ] `rbac.role(…).syncSubjects()` (spatie `Role::syncModels()`)
+- [ ] One shared guard implementation for all integrations
+- [ ] 1.0: stable API
 
 ## Contributing
 
-Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) and our
+Contributions are welcome! Please read [CONTRIBUTING.md](./CONTRIBUTING.md) and the
 [Code of Conduct](./CODE_OF_CONDUCT.md) first.
 
 ## License
