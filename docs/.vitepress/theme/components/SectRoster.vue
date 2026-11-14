@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { withBase } from 'vitepress'
+import { ref } from 'vue'
 import { mascots } from '../mascots'
+
+const view = ref<'2d' | '3d'>('2d')
 </script>
 
 <template>
@@ -12,11 +15,15 @@ import { mascots } from '../mascots'
         RBAC Evolution is a sect: roles are ranks, permissions are technique scrolls, and these nine keep watch over
         each chapter.
       </p>
+      <div class="switch" role="group" aria-label="Character art style">
+        <button type="button" :aria-pressed="view === '2d'" @click="view = '2d'">2D</button>
+        <button type="button" :aria-pressed="view === '3d'" @click="view = '3d'">3D</button>
+      </div>
       <ul class="cards">
         <li v-for="m in mascots" :key="m.id" class="card" :style="{ '--accent': m.accent }">
           <a :href="withBase(m.link)" class="card-link">
             <span class="portrait">
-              <img :src="withBase(`/mascots/${m.id}.webp`)" :alt="`${m.name}, the ${m.title}`" loading="lazy" width="200" height="260" />
+              <img :src="withBase(`/mascots/${m.id}${view === '3d' ? '-3d' : ''}.webp`)" :alt="`${m.name}, the ${m.title}`" loading="lazy" width="200" height="260" />
             </span>
             <span class="meta">
               <span class="role">{{ m.role }}</span>
@@ -47,10 +54,10 @@ import { mascots } from '../mascots'
   margin: 0 0 6px;
 }
 h2 {
-  font-family: var(--sect-font-display);
+  font-family: var(--sect-font-label);
   font-weight: 400;
-  font-size: clamp(40px, 6vw, 72px);
-  line-height: 1;
+  font-size: clamp(34px, 4.8vw, 56px);
+  line-height: 1.05;
   margin: 0 0 12px;
   border: 0;
   padding: 0;
@@ -59,6 +66,28 @@ h2 {
   max-width: 640px;
   color: var(--vp-c-text-2);
   margin: 0 0 36px;
+}
+.switch {
+  display: inline-flex;
+  margin: -12px 0 28px;
+  border: 2px solid var(--vp-c-text-1);
+  border-radius: 2px;
+}
+.switch button {
+  min-width: 56px;
+  min-height: 40px;
+  padding: 0 14px;
+  font-family: var(--sect-font-label);
+  font-size: 15px;
+  color: var(--vp-c-text-1);
+}
+.switch button[aria-pressed='true'] {
+  background: var(--vp-c-text-1);
+  color: var(--vp-c-bg);
+}
+:global(.dark .roster .switch button[aria-pressed='true']) {
+  background: var(--sect-yellow);
+  color: var(--sect-ink);
 }
 .cards {
   list-style: none;
