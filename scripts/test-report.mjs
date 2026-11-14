@@ -7,7 +7,7 @@
 // Exits 1 when any suite failed, after the report has been written.
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { delimiter, join } from 'node:path'
 
 const root = process.cwd()
 const tmp = join(root, '.test-report')
@@ -24,6 +24,12 @@ for (const dir of readdirSync(join(root, 'packages')).sort()) {
   const cwd = join(root, 'packages', dir)
   const pkg = readJson(join(cwd, 'package.json'))
   if (!pkg?.scripts?.test) continue
+
+  // Run the package's own setup steps first (e.g. prisma's `node test/prepare.mjs && vitest run`).
+  const setup = pkg.scripts.test.split('&&').map((s) => s.trim()).filter((s) => !s.startsWith('vitest'))
+  // Like `pnpm run`, put the package's (and the root's) node_modules/.bin on PATH for those steps.
+  const PATH = [join(cwd, 'node_modules/.bin'), join(root, 'node_modules/.bin'), process.env.PATH].join(delimiter)
+  const setupOk = setup.every((cmd) => spawnSync(cmd, { cwd, stdio: 'inherit', shell: true, env: { ...process.env, PATH } }).status === 0)
 
   const results = join(tmp, `${dir}.json`)
   const coverageDir = join(tmp, `${dir}-coverage`)
@@ -45,7 +51,7 @@ for (const dir of readdirSync(join(root, 'packages')).sort()) {
   packages.push({
     name: pkg.name,
     version: pkg.version,
-    ok: run.status === 0,
+    ok: setupOk && run.status === 0,
     tests: {
       total: json?.numTotalTests ?? 0,
       passed: json?.numPassedTests ?? 0,
