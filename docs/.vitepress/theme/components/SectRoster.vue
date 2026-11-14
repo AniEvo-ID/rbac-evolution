@@ -33,7 +33,7 @@ import { mascots } from '../mascots'
 
 <style scoped>
 .roster {
-  padding: 72px 24px 96px;
+  padding: 72px 24px 48px;
 }
 .roster-inner {
   max-width: 1152px;

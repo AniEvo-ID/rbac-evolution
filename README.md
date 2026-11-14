@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/public/brand/wordmark-dark.svg">
+    <img src="docs/public/brand/wordmark-light.svg" alt="rbac-evolution" width="460">
+  </picture>
+</p>
+
 # rbac-evolution
 
 > Role & permission management (RBAC) for the JavaScript / TypeScript ecosystem.
