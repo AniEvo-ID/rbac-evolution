@@ -23,6 +23,7 @@ and integrations for your framework.
 | [`@anievo-id/rbac-evolution-react`](./packages/react) | `<Can>`, `useCan()`, `useRole()` | 🧪 beta |
 | [`@anievo-id/rbac-evolution-vue`](./packages/vue) | `v-can` directive & composables | 🧪 beta |
 | [`@anievo-id/rbac-evolution-express`](./packages/express) | Express / Node HTTP middleware | 🧪 beta |
+| [`@anievo-id/rbac-evolution-cli`](./packages/cli) | CLI like `php artisan permission:*` | 🧪 beta |
 
 Install only what you need — e.g. for a Next.js + Prisma app:
 
@@ -63,7 +64,7 @@ See the [core package README](./packages/core#readme) for guards, wildcards, tea
 - [x] Prisma & Drizzle adapters
 - [x] Super-admin, events, typed names (enums)
 - [x] Next.js, React, Vue, Express integrations
-- [ ] CLI (like `php artisan permission:*`)
+- [x] CLI (like `php artisan permission:*`)
 - [ ] MySQL support for Drizzle
 - [ ] Documentation site
 
