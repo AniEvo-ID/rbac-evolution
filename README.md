@@ -21,7 +21,8 @@
 <p align="center">
   📖 <a href="https://app.anievo.id/rbac-evolution/"><b>Documentation</b></a> ·
   🧪 <a href="https://app.anievo.id/rbac-evolution/quality">Test report</a> ·
-  🚀 <a href="https://app.anievo.id/rbac-evolution/guide/quick-start">Quick start</a>
+  🚀 <a href="https://app.anievo.id/rbac-evolution/guide/quick-start">Quick start</a> ·
+  ✨ <a href="https://app.anievo.id/rbac-evolution/guide/whats-new">What's new</a>
 </p>
 
 > **Status: 🧪 beta.** The API may still change before 1.0. Every release is tested against real PostgreSQL, MySQL
