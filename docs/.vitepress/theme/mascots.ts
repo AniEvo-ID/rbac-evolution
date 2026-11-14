@@ -134,6 +134,7 @@ export const byId = Object.fromEntries(mascots.map((m) => [m.id, m])) as Record<
 const routes: [prefix: string, id: string][] = [
   ['/guide/quick-start', 'disciple'],
   ['/guide/installation', 'disciple'],
+  ['/guide/whats-new', 'messenger'],
   ['/guide/', 'scroll-keeper'],
   ['/basic-usage/super-admin', 'sect-master'],
   ['/basic-usage/teams', 'twins'],
