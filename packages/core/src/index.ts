@@ -5,7 +5,23 @@
  */
 
 export { createRbac, Rbac, RoleRbac, SubjectRbac } from './rbac'
-export type { GuardOptions, RbacOptions, ScopeOptions } from './rbac'
+export type { BeforeContext, BeforeHook, GuardOptions, RbacOptions, ScopeOptions } from './rbac'
+
+export type {
+  PermissionAttachedEvent,
+  PermissionCreatedEvent,
+  PermissionDeletedEvent,
+  PermissionDetachedEvent,
+  PermissionTarget,
+  RbacEvent,
+  RbacEventListener,
+  RbacEventMap,
+  RbacEventName,
+  RoleAttachedEvent,
+  RoleCreatedEvent,
+  RoleDeletedEvent,
+  RoleDetachedEvent,
+} from './events'
 
 export type {
   FindPermissionsQuery,
@@ -32,13 +48,17 @@ export type { RbacErrorCode } from './errors'
 export { parseWildcardPermission, wildcardImplies } from './wildcard'
 
 export type {
+  DefaultRbacTypes,
   Id,
   Many,
   Permission,
   PermissionInput,
+  PermissionName,
   RbacSnapshot,
+  RbacTypeConfig,
   Role,
   RoleInput,
+  RoleName,
   Subject,
   TeamId,
 } from './types'

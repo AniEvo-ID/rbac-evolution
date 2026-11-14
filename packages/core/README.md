@@ -45,6 +45,8 @@ Use `rbac.for(subject)` to work with it:
 | `hasPermissionTo(p)` | Check a permission (direct or via roles). Throws if `p` doesn't exist |
 | `can(p)` / `cannot(p)` / `canAny(...)` / `canAll(...)` | Same check, never throws |
 | `hasDirectPermission(p)` | Check direct permissions only |
+| `hasAnyPermission(...)` / `hasAllPermissions(...)` | Data check for several permissions, never throws |
+| `hasExactRoles(...roles)` | Has all of these roles and no others |
 | `getRoleNames()` / `getPermissionNames()` / `getAllPermissions()` | Read access |
 | `snapshot()` | `{ roles, permissions }` — serializable, for the client |
 
@@ -98,6 +100,124 @@ await rbac.for(user, { team: 42 }).assignRole('admin')
 await rbac.for(user, { team: 42 }).hasRole('admin') // true
 await rbac.for(user, { team: 7 }).hasRole('admin')  // false
 ```
+
+## Super-admin
+
+Like spatie's `Gate::before`, you can let some subjects pass every check:
+
+```ts
+const rbac = createRbac({ adapter, superAdminRoles: ['super-admin'] })
+
+await rbac.for(root).assignRole('super-admin')
+await rbac.for(root).can('anything')              // true, even if the permission doesn't exist
+await rbac.for(root).hasPermissionTo('edit articles') // false: pure data check
+```
+
+For full control use a `before` hook. Return `true` to allow, `false` to deny, or
+`undefined` to continue with the normal check. It may be async:
+
+```ts
+createRbac({
+  adapter,
+  superAdminRoles: ['super-admin'],
+  before: async ({ subject, permission }) => {
+    if (permission === 'delete everything') return false // nobody, not even super-admins
+    if (await isBanned(subject.subject)) return false
+    return undefined
+  },
+})
+```
+
+`before` runs first. If it returns `undefined`, `superAdminRoles` is checked, then the normal
+check. `subject` is the scoped `SubjectRbac` (it has `subject`, `guardName`, `teamId`, `hasRole()`...).
+
+> As in spatie, only `can()`, `cannot()`, `canAny()` and `canAll()` use `before` and
+> `superAdminRoles`. `hasPermissionTo()`, `hasDirectPermission()`, `hasAnyPermission()`,
+> `hasAllPermissions()` and the role checks only look at the stored data.
+
+## Events
+
+```ts
+const off = rbac.on('role.attached', async ({ subject, roles, teamId }) => {
+  await audit.log(`${subject.type}#${subject.id} got ${roles.map((r) => r.name).join(', ')}`)
+})
+off() // or rbac.off('role.attached', listener)
+```
+
+| Event | Fired by | Payload |
+| --- | --- | --- |
+| `role.attached` / `role.detached` | `assignRole`, `removeRole`, `syncRoles` | `{ subject, roles, guardName, teamId }` |
+| `permission.attached` / `permission.detached` | `givePermissionTo`, `revokePermissionTo`, `syncPermissions` on a subject or a role | `{ target: 'subject', subject, ... }` or `{ target: 'role', role, ... }`, plus `{ permissions, guardName, teamId }` |
+| `role.created` / `role.deleted` | `createRole` (and `findOrCreateRole`), `deleteRole` | `{ role, teamId }` |
+| `permission.created` / `permission.deleted` | `createPermission` (and `findOrCreatePermission`), `deletePermission` | `{ permission }` |
+
+Every payload has an `event` field, so `RbacEvent` is a discriminated union.
+
+- Events fire only after the adapter write succeeds and the cache has been cleared.
+- Listeners run in registration order. Async listeners are awaited one by one, and the
+  method (e.g. `assignRole`) resolves after all of them. If a listener throws, the error
+  reaches the caller, but the change is already saved.
+- Only real changes are reported. Assigning a role the subject already has emits nothing.
+  `sync*` emits `detached` for what was removed and then `attached` for what was added.
+- To find what changed, attach/detach do one extra adapter read, but only when a listener
+  is registered for that event.
+- Deleting a role or permission emits only `*.deleted`, not `detached` for every subject.
+
+## Typed names
+
+Like spatie's enum support, you can tell the engine which permission and role names are valid:
+
+```ts
+type AppRbac = {
+  permissions: 'edit articles' | 'delete articles'
+  roles: 'writer' | 'admin'
+}
+
+const rbac = createRbac<AppRbac>({ adapter })
+
+await rbac.for(user).can('edit articles') // ok
+await rbac.for(user).can('fly')           // type error
+await rbac.for(user).assignRole('ghost')  // type error
+```
+
+TS string enums work too, either as enum members or as their literal values:
+
+```ts
+enum Perm { Edit = 'edit articles', Delete = 'delete articles' }
+const rbac = createRbac<{ permissions: Perm }>({ adapter }) // roles: any string
+
+await rbac.for(user).can(Perm.Edit)       // ok
+await rbac.for(user).can('edit articles') // ok
+```
+
+- Name inputs are type-checked everywhere: `createPermission`, `findRole`, `role()`,
+  `givePermissionTo`, `can`, `hasRole`, `assignRole`, `superAdminRoles`, the query methods, and so on.
+  `Permission` and `Role` objects are always accepted.
+- Return values (`getRoleNames()`, `snapshot()`, ...) stay `string[]`, because the database may
+  contain other names.
+- With `wildcard: true`, add the names you check to the union too (`'articles.*' | 'articles.edit'`).
+- With no type argument everything accepts `string`, as before. `Rbac`, `SubjectRbac` and
+  `RoleRbac` without type arguments still work, and a typed instance can be passed where `Rbac` is expected.
+- Helper types: `RbacTypeConfig`, `PermissionName<T>`, `RoleName<T>`.
+
+## Querying subjects
+
+Like spatie's `User::role('writer')` and `User::permission('edit articles')` scopes, these return
+the ids of matching subjects of a type:
+
+```ts
+await rbac.subjectsWithRole('user', 'writer')                  // [1, 4]
+await rbac.subjectsWithRole('user', ['writer', 'editor'])      // any of the roles
+await rbac.subjectsWithPermission('user', 'edit articles')     // direct or via a role
+await rbac.subjectsWithPermission('user', 'edit articles', { team: 42, guard: 'api' })
+```
+
+- Unknown names throw `RoleDoesNotExist` / `PermissionDoesNotExist`.
+- Wildcard patterns are not expanded. A subject is found only if it has exactly that permission,
+  directly or through a role.
+
+On a subject, `hasExactRoles('writer', 'editor')` is `true` only if the subject has exactly
+those roles, no more and no fewer.
 
 ## Caching
 

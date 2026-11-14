@@ -1,7 +1,7 @@
 {
   "name": "@anievo-id/rbac-evolution",
   "version": "0.0.0",
-  "description": "Framework-agnostic RBAC engine for rbac-evolution — roles, permissions, guards.",
+  "description": "Framework-agnostic RBAC engine for rbac-evolution \u2014 roles, permissions, guards.",
   "license": "MIT",
   "type": "module",
   "repository": {
@@ -9,7 +9,14 @@
     "url": "git+https://github.com/AniEvo-ID/rbac-evolution.git",
     "directory": "packages/core"
   },
-  "keywords": ["rbac", "permissions", "roles", "authorization", "acl", "typescript"],
+  "keywords": [
+    "rbac",
+    "permissions",
+    "roles",
+    "authorization",
+    "acl",
+    "typescript"
+  ],
   "sideEffects": false,
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -25,9 +32,21 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./testing": {
+      "import": {
+        "types": "./dist/testing.d.ts",
+        "default": "./dist/testing.js"
+      },
+      "require": {
+        "types": "./dist/testing.d.cts",
+        "default": "./dist/testing.cjs"
+      }
+    },
     "./package.json": "./package.json"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "publishConfig": {
     "access": "public"
   },
@@ -42,5 +61,13 @@
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"
+  },
+  "peerDependencies": {
+    "vitest": ">=2"
+  },
+  "peerDependenciesMeta": {
+    "vitest": {
+      "optional": true
+    }
   }
 }
