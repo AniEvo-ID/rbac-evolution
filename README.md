@@ -27,6 +27,8 @@ and integrations for your framework.
 | [`@anievo-id/rbac-evolution-react`](./packages/react) | `<Can>`, `useCan()`, `useHasRole()` | 🧪 beta |
 | [`@anievo-id/rbac-evolution-vue`](./packages/vue) | `v-can` directive & composables | 🧪 beta |
 | [`@anievo-id/rbac-evolution-express`](./packages/express) | Express / Node HTTP middleware | 🧪 beta |
+| [`@anievo-id/rbac-evolution-hono`](./packages/hono) | Hono middleware (Node, Bun, Workers, Edge) | 🧪 beta |
+| [`@anievo-id/rbac-evolution-fastify`](./packages/fastify) | Fastify plugin & preHandler guards | 🧪 beta |
 | [`@anievo-id/rbac-evolution-cli`](./packages/cli) | CLI like `php artisan permission:*` | 🧪 beta |
 
 Install only what you need — e.g. for a Next.js + Prisma app:
