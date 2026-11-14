@@ -56,3 +56,23 @@ describe('createRbacState', () => {
     expect(rbac.hasRole('admin')).toBe(false)
   })
 })
+
+describe('loading', () => {
+  it('denies every check, cannot included, until the first setSnapshot()', () => {
+    const rbac = createRbacState({
+      snapshot: { roles: ['admin'], permissions: ['x'] },
+      superAdminRoles: ['admin'],
+      loading: true,
+    })
+    expect(rbac.can('x')).toBe(false)
+    expect(rbac.cannot('x')).toBe(false)
+    expect(rbac.cannot('y')).toBe(false)
+    expect(rbac.canAny('x')).toBe(false)
+    expect(rbac.hasRole('admin')).toBe(false)
+    expect(rbac.hasAllRoles('admin')).toBe(false)
+    expect(rbac.isSuperAdmin()).toBe(false)
+
+    rbac.setSnapshot(null)
+    expect(rbac.cannot('x')).toBe(true)
+  })
+})
