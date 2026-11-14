@@ -1,5 +1,11 @@
 # @anievo-id/rbac-evolution-drizzle
 
+## 0.6.1
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@0.6.1
+
 ## 0.6.0
 
 ### Patch Changes
