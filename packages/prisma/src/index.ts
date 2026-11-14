@@ -95,17 +95,24 @@ export type PrismaRbacRoleHasPermissionDelegate = PrismaRbacDelegate<
   PrismaRbacRoleHasPermissionRow
 >
 
+/** `groupBy` on the subject links: the reverse lookups de-duplicate in the database, not in JS. */
+export interface PrismaRbacSubjectGroupBy<Where> {
+  groupBy(args: { by: ['subjectId']; where: Where }): PromiseLike<{ subjectId: string }[]>
+}
+
 export type PrismaRbacModelHasRoleDelegate = PrismaRbacDelegate<
   PrismaRbacModelHasRoleRow,
   { roleId?: IntFilter; subjectType?: string; subjectId?: string; teamId?: string },
   PrismaRbacModelHasRoleRow
->
+> &
+  PrismaRbacSubjectGroupBy<{ roleId?: IntFilter; subjectType?: string; teamId?: string }>
 
 export type PrismaRbacModelHasPermissionDelegate = PrismaRbacDelegate<
   PrismaRbacModelHasPermissionRow,
   { permissionId?: IntFilter; subjectType?: string; subjectId?: string; teamId?: string },
   PrismaRbacModelHasPermissionRow
->
+> &
+  PrismaRbacSubjectGroupBy<{ permissionId?: IntFilter; subjectType?: string; teamId?: string }>
 
 /** The part of a `PrismaClient` (with the rbac models) that the adapter needs. */
 export interface PrismaRbacClient {
@@ -385,19 +392,21 @@ export class PrismaAdapter implements RbacAdapter {
   async getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
     const ids = toIntIds(roleIds)
     if (ids.length === 0) return []
-    const rows = await this.#db.rbacModelHasRole.findMany({
+    const rows = await this.#db.rbacModelHasRole.groupBy({
+      by: ['subjectId'],
       where: { subjectType, teamId: teamKey(teamId), roleId: { in: ids } },
     })
-    return unique(rows.map((r) => r.subjectId))
+    return rows.map((r) => r.subjectId)
   }
 
   async getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
     const ids = toIntIds(permissionIds)
     if (ids.length === 0) return []
-    const rows = await this.#db.rbacModelHasPermission.findMany({
+    const rows = await this.#db.rbacModelHasPermission.groupBy({
+      by: ['subjectId'],
       where: { subjectType, teamId: teamKey(teamId), permissionId: { in: ids } },
     })
-    return unique(rows.map((r) => r.subjectId))
+    return rows.map((r) => r.subjectId)
   }
 
   // -------------------------------------------------------------------- helpers
