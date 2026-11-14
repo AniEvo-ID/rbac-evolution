@@ -2,6 +2,7 @@ import DefaultTheme from 'vitepress/theme'
 import type { Theme } from 'vitepress'
 import { h } from 'vue'
 import BoundFormations from './components/BoundFormations.vue'
+import E2eReport from './components/E2eReport.vue'
 import FeatureRows from './components/FeatureRows.vue'
 import GridPulse from './components/GridPulse.vue'
 import HomeCta from './components/HomeCta.vue'
@@ -17,6 +18,7 @@ export default {
   extends: DefaultTheme,
   enhanceApp({ app }) {
     app.component('QualityReport', QualityReport)
+    app.component('E2eReport', E2eReport)
   },
   Layout: () =>
     h(DefaultTheme.Layout, null, {

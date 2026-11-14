@@ -96,3 +96,25 @@ jobs:
       - run: pnpm turbo run build --filter=./packages/*
       - run: bun --version
       - run: pnpm --filter rbac-evolution-bun-tests test:bun
+
+  e2e:
+    # Playwright against the two example apps (fresh SQLite data, production builds) and the docs site.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build --filter=./packages/*
+      - run: pnpm --filter rbac-evolution-e2e exec playwright install --with-deps chromium
+      - run: pnpm --filter rbac-evolution-e2e prepare:apps
+      - run: pnpm --filter rbac-evolution-e2e test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: tests/e2e/test-results
+          retention-days: 7
