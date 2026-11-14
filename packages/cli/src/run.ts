@@ -47,6 +47,7 @@ const OPTIONS = {
   file: { type: 'string', short: 'f' },
   prune: { type: 'boolean' },
   'dry-run': { type: 'boolean' },
+  yes: { type: 'boolean', short: 'y' },
   help: { type: 'boolean', short: 'h' },
   version: { type: 'boolean', short: 'v' },
 } as const
@@ -61,6 +62,7 @@ type Flags = {
   file?: string | undefined
   prune?: boolean | undefined
   'dry-run'?: boolean | undefined
+  yes?: boolean | undefined
   help?: boolean | undefined
   version?: boolean | undefined
 }
@@ -215,7 +217,7 @@ const COMMANDS: Record<string, Command> = {
   },
 
   sync: {
-    usage: 'sync [--file roles.json] [--prune] [--dry-run] [--guard web] [--team 1] [--json]',
+    usage: 'sync [--file roles.json] [--prune --yes] [--dry-run] [--guard web] [--team 1] [--json]',
     description: 'Create & sync roles and permissions from `seed` in the config (or --file)',
     needsRbac: true,
     async run({ cwd, flags, io }, rbac, config) {
@@ -225,6 +227,14 @@ const COMMANDS: Record<string, Command> = {
       }
       if (typeof (rbac as Partial<Rbac>).sync !== 'function') {
         throw new CliError('`sync` needs @anievo-id/rbac-evolution 0.3 or later in your project.')
+      }
+
+      // Pruning deletes roles and permissions; a typo in --file must not wipe them without asking.
+      if (flags.prune && !flags['dry-run'] && !flags.yes) {
+        throw new CliError(
+          '`sync --prune` deletes every role and permission that is not in the seed.\n' +
+            'Preview it with `--dry-run`, then re-run with `--yes` to apply.',
+        )
       }
 
       const options: SyncOptions = { ...scopeOpt(flags) }
@@ -396,8 +406,14 @@ function splitList(values: readonly string[]): string[] {
     .filter((v) => v !== '')
 }
 
-function parseId(value: string): Id {
-  return /^\d+$/.test(value) ? Number(value) : value
+/**
+ * Numeric-looking ids become numbers only when that is lossless: `9007199254740993` (beyond
+ * Number.MAX_SAFE_INTEGER) and `007` stay strings, so they can't silently point at another subject.
+ */
+export function parseId(value: string): Id {
+  if (!/^(0|[1-9]\d*)$/.test(value)) return value
+  const n = Number(value)
+  return Number.isSafeInteger(n) ? n : value
 }
 
 function guardOpt(guard: string | undefined): { guard?: string } {
@@ -440,7 +456,8 @@ function helpText(command?: string): string {
     '      --type <type>     Subject type for assign-role / give-permission (default: user)',
     '      --json            JSON output (show, sync)',
     '  -f, --file <file>     Seed file for sync (.json, .ts, .js; default: `seed` in the config)',
-    '      --prune           sync: delete roles & permissions not in the seed',
+    '      --prune           sync: delete roles & permissions not in the seed (needs --yes)',
+    '  -y, --yes             sync --prune: confirm the deletions',
     '      --dry-run         sync: print the plan without writing anything',
     '  -h, --help            Show help',
     '  -v, --version         Show version',

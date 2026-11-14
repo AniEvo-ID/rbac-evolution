@@ -42,7 +42,7 @@ export type {
 } from './adapter'
 export { MemoryAdapter } from './adapters/memory'
 
-export { MemoryCache } from './cache'
+export { MemoryCache, type MemoryCacheOptions } from './cache'
 export type { CacheStore } from './cache'
 
 export {

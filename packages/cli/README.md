@@ -42,7 +42,7 @@ Use `--config path/to/file` for another location.
 | `assign-role <role> <id>` | `permission:assign-role` | Assign a role to a subject |
 | `give-permission <permission> <id>` | — | Give a direct permission to a subject |
 | `show` | `permission:show` | Print the role × permission matrix per guard |
-| `sync [--prune] [--dry-run]` | — (spatie's seeders) | Create & sync roles and permissions from `seed` in the config or `--file` |
+| `sync [--prune --yes] [--dry-run]` | — (spatie's seeders) | Create & sync roles and permissions from `seed` in the config or `--file` |
 | `cache-reset` | `permission:cache-reset` | Flush the permission cache |
 | `init` | — | Create `rbac.config.ts` |
 
@@ -57,7 +57,8 @@ Spatie-style names work too: `rbac-evolution permission:create-role writer`.
 | `--type <type>` | Subject type for `assign-role` / `give-permission` (default: `subjectType` or `user`) |
 | `--json` | JSON output for `show` and `sync` |
 | `-f, --file <file>` | Seed file for `sync` (`.json`, `.ts`, `.js`, …; default: `seed` in the config) |
-| `--prune` | `sync`: delete roles & permissions that are not in the seed |
+| `--prune` | `sync`: delete roles & permissions that are not in the seed (needs `--yes`, or `--dry-run` to preview) |
+| `-y`, `--yes` | `sync --prune`: confirm the deletions |
 | `--dry-run` | `sync`: print the plan without writing anything |
 | `-c, --config <file>` | Config file |
 | `--force` | Overwrite an existing `rbac.config.ts` (`init`) |
@@ -106,7 +107,7 @@ export default defineConfig({
 ```bash
 npx rbac-evolution sync --dry-run   # show the plan
 npx rbac-evolution sync             # create missing roles/permissions, sync role permissions
-npx rbac-evolution sync --prune     # ... and delete roles/permissions not in the seed
+npx rbac-evolution sync --prune --yes  # ... and delete roles/permissions not in the seed
 npx rbac-evolution sync --file roles.json
 ```
 

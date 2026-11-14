@@ -44,7 +44,15 @@ const rbac = createRbac({ adapter, cacheTtl: 5 * 60_000 }) // 5 minutes
 The TTL limits how long stale data can survive when the cache is **not** cleared for you, for example when another process changes the database. See [Multiple processes](#multiple-processes).
 
 ::: info MemoryCache housekeeping
-`MemoryCache` deletes an expired entry when it is next read. It has no size limit and no background sweep. The cache is cleared on every change, so this is rarely a problem, but a long-running process that checks many different subjects without changes will keep their entries until the TTL expires and they are read again.
+`MemoryCache` deletes an expired entry when it is next read, and keeps at most `maxEntries` entries (default
+10 000): when it is full, the oldest write is dropped. A dropped entry is simply recomputed on the next check.
+Raise the limit if you check many more distinct users per TTL than that:
+
+```ts
+import { createRbac, MemoryCache } from '@anievo-id/rbac-evolution'
+
+const rbac = createRbac({ adapter, cache: new MemoryCache({ maxEntries: 50_000 }) })
+```
 :::
 
 ## Turning the cache off

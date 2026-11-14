@@ -94,3 +94,26 @@ describe('sync never leaves a subject empty-handed', () => {
     expect(await rbac.role('editor').getPermissionNames()).toEqual(['publish'])
   })
 })
+
+describe('MemoryCache', () => {
+  it('keeps at most maxEntries, dropping the oldest write first', async () => {
+    const { MemoryCache } = await import('../src/cache')
+    const cache = new MemoryCache({ maxEntries: 3 })
+    for (const k of ['a', 'b', 'c']) cache.set(k, k, 60_000)
+    cache.set('a', 'a2', 60_000) // rewrite: 'a' becomes the newest
+    cache.set('d', 'd', 60_000) // full: drops 'b', the oldest write
+    expect(cache.size).toBe(3)
+    expect(cache.get('b')).toBeUndefined()
+    expect([cache.get('a'), cache.get('c'), cache.get('d')]).toEqual(['a2', 'c', 'd'])
+  })
+
+  it('stays bounded under many distinct subjects', async () => {
+    const { MemoryCache } = await import('../src/cache')
+    const cache = new MemoryCache({ maxEntries: 50 })
+    const rbac = createRbac({ adapter: new MemoryAdapter(), cache })
+    await rbac.createPermission('read')
+    for (let id = 0; id < 500; id++) await rbac.for({ type: 'user', id }).can('read')
+    expect(cache.size).toBe(50)
+    expect(await rbac.for({ type: 'user', id: 1 }).can('read')).toBe(false) // evicted entries are just recomputed
+  })
+})
