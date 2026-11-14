@@ -2,7 +2,7 @@
 
 📖 **[Documentation](https://app.anievo.id/rbac-evolution/frameworks/react)**
 
-React bindings for [rbac-evolution](../core): `<RbacProvider>`, `useCan()`, `<Can>`, `<HasRole>`, ... — the React
+React bindings for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution): `<RbacProvider>`, `useCan()`, `<Can>`, `<HasRole>`, ... — the React
 counterpart of spatie/laravel-permission's Blade directives (`@can`, `@cannot`, `@role`, `@hasanyrole`, ...).
 
 > **UI only.** These helpers show and hide elements based on a snapshot sent to the browser. Anyone can edit

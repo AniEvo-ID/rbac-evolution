@@ -2,7 +2,7 @@
 
 📖 **[Documentation](https://app.anievo.id/rbac-evolution/frameworks/hono)**
 
-[Hono](https://hono.dev) middleware for [rbac-evolution](../core) — the counterpart of spatie/laravel-permission's
+[Hono](https://hono.dev) middleware for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution) — the counterpart of spatie/laravel-permission's
 `role`, `permission` and `role_or_permission` middleware. Runs anywhere Hono runs: **Node, Bun, Deno,
 Cloudflare Workers and other edge runtimes** (no Node-only APIs).
 

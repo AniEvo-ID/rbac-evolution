@@ -2,7 +2,7 @@
 
 📖 **[Documentation](https://app.anievo.id/rbac-evolution/frameworks/express)**
 
-Express middleware for [rbac-evolution](../core) — the counterpart of spatie/laravel-permission's
+Express middleware for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution) — the counterpart of spatie/laravel-permission's
 `role`, `permission` and `role_or_permission` middleware. Works with **Express 4 and 5**
 (async errors are always forwarded to `next(err)`).
 

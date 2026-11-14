@@ -2,7 +2,7 @@
 
 📖 **[Documentation](https://app.anievo.id/rbac-evolution/frameworks/fastify)**
 
-[Fastify](https://fastify.dev) plugin for [rbac-evolution](../core) — the counterpart of spatie/laravel-permission's
+[Fastify](https://fastify.dev) plugin for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution) — the counterpart of spatie/laravel-permission's
 `role`, `permission` and `role_or_permission` middleware, as `preHandler` hooks. Requires **Fastify 5**.
 
 ```bash

@@ -2,7 +2,7 @@
 
 📖 **[Documentation](https://app.anievo.id/rbac-evolution/frameworks/nuxt)**
 
-Nuxt 3 / 4 module for [rbac-evolution](../core). It installs [`@anievo-id/rbac-evolution-vue`](../vue)
+Nuxt 3 / 4 module for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution). It installs [`@anievo-id/rbac-evolution-vue`](https://www.npmjs.com/package/@anievo-id/rbac-evolution-vue)
 (`v-can`, `v-role`, `<Can>`, `<HasRole>`, `$can`), hydrates the user's snapshot from SSR, auto-imports
 `useRbac()` / `useCan()` & co., adds a route middleware for `definePageMeta({ rbac })`, and ships Nitro helpers
 for server-side enforcement.

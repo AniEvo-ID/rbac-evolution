@@ -2,10 +2,10 @@
 
 📖 **[Documentation](https://app.anievo.id/rbac-evolution/frameworks/nestjs)**
 
-NestJS integration for [rbac-evolution](../core): a global `RbacModule`, an `RbacGuard`, and the
+NestJS integration for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution): a global `RbacModule`, an `RbacGuard`, and the
 `@RequirePermissions()`, `@RequireRoles()` and `@RequireRoleOrPermission()` decorators — the Nest counterpart of
 spatie/laravel-permission's `permission`, `role` and `role_or_permission` middleware. Semantics and error bodies are
-identical to [`@anievo-id/rbac-evolution-express`](../express).
+identical to [`@anievo-id/rbac-evolution-express`](https://www.npmjs.com/package/@anievo-id/rbac-evolution-express).
 
 ```bash
 npm i @anievo-id/rbac-evolution @anievo-id/rbac-evolution-nestjs
