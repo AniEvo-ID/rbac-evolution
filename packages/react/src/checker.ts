@@ -18,7 +18,7 @@ export interface RbacChecker {
   cannot(permission: string): boolean
   /** `true` if ANY of the permissions is granted. `false` for an empty list. */
   canAny(...permissions: Many<string>[]): boolean
-  /** `true` if ALL of the permissions are granted. `true` for an empty list. */
+  /** `true` if ALL of the permissions are granted. `false` for an empty list (deny by default, like the Vue package). */
   canAll(...permissions: Many<string>[]): boolean
   /** `true` if the subject has the role — or ANY of the roles when given an array. */
   hasRole(roles: Many<string>): boolean
@@ -75,9 +75,15 @@ export function createRbacChecker(
     can,
     cannot: (permission) => !can(permission),
     canAny: (...list) => flatten(list).some(can),
-    canAll: (...list) => flatten(list).every(can),
+    canAll: (...list) => {
+      const wanted = flatten(list)
+      return wanted.length > 0 && wanted.every(can)
+    },
     hasRole: (list) => flatten([list]).some(hasOne),
     hasAnyRole: (...list) => flatten(list).some(hasOne),
-    hasAllRoles: (...list) => flatten(list).every(hasOne),
+    hasAllRoles: (...list) => {
+      const wanted = flatten(list)
+      return wanted.length > 0 && wanted.every(hasOne)
+    },
   }
 }

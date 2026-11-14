@@ -31,7 +31,8 @@ describe('createRbacChecker', () => {
     expect(rbac.canAll(['articles.edit', 'articles.view'])).toBe(true)
     expect(rbac.canAll('articles.edit', ['articles.delete'])).toBe(false)
     expect(rbac.canAny([])).toBe(false)
-    expect(rbac.canAll([])).toBe(true)
+    expect(rbac.canAll([])).toBe(false)
+    expect(rbac.hasAllRoles([])).toBe(false)
   })
 
   it('role checks', () => {

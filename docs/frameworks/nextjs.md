@@ -256,8 +256,11 @@ export const PATCH = withRbac(
 
 | Case               | Status | Body                                                                          |
 | ------------------ | ------ | ----------------------------------------------------------------------------- |
-| Guest              | `401`  | `{ "error": "Unauthenticated", "message": "Unauthenticated." }`               |
-| Missing access     | `403`  | `{ "error": "Forbidden", "message": "User does not have the right permissions." }` |
+| Guest              | `401`  | `{ "error": "UNAUTHENTICATED", "message": "User is not logged in." }` |
+| Missing access     | `403`  | `{ "error": "FORBIDDEN", "reason": "permission", "message": "User does not have the right permissions." }` |
+
+`reason` is `permission`, `role` or `role_or_permission`. The bodies are the same as the
+[Express](/frameworks/express) package's, and the middleware uses them too.
 
 The 403 message names the *kind* of requirement (permissions, roles, or either) but never the actual role or
 permission names.
@@ -577,9 +580,8 @@ export const config = { runtime: 'nodejs', matcher: ['/admin/:path*'] }
 The admin area is protected twice (middleware and layout); the delete operation is protected in both the server
 action and the API route, and the button is merely hidden for users who cannot use it.
 
-::: warning Super-admins in middleware
-In `rbac` mode the middleware checks the subject's snapshot and does not apply the engine's `superAdminRoles` or
-`before` hook — unlike `requirePermission()` and friends, which go through `can()`. If you rely on a super-admin
-role, also list that role in your middleware rules (e.g. `roleOrPermission: ['super-admin', 'reports.view']`), or use
-snapshot mode with `superAdminRoles`.
+::: tip Super-admins in middleware
+In `rbac` mode the middleware checks through the engine (`canAny()` / `hasAnyRole()`), so `superAdminRoles` and the
+`before` hook apply exactly like in `requirePermission()` and friends. In snapshot mode, pass `superAdminRoles` to the
+middleware itself.
 :::

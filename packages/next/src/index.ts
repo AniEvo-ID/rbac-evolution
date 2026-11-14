@@ -5,6 +5,7 @@
  */
 
 export { createNextRbac, forbiddenMessage } from './server'
+export type { ForbiddenReason } from './responses'
 export type { AuthorizeResult, NextRbac, NextRbacOptions, RequireOptions, WithRbacOptions } from './server'
 
 export { RbacUnauthorizedError } from './errors'

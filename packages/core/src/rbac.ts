@@ -346,6 +346,22 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return value
   }
 
+  /**
+   * @internal Whether a permission with this name exists in the guard.
+   * With caching on, the guard's permission names are cached (cleared on every change),
+   * so repeated `can()` checks don't hit the database.
+   */
+  async permissionExists(name: string, guardName: string): Promise<boolean> {
+    if (!this.#cache) {
+      const [permission] = await this.adapter.findPermissions({ names: [name], guardName })
+      return permission !== undefined
+    }
+    const names = await this.remember(`rbac:permissions:${JSON.stringify([guardName])}`, async () =>
+      (await this.adapter.findPermissions({ guardName })).map((p) => p.name),
+    )
+    return names.includes(name)
+  }
+
   // ---------------------------------------------------------------------- internal
 
   /** @internal Runs the `before` hook and the super-admin check. `undefined` = no decision. */
@@ -765,7 +781,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
       return permission.name
     }
     const name = normalizeName(permission)
-    if (!this.rbac.wildcard && !(await this.rbac.findPermission(name as PermissionName<T>, { guard: this.guardName }))) {
+    if (!this.rbac.wildcard && !(await this.rbac.permissionExists(name, this.guardName))) {
       throw new PermissionDoesNotExist(name, this.guardName)
     }
     return name

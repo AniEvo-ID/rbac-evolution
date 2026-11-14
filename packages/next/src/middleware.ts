@@ -1,7 +1,8 @@
 import type { Many, Rbac, RbacSnapshot, ScopeOptions, Subject, TeamId } from '@anievo-id/rbac-evolution'
 import { matchPath } from './matcher'
 import type { PathMatcher } from './matcher'
-import { snapshotSatisfies } from './snapshot'
+import { forbiddenResponse, unauthenticatedResponse } from './responses'
+import { snapshotSatisfies, type SnapshotCheckOptions } from './snapshot'
 import type { MaybePromise, Requirement } from './types'
 
 export interface RbacMiddlewareRule {
@@ -63,9 +64,6 @@ function ruleRequirements(rule: RbacMiddlewareRule): Requirement[] {
   return out
 }
 
-const json = (status: number, error: string, message: string): Response =>
-  new Response(JSON.stringify({ error, message }), { status, headers: { 'content-type': 'application/json' } })
-
 /**
  * Route protection for `middleware.ts`, like spatie's route middleware.
  * Returns a `Response` when access is denied, or `undefined` to let the request through.
@@ -80,10 +78,20 @@ const json = (status: number, error: string, message: string): Response =>
 export function createRbacMiddleware<Req extends MiddlewareRequest = MiddlewareRequest>(
   options: RbacMiddlewareOptions<Req>,
 ): (req: Req) => Promise<Response | undefined> {
-  async function loadSnapshot(req: Req): Promise<{ snapshot: RbacSnapshot; wildcard: boolean } | null> {
+  type Checker = (requirement: Requirement) => Promise<boolean>
+
+  /**
+   * Resolves who is asking and returns a requirement checker, or `null` for guests.
+   * In `rbac` mode the checks go through the engine (`canAny` / `hasAnyRole`), so
+   * `superAdminRoles` and the `before` hook apply exactly like in the server helpers.
+   */
+  async function loadChecker(req: Req): Promise<Checker | null> {
     if (options.rbac === undefined) {
       const snapshot = (await options.getSnapshot(req)) ?? null
-      return snapshot && { snapshot, wildcard: options.wildcard ?? false }
+      if (!snapshot) return null
+      const checkOptions: SnapshotCheckOptions = { wildcard: options.wildcard ?? false }
+      if (options.superAdminRoles) checkOptions.superAdminRoles = options.superAdminRoles
+      return async (requirement) => snapshotSatisfies(snapshot, requirement, checkOptions)
     }
     const subject = (await options.getSubject(req)) ?? null
     if (!subject) return null
@@ -91,7 +99,13 @@ export function createRbacMiddleware<Req extends MiddlewareRequest = MiddlewareR
     if (options.guard !== undefined) scope.guard = options.guard
     const team = typeof options.team === 'function' ? await options.team(req) : options.team
     if (team !== undefined && team !== null) scope.team = team
-    return { snapshot: await options.rbac.for(subject, scope).snapshot(), wildcard: options.rbac.wildcard }
+    const s = options.rbac.for(subject, scope)
+    return async (requirement) => {
+      if (requirement.permission !== undefined) return s.canAny(requirement.permission)
+      if (requirement.role !== undefined) return s.hasAnyRole(requirement.role)
+      const items = requirement.roleOrPermission
+      return (await s.hasAnyRole(items)) || (await s.canAny(items))
+    }
   }
 
   return async (req: Req): Promise<Response | undefined> => {
@@ -99,27 +113,28 @@ export function createRbacMiddleware<Req extends MiddlewareRequest = MiddlewareR
     const matching = options.rules.filter((rule) => matchPath(rule.matcher, pathname))
     if (matching.length === 0) return undefined
 
-    const loaded = await loadSnapshot(req)
-    if (!loaded) {
+    const check = await loadChecker(req)
+    if (!check) {
       const rule = matching[0]!
       if (options.onUnauthenticated) return options.onUnauthenticated(req, rule)
       if (options.loginUrl !== undefined) {
         const target = typeof options.loginUrl === 'function' ? options.loginUrl(req) : options.loginUrl
         return Response.redirect(new URL(target, req.url), 307)
       }
-      return json(401, 'Unauthenticated', 'Unauthenticated.')
+      return unauthenticatedResponse()
     }
 
-    const checkOptions =
-      options.rbac === undefined && options.superAdminRoles
-        ? { wildcard: loaded.wildcard, superAdminRoles: options.superAdminRoles }
-        : { wildcard: loaded.wildcard }
-
     for (const rule of matching) {
-      const passes = ruleRequirements(rule).every((r) => snapshotSatisfies(loaded.snapshot, r, checkOptions))
-      if (!passes) {
+      let failed: Requirement | undefined
+      for (const requirement of ruleRequirements(rule)) {
+        if (!(await check(requirement))) {
+          failed = requirement
+          break
+        }
+      }
+      if (failed) {
         if (options.onUnauthorized) return options.onUnauthorized(req, rule)
-        return json(403, 'Forbidden', 'User does not have the right roles or permissions.')
+        return forbiddenResponse(failed)
       }
     }
     return undefined
