@@ -56,10 +56,15 @@ const GLOBAL_TEAM = ''
 const teamKey = (teamId: TeamId): string => (teamId === null ? GLOBAL_TEAM : String(teamId))
 const teamFromKey = (key: string): TeamId => (key === GLOBAL_TEAM ? null : key)
 
-/** Role / permission ids are integers. Ids that are not integers can never match a row, so they are dropped. */
+/**
+ * Role / permission ids are integers. Ids that are not plain integers can never match a row, so they are dropped.
+ * Strings must be written as integers: `'1e3'`, `'0x1A'` or `'1.0'` are not ids (same rule as the Prisma adapter).
+ */
 const toIntId = (id: Id): number | null => {
-  const n = typeof id === 'number' ? id : Number(id)
-  return Number.isSafeInteger(n) && String(id).trim() !== '' ? n : null
+  if (typeof id === 'number') return Number.isSafeInteger(id) ? id : null
+  if (!/^-?\d+$/.test(id.trim())) return null
+  const n = Number(id)
+  return Number.isSafeInteger(n) ? n : null
 }
 const toIntIds = (ids: readonly Id[]): number[] => {
   const out = new Set<number>()
@@ -95,6 +100,16 @@ export class DrizzleRbacAdapter implements RbacAdapter {
     private readonly t: RbacTables,
     private readonly dialect: DrizzleDialect = 'pg',
   ) {}
+
+  /**
+   * Runs `fn` in a transaction (a savepoint when `db` is already a transaction). SQLite runs without one:
+   * better-sqlite3 and bun:sqlite only accept synchronous transaction callbacks, and libsql `:memory:` would
+   * open a separate, empty database.
+   */
+  private atomically(fn: (db: UntypedDb) => Promise<void>): Promise<void> {
+    if (this.dialect === 'sqlite') return fn(this.db)
+    return this.db.transaction(fn)
+  }
 
   // ---------------------------------------------------------------- permissions
 
@@ -136,9 +151,12 @@ export class DrizzleRbacAdapter implements RbacAdapter {
     if (pid === null) return
     const { permissions, roleHasPermissions, modelHasPermissions } = this.t
     // Links are removed explicitly: FK cascades may be disabled (e.g. SQLite without `PRAGMA foreign_keys`).
-    await this.db.delete(roleHasPermissions).where(eq(roleHasPermissions.permissionId, pid))
-    await this.db.delete(modelHasPermissions).where(eq(modelHasPermissions.permissionId, pid))
-    await this.db.delete(permissions).where(eq(permissions.id, pid))
+    // One transaction, so a failure can't leave roles without a permission that still exists.
+    await this.atomically(async (db) => {
+      await db.delete(roleHasPermissions).where(eq(roleHasPermissions.permissionId, pid))
+      await db.delete(modelHasPermissions).where(eq(modelHasPermissions.permissionId, pid))
+      await db.delete(permissions).where(eq(permissions.id, pid))
+    })
   }
 
   // ---------------------------------------------------------------------- roles
@@ -184,9 +202,11 @@ export class DrizzleRbacAdapter implements RbacAdapter {
     const rid = toIntId(id)
     if (rid === null) return
     const { roles, roleHasPermissions, modelHasRoles } = this.t
-    await this.db.delete(roleHasPermissions).where(eq(roleHasPermissions.roleId, rid))
-    await this.db.delete(modelHasRoles).where(eq(modelHasRoles.roleId, rid))
-    await this.db.delete(roles).where(eq(roles.id, rid))
+    await this.atomically(async (db) => {
+      await db.delete(roleHasPermissions).where(eq(roleHasPermissions.roleId, rid))
+      await db.delete(modelHasRoles).where(eq(modelHasRoles.roleId, rid))
+      await db.delete(roles).where(eq(roles.id, rid))
+    })
   }
 
   // ---------------------------------------------------------- role ↔ permission

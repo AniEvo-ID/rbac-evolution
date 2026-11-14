@@ -57,9 +57,17 @@ export class MongooseRbacAdapter implements RbacAdapter {
 
   constructor(readonly models: RbacModels) {}
 
-  /** Waits for the models' indexes (unique constraints) once, before the first operation. */
+  /**
+   * Waits for the models' indexes (unique constraints) once, before the first operation.
+   * A failed attempt (e.g. a transient connection error) is forgotten, so the next call retries.
+   */
   private init(): Promise<unknown> {
-    this.ready ??= Promise.all(Object.values(this.models).map((model: Model<unknown>) => model.init()))
+    this.ready ??= Promise.all(Object.values(this.models).map((model: Model<unknown>) => model.init())).catch(
+      (error: unknown) => {
+        this.ready = undefined
+        throw error
+      },
+    )
     return this.ready
   }
 

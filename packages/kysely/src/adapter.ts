@@ -40,10 +40,15 @@ const GLOBAL_TEAM = ''
 const teamKey = (teamId: TeamId): string => (teamId === null ? GLOBAL_TEAM : String(teamId))
 const teamFromKey = (key: string): TeamId => (key === GLOBAL_TEAM ? null : key)
 
-/** Role / permission ids are integers. Ids that are not integers can never match a row, so they are dropped. */
+/**
+ * Role / permission ids are integers. Ids that are not plain integers can never match a row, so they are dropped.
+ * Strings must be written as integers: `'1e3'`, `'0x1A'` or `'1.0'` are not ids (same rule as the Prisma adapter).
+ */
 const toIntId = (id: Id): number | null => {
-  const n = typeof id === 'number' ? id : Number(id)
-  return Number.isSafeInteger(n) && String(id).trim() !== '' ? n : null
+  if (typeof id === 'number') return Number.isSafeInteger(id) ? id : null
+  if (!/^-?\d+$/.test(id.trim())) return null
+  const n = Number(id)
+  return Number.isSafeInteger(n) ? n : null
 }
 const toIntIds = (ids: readonly Id[]): number[] => {
   const out = new Set<number>()
@@ -96,6 +101,16 @@ export class KyselyRbacAdapter implements RbacAdapter {
     this.tables = tableNames(options)
   }
 
+  /**
+   * Runs `fn` in a transaction, or in the caller's transaction when the adapter was given one.
+   * SQLite runs without one: some drivers open a separate connection per transaction, and with an
+   * in-memory database (libsql `:memory:`) that connection sees an empty database.
+   */
+  private atomically(fn: (db: AnyDb) => Promise<void>): Promise<void> {
+    if (this.db.isTransaction || this.dialect === 'sqlite') return fn(this.db)
+    return this.db.transaction().execute(fn)
+  }
+
   // ---------------------------------------------------------------- permissions
 
   async createPermission(data: { name: string; guardName: string }): Promise<Permission> {
@@ -124,9 +139,12 @@ export class KyselyRbacAdapter implements RbacAdapter {
     if (pid === null) return
     const { permissions, roleHasPermissions, modelHasPermissions } = this.tables
     // Links are removed explicitly: FK cascades may be disabled (e.g. SQLite without `PRAGMA foreign_keys`).
-    await this.db.deleteFrom(roleHasPermissions).where('permission_id', '=', pid).execute()
-    await this.db.deleteFrom(modelHasPermissions).where('permission_id', '=', pid).execute()
-    await this.db.deleteFrom(permissions).where('id', '=', pid).execute()
+    // One transaction, so a failure can't leave roles without a permission that still exists.
+    await this.atomically(async (db) => {
+      await db.deleteFrom(roleHasPermissions).where('permission_id', '=', pid).execute()
+      await db.deleteFrom(modelHasPermissions).where('permission_id', '=', pid).execute()
+      await db.deleteFrom(permissions).where('id', '=', pid).execute()
+    })
   }
 
   // ---------------------------------------------------------------------- roles
@@ -165,9 +183,11 @@ export class KyselyRbacAdapter implements RbacAdapter {
     const rid = toIntId(id)
     if (rid === null) return
     const { roles, roleHasPermissions, modelHasRoles } = this.tables
-    await this.db.deleteFrom(roleHasPermissions).where('role_id', '=', rid).execute()
-    await this.db.deleteFrom(modelHasRoles).where('role_id', '=', rid).execute()
-    await this.db.deleteFrom(roles).where('id', '=', rid).execute()
+    await this.atomically(async (db) => {
+      await db.deleteFrom(roleHasPermissions).where('role_id', '=', rid).execute()
+      await db.deleteFrom(modelHasRoles).where('role_id', '=', rid).execute()
+      await db.deleteFrom(roles).where('id', '=', rid).execute()
+    })
   }
 
   // ---------------------------------------------------------- role ↔ permission
