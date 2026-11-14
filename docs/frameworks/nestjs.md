@@ -135,6 +135,8 @@ export class ArticlesController {
 | `@RequirePermissions('articles.edit', 'articles.publish')` | **all** of them              |
 | `@RequirePermissions(['articles.edit', 'articles.publish'])` | **all** of them            |
 | `@RequirePermissions('a', 'b', { any: true })`            | **any** of them              |
+| `@CanAny('a', 'b')`                                       | **any** of them (spatie v8.5) |
+| `@CanAll('a', 'b\|c')`                                     | **all** entries (spatie v8.5) |
 
 Permission checks use `SubjectRbac.can()`, so `before` hooks, `superAdminRoles` and wildcards apply.
 

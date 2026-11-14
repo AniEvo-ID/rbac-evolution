@@ -55,6 +55,13 @@ await user.syncRoles()             // no roles at all
 
 Syncing only affects roles in the current [guard](/basic-usage/multiple-guards) and [team](/basic-usage/teams).
 
+From the role's side, `syncSubjects()` makes the given subjects of one type the role's only holders
+(spatie `Role::syncModels()`). Other subject types keep the role. `role.attached` / `role.detached` events fire per subject.
+
+```ts
+await rbac.role('editor').syncSubjects('user', [2, 7]) // only users 2 and 7 are editors now
+```
+
 ## Checking roles
 
 ```ts

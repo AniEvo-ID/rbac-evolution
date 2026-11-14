@@ -92,6 +92,10 @@ export interface RbacServer<E extends RbacEvent = RbacEvent> {
   requireRole(event: E, ...args: (RequirementNames | RoleRequirementOptions)[]): Promise<SubjectRbac>
   /** Like Express `requireRoleOrPermission`: any of the names as a role OR a permission. */
   requireRoleOrPermission(event: E, ...names: RequirementNames[]): Promise<SubjectRbac>
+  /** spatie v8.5 `canAny()`: requires ANY of the listed permissions. */
+  canAny(event: E, ...names: RequirementNames[]): Promise<SubjectRbac>
+  /** spatie v8.5 `canAll()`: requires EVERY listed entry; a `'a|b'` entry still means "a or b". */
+  canAll(event: E, ...names: RequirementNames[]): Promise<SubjectRbac>
 }
 
 const CONTEXT_KEY = 'rbac'
@@ -185,6 +189,12 @@ export function createRbacServer<E extends RbacEvent = RbacEvent>(options: RbacS
     },
     requireRoleOrPermission(event, ...names) {
       return enforce(event, 'role_or_permission', requirementGroups('role_or_permission', names))
+    },
+    canAny(event, ...names) {
+      return enforce(event, 'permission', requirementGroups('permission', names, { any: true }))
+    },
+    canAll(event, ...names) {
+      return enforce(event, 'permission', requirementGroups('permission', names))
     },
   }
 }

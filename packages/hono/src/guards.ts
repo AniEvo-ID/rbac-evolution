@@ -178,7 +178,27 @@ export function createGuards(defaults: GuardHandlers = {}) {
     )
   }
 
-  return { requirePermission, requireRole, requireRoleOrPermission }
+  /**
+   * spatie v8.5 `canAny()`: passes with ANY of the listed permissions.
+   *
+   * - `canAny('edit articles', 'publish articles')`, `canAny(['edit articles', 'publish articles'])`
+   */
+  function canAny(...args: (GuardNames | GuardHandlers)[]): MiddlewareHandler<RbacEnv> {
+    const { names, options } = parseArgs<GuardHandlers>(args)
+    return requirePermission(...names, { ...options, any: true })
+  }
+
+  /**
+   * spatie v8.5 `canAll()`: requires EVERY listed entry. A `'a|b'` entry still means "a or b".
+   *
+   * - `canAll('edit articles', 'publish articles')`, `canAll(['edit articles', 'publish|review'])`
+   */
+  function canAll(...args: (GuardNames | GuardHandlers)[]): MiddlewareHandler<RbacEnv> {
+    const { names, options } = parseArgs<GuardHandlers>(args)
+    return requirePermission(...names, { ...options, any: false })
+  }
+
+  return { requirePermission, requireRole, requireRoleOrPermission, canAny, canAll }
 }
 
-export const { requirePermission, requireRole, requireRoleOrPermission } = createGuards()
+export const { requirePermission, requireRole, requireRoleOrPermission, canAny, canAll } = createGuards()

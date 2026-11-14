@@ -131,6 +131,18 @@ app.put('/articles/:id', { preHandler: requirePermission('articles.edit', 'artic
 Permission checks use `can()`, so the engine's `before` hook and `superAdminRoles` apply. Unknown permissions
 simply fail the check; they never throw.
 
+### `canAny` / `canAll`
+
+Named forms of the two common cases, like spatie v8.5's route macros. `canAny` passes with **any** of the
+permissions. `canAll` needs **every** argument; a pipe inside one argument still means "any of these".
+
+```ts
+app.put('/articles/:id', { preHandler: canAny('articles.edit', 'articles.publish') }, handler)
+app.put('/articles/:id', { preHandler: canAll('articles.edit', 'articles.publish|articles.delete') }, handler)
+```
+
+`canAny(...)` is `requirePermission(..., { any: true })`, and `canAll(...)` is `requirePermission(...)`.
+
 ### `requireRole`
 
 ```ts

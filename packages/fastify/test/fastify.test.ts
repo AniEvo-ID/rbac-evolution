@@ -7,6 +7,8 @@ import {
   requirePermission,
   requireRole,
   requireRoleOrPermission,
+  canAny,
+  canAll,
 } from '../src'
 
 const ok = async () => ({ ok: true })
@@ -297,5 +299,34 @@ describe('error handling, scopes, teams and guards', () => {
   it('rejects guards without names', () => {
     expect(() => requirePermission()).toThrow(TypeError)
     expect(() => requireRole({ all: true })).toThrow(TypeError)
+  })
+})
+
+// spatie v8.5 canAny() / canAll(). User 1 is a writer (edit), user 2 a writer + editor (edit, publish).
+const CAN_CASES: [path: string, user: number, status: number][] = [
+  ['/can-any', 1, 200],
+  ['/can-any', 0, 401],
+  ['/can-all', 1, 403],
+  ['/can-all', 2, 200],
+  ['/can-all-pipe', 1, 200], // 'publish|edit' is one entry: either passes it
+]
+
+describe('canAny / canAll (spatie v8.5)', () => {
+  let app: FastifyInstance
+  beforeAll(async () => {
+    const rbac = createRbac({ adapter: new MemoryAdapter() })
+    await seed(rbac)
+    app = Fastify()
+    await app.register(rbacPlugin, { rbac, getSubject: async (request) => userFrom(request) })
+    app.get('/can-any', { preHandler: canAny('publish articles', 'edit articles') }, ok)
+    app.get('/can-all', { preHandler: canAll('edit articles', 'publish articles') }, ok)
+    app.get('/can-all-pipe', { preHandler: canAll(['edit articles', 'publish articles|edit articles']) }, ok)
+    await app.ready()
+  })
+  afterAll(() => app.close())
+
+  it.each(CAN_CASES)('%s as user %i → %i', async (path, user, status) => {
+    const res = await app.inject({ url: path, headers: user ? { 'x-user': String(user) } : {} })
+    expect(res.statusCode).toBe(status)
   })
 })

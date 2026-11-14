@@ -76,6 +76,7 @@ The [Prisma](/adapters/prisma) and [Drizzle](/adapters/drizzle) adapters use the
 | `$user->getAllPermissions()` | `rbac.for(user).getAllPermissions()` |
 | `$user->getDirectPermissions()` | `rbac.for(user).getDirectPermissions()` |
 | `$user->getPermissionsViaRoles()` | `rbac.for(user).getPermissionsViaRoles()` |
+| `Role::syncModels([...])` | `rbac.role('writer').syncSubjects('user', [...ids])` |
 | `User::role('writer')->get()` | `rbac.subjectsWithRole('user', 'writer')` (returns ids) |
 | `User::permission('edit articles')->get()` | `rbac.subjectsWithPermission('user', 'edit articles')` (returns ids) |
 
