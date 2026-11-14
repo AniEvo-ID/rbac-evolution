@@ -7,6 +7,13 @@
 
 # RBAC Evolution
 
+[![CI](https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/ci.yml/badge.svg)](https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/@anievo-id/rbac-evolution?color=3b82f6&label=npm)](https://www.npmjs.com/package/@anievo-id/rbac-evolution)
+[![tests](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fanievo-id.github.io%2Frbac-evolution%2Freports%2Funit.json&query=%24.totals.passed&suffix=%20passed&label=tests&color=00c896)](https://anievo-id.github.io/rbac-evolution/quality)
+[![e2e](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fanievo-id.github.io%2Frbac-evolution%2Freports%2Fe2e.json&query=%24.totals.passed&suffix=%20passed&label=e2e&color=00c896)](https://anievo-id.github.io/rbac-evolution/quality)
+[![release sync](https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/release-check.yml/badge.svg)](https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/release-check.yml)
+[![license](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 > Role & permission management (RBAC) for the JavaScript / TypeScript ecosystem.
 > Inspired by [spatie/laravel-permission](https://github.com/spatie/laravel-permission), built for JS.
 

@@ -77,6 +77,12 @@ jobs:
       # main is protected by the CI checks anyway.
       - name: Test report
         run: node scripts/test-report.mjs || echo "::warning::Some test suites failed, see the Test report page."
+      # Waits for npm when this push is a release (the publish runs in parallel).
+      - name: Release sync report
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFY_RETRIES: 30
+        run: node scripts/verify-release.mjs || echo "::warning::npm and GitHub are out of sync, see the Test report page."
       - name: E2E report
         run: |
           pnpm --filter rbac-evolution-e2e exec playwright install --with-deps chromium

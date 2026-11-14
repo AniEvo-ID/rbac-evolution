@@ -1,0 +1,24 @@
+name: Release check
+
+# Daily guard that the repo, npm and GitHub agree on every package's version
+# (see scripts/verify-release.mjs). A red run means something drifted, e.g. a
+# manual npm publish or deprecation, a deleted tag or a missing GitHub Release.
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node scripts/verify-release.mjs
+        env:
+          GH_TOKEN: ${{ github.token }}

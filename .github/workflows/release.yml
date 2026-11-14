@@ -60,3 +60,12 @@ jobs:
         run: |
           version=$(node -p "require('./packages/core/package.json').version")
           gh release edit "@anievo-id/rbac-evolution@${version}" --latest
+
+      # Fails the release (and notifies) if npm and GitHub disagree after publishing:
+      # version on npm with provenance, npm `latest`, git tag and GitHub Release per package.
+      - name: Verify npm and GitHub are in sync
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          VERIFY_RETRIES: 30
+        run: node scripts/verify-release.mjs
