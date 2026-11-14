@@ -1,0 +1,266 @@
+/* ==========================================================================
+   rbac-evolution docs — "Sect of Evolution" theme
+   Night ink + glowing jade + seal gold, on rice paper in light mode.
+   ========================================================================== */
+
+/* ---------- tokens ---------- */
+:root {
+  --sect-font-display: 'Noto Serif JP', 'Iowan Old Style', Georgia, serif;
+  --vp-font-family-base: 'IBM Plex Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --vp-font-family-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+
+  --sect-ink: #0b1020;
+  --sect-jade: #0e9f7a;
+  --sect-jade-glow: rgba(45, 212, 167, 0.45);
+  --sect-gold: #b8862b;
+  --sect-violet: #7c5cd6;
+
+  --vp-c-brand-1: #0b7f62;
+  --vp-c-brand-2: #0e9f7a;
+  --vp-c-brand-3: #12b38a;
+  --vp-c-brand-soft: rgba(14, 159, 122, 0.14);
+
+  --vp-c-bg: #fbfaf6;
+  --vp-c-bg-alt: #f3f1ea;
+  --vp-c-bg-soft: #f1efe7;
+  --vp-c-bg-elv: #ffffff;
+  --vp-c-text-1: #1a1f2e;
+  --vp-c-text-2: #4a5165;
+  --vp-c-text-3: #6b7280;
+  --vp-c-divider: #e3dfd3;
+  --vp-c-border: #d6d1c2;
+  --vp-c-gutter: #ece8dc;
+
+  --vp-button-brand-bg: #0b7f62;
+  --vp-button-brand-hover-bg: #0e9f7a;
+  --vp-button-brand-active-bg: #0a6f56;
+  --vp-button-brand-text: #ffffff;
+  --vp-button-brand-hover-text: #ffffff;
+
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(120deg, #0b7f62 10%, #b8862b 90%);
+  --vp-home-hero-image-background-image: radial-gradient(circle, rgba(45, 212, 167, 0.35) 0%, rgba(231, 183, 95, 0.18) 45%, transparent 70%);
+  --vp-home-hero-image-filter: blur(56px);
+
+  --vp-custom-block-tip-border: rgba(14, 159, 122, 0.35);
+  --vp-custom-block-tip-bg: rgba(14, 159, 122, 0.08);
+  --vp-custom-block-warning-border: rgba(184, 134, 43, 0.4);
+  --vp-custom-block-warning-bg: rgba(231, 183, 95, 0.12);
+  --vp-custom-block-info-border: rgba(124, 92, 214, 0.3);
+  --vp-custom-block-info-bg: rgba(124, 92, 214, 0.08);
+
+  /* ---------- cursors (32px SVG, hotspot, fallback) ---------- */
+  --cursor-default: url('./cursors/default.svg') 4 3, default;
+  --cursor-pointer: url('./cursors/pointer.svg') 4 3, pointer;
+  --cursor-text: url('./cursors/text.svg') 16 16, text;
+  --cursor-grab: url('./cursors/grab.svg') 14 14, grab;
+  --cursor-grabbing: url('./cursors/grabbing.svg') 14 14, grabbing;
+  --cursor-copy: url('./cursors/copy.svg') 4 3, copy;
+  --cursor-not-allowed: url('./cursors/not-allowed.svg') 4 3, not-allowed;
+  --cursor-help: url('./cursors/help.svg') 4 3, help;
+  --cursor-progress: url('./cursors/progress.svg') 4 3, progress;
+  --cursor-wait: url('./cursors/wait.svg') 16 16, wait;
+  --cursor-move: url('./cursors/move.svg') 16 16, move;
+  --cursor-zoom-in: url('./cursors/zoom-in.svg') 13 13, zoom-in;
+}
+
+.dark {
+  --sect-jade: #2dd4a7;
+  --sect-jade-glow: rgba(45, 212, 167, 0.55);
+  --sect-gold: #e7b75f;
+  --sect-violet: #a78bfa;
+
+  --vp-c-brand-1: #34d3a6;
+  --vp-c-brand-2: #2dd4a7;
+  --vp-c-brand-3: #14b8a6;
+  --vp-c-brand-soft: rgba(45, 212, 167, 0.16);
+
+  --vp-c-bg: #0b1020;
+  --vp-c-bg-alt: #080c18;
+  --vp-c-bg-soft: #121a2e;
+  --vp-c-bg-elv: #141d33;
+  --vp-c-text-1: #e8ecf6;
+  --vp-c-text-2: #aab3c8;
+  --vp-c-text-3: #7c869e;
+  --vp-c-divider: #1f2a44;
+  --vp-c-border: #2a3654;
+  --vp-c-gutter: #080c18;
+
+  --vp-button-brand-bg: #2dd4a7;
+  --vp-button-brand-hover-bg: #5eead4;
+  --vp-button-brand-active-bg: #14b8a6;
+  --vp-button-brand-text: #0b1020;
+  --vp-button-brand-hover-text: #0b1020;
+
+  --vp-home-hero-name-background: linear-gradient(120deg, #5eead4 10%, #e7b75f 90%);
+  --vp-home-hero-image-background-image: radial-gradient(circle, rgba(45, 212, 167, 0.45) 0%, rgba(167, 139, 250, 0.22) 45%, transparent 70%);
+
+  --vp-code-block-bg: #0d1426;
+  --vp-custom-block-tip-bg: rgba(45, 212, 167, 0.08);
+  --vp-custom-block-warning-bg: rgba(231, 183, 95, 0.1);
+  --vp-custom-block-info-bg: rgba(167, 139, 250, 0.08);
+}
+
+/* ---------- page atmosphere ---------- */
+.VPHome {
+  background:
+    radial-gradient(60% 40% at 85% 0%, color-mix(in srgb, var(--sect-jade) 12%, transparent), transparent 70%),
+    radial-gradient(50% 35% at 0% 30%, color-mix(in srgb, var(--sect-gold) 10%, transparent), transparent 70%);
+}
+
+/* VitePress pulls the hero image down over the title on narrow screens; our cast is taller. */
+@media (max-width: 959px) {
+  .VPHero .image {
+    margin-bottom: 8px !important;
+  }
+  .VPHero .image-container {
+    height: auto !important;
+  }
+}
+
+/* ---------- typography ---------- */
+.VPHero .name,
+.VPHero .text,
+.vp-doc h1,
+.vp-doc h2,
+.vp-doc h3,
+.VPFeature .title {
+  font-family: var(--sect-font-display);
+  letter-spacing: -0.01em;
+}
+.VPHero .name {
+  font-weight: 700;
+}
+.VPHero .tagline {
+  max-width: 560px;
+}
+.vp-doc h2 {
+  border-top-color: var(--vp-c-divider);
+}
+.vp-doc h2::after {
+  content: '';
+  display: block;
+  width: 48px;
+  height: 3px;
+  margin-top: 10px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--sect-jade), var(--sect-gold));
+}
+.vp-doc a {
+  text-underline-offset: 3px;
+}
+
+/* ---------- home features ("technique cards") ---------- */
+.VPFeature {
+  border-radius: 18px !important;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.VPFeature:hover {
+  transform: translateY(-3px);
+  border-color: var(--vp-c-brand-2) !important;
+  box-shadow: 0 14px 34px -18px var(--sect-jade-glow);
+}
+/* mascot portraits used as feature icons */
+.VPFeature .VPImage {
+  display: block;
+  width: 100% !important;
+  max-width: none !important;
+  height: 120px !important;
+  object-fit: contain;
+  object-position: left bottom;
+  margin-bottom: 14px;
+  filter: drop-shadow(0 8px 12px rgba(5, 10, 25, 0.22));
+  transition: transform 0.3s ease;
+  transform-origin: left bottom;
+}
+.VPFeature:hover .VPImage {
+  transform: scale(1.06) rotate(-2deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .VPFeature .VPImage { transition: none; }
+  .VPFeature:hover .VPImage { transform: none; }
+}
+
+/* ---------- code ---------- */
+.vp-doc div[class*='language-'] {
+  border-radius: 14px;
+  border: 1px solid var(--vp-c-divider);
+}
+.dark .vp-doc div[class*='language-'] {
+  border-color: #1b2540;
+}
+
+/* ---------- custom blocks ---------- */
+.custom-block {
+  border-radius: 14px;
+  border-left-width: 4px !important;
+}
+.custom-block.tip { border-left-color: var(--sect-jade) !important; }
+.custom-block.warning { border-left-color: var(--sect-gold) !important; }
+.custom-block.info { border-left-color: var(--sect-violet) !important; }
+
+/* ---------- focus ---------- */
+:focus-visible {
+  outline-color: var(--vp-c-brand-1);
+}
+
+/* ---------- motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .VPFeature { transition: none; }
+  .VPFeature:hover { transform: none; }
+}
+
+/* ==========================================================================
+   Cursors — the whole site uses the Sect cursor set.
+   Order matters: later rules win for elements that match several selectors.
+   ========================================================================== */
+html,
+body {
+  cursor: var(--cursor-default);
+}
+
+/* readable text → brush I-beam */
+p, li, dd, dt, td, th, blockquote, figcaption, h1, h2, h3, h4, h5, h6,
+pre, code, kbd, .vp-doc span, .VPHero .tagline, .VPHero .text,
+input:not([type='checkbox'], [type='radio'], [type='button'], [type='submit'], [type='reset'], [type='range'], [type='color'], [type='file']),
+textarea, [contenteditable='true'] {
+  cursor: var(--cursor-text);
+}
+
+/* anything clickable → gold arrow */
+a, a *, button, button *, summary, select, label[for], [role='button'], [role='button'] *, [role='tab'], [role='menuitem'], [role='switch'],
+input[type='checkbox'], input[type='radio'], input[type='button'], input[type='submit'], input[type='reset'], input[type='color'], input[type='file'],
+.VPSwitch, .VPSwitch *, .VPNavBarSearch, .DocSearch-Button, .DocSearch-Button * {
+  cursor: var(--cursor-pointer);
+}
+
+/* code block copy button */
+.vp-doc [class*='language-'] > button.copy,
+.vp-doc [class*='language-'] > button.copy * {
+  cursor: var(--cursor-copy);
+}
+
+/* draggable things */
+[draggable='true'] { cursor: var(--cursor-grab); }
+[draggable='true']:active { cursor: var(--cursor-grabbing); }
+.cursor-move, [data-cursor='move'] { cursor: var(--cursor-move); }
+
+/* zoomable images inside docs */
+.vp-doc img[data-zoomable], [data-cursor='zoom-in'] { cursor: var(--cursor-zoom-in); }
+
+/* help & tooltips */
+abbr[title], [data-tooltip], [aria-describedby] { cursor: var(--cursor-help); }
+
+/* busy */
+[aria-busy='true'] { cursor: var(--cursor-progress); }
+html.is-loading, html.is-loading * { cursor: var(--cursor-wait); }
+
+/* disabled → red seal */
+:disabled, [disabled], [aria-disabled='true'], :disabled *, [aria-disabled='true'] * {
+  cursor: var(--cursor-not-allowed);
+}
+
+/* touch devices have no cursor; keep the platform defaults there */
+@media (pointer: coarse) {
+  html, body, * { cursor: auto !important; }
+}

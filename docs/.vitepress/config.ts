@@ -10,9 +10,22 @@ export default defineConfig({
   base: '/rbac-evolution/',
   cleanUrls: true,
   lastUpdated: true,
-  head: [['meta', { name: 'theme-color', content: '#7c3aed' }]],
+  head: [
+    ['meta', { name: 'theme-color', content: '#0b1020' }],
+    ['link', { rel: 'icon', type: 'image/webp', href: '/rbac-evolution/mascots/spirit-fox.webp' }],
+    ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
+    ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
+    [
+      'link',
+      {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Noto+Serif+JP:wght@600;700&display=swap',
+      },
+    ],
+  ],
 
   themeConfig: {
+    logo: { src: '/mascots/spirit-fox.webp', alt: 'Kitsu the Spirit Fox' },
     nav: [
       { text: 'Guide', link: '/guide/introduction' },
       { text: 'Frameworks', link: '/frameworks/react' },
