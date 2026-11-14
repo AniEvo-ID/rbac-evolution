@@ -23,3 +23,12 @@ guests get `401`, users without access get `403`, a revoked role is denied on th
 `v-can` show or hide the right parts of the UI.
 
 <E2eReport />
+
+## Releases: GitHub ↔ npm
+
+Releases are automatic: merging the "version packages" pull request publishes every package to npm with
+[provenance](https://docs.npmjs.com/generating-provenance-statements), tags the commit and creates the GitHub
+Releases. This check confirms the result for every package: the version on npm, its provenance, npm's `latest`
+tag, the git tag and the GitHub Release. It runs after each release and every day.
+
+<ReleaseSync />

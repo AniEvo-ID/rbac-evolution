@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vitepress'
 
 const repo = 'https://github.com/AniEvo-ID/rbac-evolution'
+// The docs deploy on every push to main, so this is always the version that main (and npm) carries.
+const { version } = JSON.parse(readFileSync(new URL('../../packages/core/package.json', import.meta.url), 'utf8'))
 
 export default defineConfig({
   title: 'RBAC Evolution',
@@ -40,8 +43,9 @@ export default defineConfig({
       { text: 'CLI', link: '/basic-usage/cli' },
       { text: 'Test report', link: '/quality' },
       {
-        text: 'Links',
+        text: `v${version}`,
         items: [
+          { text: `Release notes v${version}`, link: `${repo}/releases/tag/%40anievo-id%2Frbac-evolution%40${version}` },
           { text: 'Changelog', link: `${repo}/blob/main/packages/core/CHANGELOG.md` },
           { text: 'Releases', link: `${repo}/releases` },
           { text: 'npm', link: 'https://www.npmjs.com/package/@anievo-id/rbac-evolution' },

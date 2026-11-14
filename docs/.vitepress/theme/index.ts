@@ -11,6 +11,7 @@ import MotionLayer from './components/MotionLayer.vue'
 import NotFound from './components/NotFound.vue'
 import PageGuide from './components/PageGuide.vue'
 import QualityReport from './components/QualityReport.vue'
+import ReleaseSync from './components/ReleaseSync.vue'
 import SectRoster from './components/SectRoster.vue'
 import './style.css'
 
@@ -19,6 +20,7 @@ export default {
   enhanceApp({ app }) {
     app.component('QualityReport', QualityReport)
     app.component('E2eReport', E2eReport)
+    app.component('ReleaseSync', ReleaseSync)
   },
   Layout: () =>
     h(DefaultTheme.Layout, null, {
