@@ -1,11 +1,12 @@
 name: Release
 
-# Publishing is paused until the npm org and NPM_TOKEN secret are set up.
-# Runs only when triggered manually from the Actions tab.
-# To re-enable automatic releases, add back:
-#   push:
-#     branches: [main]
+# On every push to main, changesets/action either:
+#  - opens/updates a "Version Packages" PR when there are pending changesets, or
+#  - publishes the bumped packages to npm (via npm Trusted Publishing / OIDC — no token),
+#    creates git tags and GitHub Releases.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
@@ -13,7 +14,7 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 permissions:
   contents: write
   pull-requests: write
-  id-token: write
+  id-token: write # required for npm Trusted Publishing (OIDC) and provenance
 
 jobs:
   release:
@@ -23,17 +24,18 @@ jobs:
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
-          registry-url: https://registry.npmjs.org
+      # Trusted Publishing needs npm >= 11.5.1 (Node 22 ships npm 10)
+      - run: npm install -g npm@latest
       - run: pnpm install --frozen-lockfile
       - name: Create release PR or publish to npm
         uses: changesets/action@v1
         with:
           version: pnpm version-packages
           publish: pnpm release
+          title: "chore(release): version packages"
+          commit: "chore(release): version packages"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
