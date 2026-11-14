@@ -254,24 +254,24 @@ export class MongooseRbacAdapter implements RbacAdapter {
     const ids = toObjectIds(roleIds)
     if (ids.length === 0) return []
     await this.init()
-    const subjectIds: unknown[] = await this.models.ModelHasRole.distinct('subjectId', {
-      subjectType,
-      teamId: teamKey(teamId),
-      roleId: { $in: ids },
-    })
-    return subjectIds.map(String)
+    // $group streams through a cursor; `distinct` returns one document, capped at 16 MB (~400k ids).
+    const rows: { _id: unknown }[] = await this.models.ModelHasRole.aggregate([
+      { $match: { subjectType, teamId: teamKey(teamId), roleId: { $in: ids } } },
+      { $group: { _id: '$subjectId' } },
+    ])
+    return rows.map((r) => String(r._id))
   }
 
   async getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
     const ids = toObjectIds(permissionIds)
     if (ids.length === 0) return []
     await this.init()
-    const subjectIds: unknown[] = await this.models.ModelHasPermission.distinct('subjectId', {
-      subjectType,
-      teamId: teamKey(teamId),
-      permissionId: { $in: ids },
-    })
-    return subjectIds.map(String)
+    // $group streams through a cursor; `distinct` returns one document, capped at 16 MB (~400k ids).
+    const rows: { _id: unknown }[] = await this.models.ModelHasPermission.aggregate([
+      { $match: { subjectType, teamId: teamKey(teamId), permissionId: { $in: ids } } },
+      { $group: { _id: '$subjectId' } },
+    ])
+    return rows.map((r) => String(r._id))
   }
 
   // -------------------------------------------------------------------- helpers
