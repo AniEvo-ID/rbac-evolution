@@ -8,6 +8,7 @@ export type RbacErrorCode =
   | 'TEAMS_NOT_ENABLED'
   | 'INVALID_NAME'
   | 'INVALID_WILDCARD_PERMISSION'
+  | 'INVALID_SYNC_DEFINITION'
 
 export class RbacError extends Error {
   readonly code: RbacErrorCode

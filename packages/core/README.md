@@ -63,6 +63,29 @@ await writer.syncPermissions(['edit articles'])
 await writer.getPermissionNames() // ['edit articles']
 ```
 
+## Seeding (`rbac.sync`)
+
+Declare your roles & permissions once and sync them — idempotent, so it's safe to run on every deploy:
+
+```ts
+const summary = await rbac.sync(
+  {
+    permissions: ['edit articles', 'delete articles', 'publish articles'],
+    roles: {
+      admin: '*', // every permission of the guard
+      writer: ['edit articles'],
+    },
+  },
+  { prune: false, dryRun: false },
+)
+// summary: { dryRun, created: { permissions, roles }, updated: { roles }, deleted: { permissions, roles } }
+```
+
+Missing permissions & roles are created, and each role's permissions are synced to exactly the
+given list. Pass an array of definitions with their own `guard` / `team` to sync several scopes;
+`prune: true` deletes what's not in the definition (only in the synced scopes); `dryRun: true`
+returns the plan without writing. The regular events fire.
+
 ## Guards
 
 Like Laravel guards — separate sets of roles/permissions (e.g. `web` and `api`):

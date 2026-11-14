@@ -1,8 +1,17 @@
-import { existsSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { extname, isAbsolute, join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
-import type { Id, Rbac, Role, ScopeOptions, TeamId } from '@anievo-id/rbac-evolution'
-import { loadConfig, resolveRbac, type RbacCliConfig } from './config'
+import type {
+  Id,
+  Rbac,
+  Role,
+  ScopeOptions,
+  SyncDefinition,
+  SyncOptions,
+  SyncResult,
+  TeamId,
+} from '@anievo-id/rbac-evolution'
+import { importModule, loadConfig, resolveRbac, type RbacCliConfig } from './config'
 import { CliError, UsageError } from './errors'
 import { renderTable } from './table'
 
@@ -35,6 +44,9 @@ const OPTIONS = {
   type: { type: 'string' },
   json: { type: 'boolean' },
   force: { type: 'boolean' },
+  file: { type: 'string', short: 'f' },
+  prune: { type: 'boolean' },
+  'dry-run': { type: 'boolean' },
   help: { type: 'boolean', short: 'h' },
   version: { type: 'boolean', short: 'v' },
 } as const
@@ -46,6 +58,9 @@ type Flags = {
   type?: string | undefined
   json?: boolean | undefined
   force?: boolean | undefined
+  file?: string | undefined
+  prune?: boolean | undefined
+  'dry-run'?: boolean | undefined
   help?: boolean | undefined
   version?: boolean | undefined
 }
@@ -199,6 +214,32 @@ const COMMANDS: Record<string, Command> = {
     },
   },
 
+  sync: {
+    usage: 'sync [--file roles.json] [--prune] [--dry-run] [--guard web] [--team 1] [--json]',
+    description: 'Create & sync roles and permissions from `seed` in the config (or --file)',
+    needsRbac: true,
+    async run({ cwd, flags, io }, rbac, config) {
+      const definition = flags.file === undefined ? config.seed : await loadSeedFile(cwd, flags.file)
+      if (definition === undefined) {
+        throw new CliError('Nothing to sync: add `seed` to rbac.config.ts or pass --file roles.json.')
+      }
+      if (typeof (rbac as Partial<Rbac>).sync !== 'function') {
+        throw new CliError('`sync` needs @anievo-id/rbac-evolution 0.3 or later in your project.')
+      }
+
+      const options: SyncOptions = { ...scopeOpt(flags) }
+      if (flags.prune) options.prune = true
+      if (flags['dry-run']) options.dryRun = true
+      const result = await rbac.sync(definition, options)
+
+      if (flags.json) {
+        io.out(JSON.stringify(result, null, 2))
+        return
+      }
+      for (const line of formatSyncResult(result)) io.out(line)
+    },
+  },
+
   'cache-reset': {
     usage: 'cache-reset',
     description: 'Flush the permission cache (useful with a shared cache like Redis)',
@@ -291,6 +332,57 @@ async function createOrFindRole(rbac: Rbac, name: string, scope: ScopeOptions, i
   }
 }
 
+async function loadSeedFile(cwd: string, path: string): Promise<SyncDefinition | SyncDefinition[]> {
+  const file = isAbsolute(path) ? path : resolve(cwd, path)
+  if (!existsSync(file)) throw new CliError(`Seed file not found: ${path}`)
+  let loaded: unknown
+  try {
+    loaded = extname(file) === '.json' ? JSON.parse(readFileSync(file, 'utf8')) : await importModule(file)
+  } catch (error) {
+    throw new CliError(`Could not read ${path}: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  if (typeof loaded !== 'object' || loaded === null) {
+    throw new CliError(`${path} must contain (or default-export) a sync definition object or array.`)
+  }
+  // validated in depth by rbac.sync()
+  return loaded as SyncDefinition | SyncDefinition[]
+}
+
+/** Human-readable lines for a sync result. */
+export function formatSyncResult(result: SyncResult): string[] {
+  const scope = (x: { guard: string; team?: TeamId }): string =>
+    x.team === undefined || x.team === null ? `guard ${x.guard}` : `guard ${x.guard}, team ${String(x.team)}`
+  const list = (names: readonly string[]): string => (names.length === 0 ? 'none' : names.join(', '))
+  const lines: string[] = []
+  if (result.dryRun) lines.push('Dry run — nothing was written.', '')
+
+  const { created, updated, deleted } = result
+  for (const p of created.permissions) lines.push(`+ permission \`${p.name}\` (${scope(p)})`)
+  for (const r of created.roles) lines.push(`+ role \`${r.name}\` (${scope(r)}): ${list(r.permissions)}`)
+  for (const r of updated.roles) {
+    const diff = [...r.attached.map((p) => `+${p}`), ...r.detached.map((p) => `-${p}`)].join(', ')
+    lines.push(`~ role \`${r.name}\` (${scope(r)}): ${diff}`)
+  }
+  for (const r of deleted.roles) lines.push(`- role \`${r.name}\` (${scope(r)})`)
+  for (const p of deleted.permissions) lines.push(`- permission \`${p.name}\` (${scope(p)})`)
+
+  const total =
+    created.permissions.length + created.roles.length + updated.roles.length + deleted.roles.length + deleted.permissions.length
+  if (total === 0) {
+    lines.push('Already in sync — nothing to do.')
+    return lines
+  }
+  const count = (n: number, word: string): string => `${n} ${word}${n === 1 ? '' : 's'}`
+  const verb = result.dryRun ? 'Would have' : 'Done:'
+  lines.push(
+    '',
+    `${verb} created ${count(created.permissions.length, 'permission')} & ${count(created.roles.length, 'role')}, ` +
+      `updated ${count(updated.roles.length, 'role')}, ` +
+      `deleted ${count(deleted.roles.length, 'role')} & ${count(deleted.permissions.length, 'permission')}.`,
+  )
+  return lines
+}
+
 function requireArg(value: string | undefined, label: string): string {
   if (value === undefined || value.trim() === '') throw new UsageError(`Missing ${label}.`)
   return value
@@ -346,7 +438,10 @@ function helpText(command?: string): string {
     '  -g, --guard <name>    Guard name (default: the config\'s defaultGuard)',
     '  -t, --team <id>       Team id (when teams are enabled)',
     '      --type <type>     Subject type for assign-role / give-permission (default: user)',
-    '      --json            JSON output (show)',
+    '      --json            JSON output (show, sync)',
+    '  -f, --file <file>     Seed file for sync (.json, .ts, .js; default: `seed` in the config)',
+    '      --prune           sync: delete roles & permissions not in the seed',
+    '      --dry-run         sync: print the plan without writing anything',
     '  -h, --help            Show help',
     '  -v, --version         Show version',
     '',
@@ -367,6 +462,7 @@ import { defineConfig } from '@anievo-id/rbac-evolution-cli'
 export default defineConfig({
   rbac: () => createRbac({ adapter: new MemoryAdapter() }),
   // subjectType: 'user',
+  // seed: { permissions: ['edit articles'], roles: { admin: '*', writer: ['edit articles'] } }, // for \`rbac-evolution sync\`
   // teardown: () => prisma.$disconnect(),
 })
 `
