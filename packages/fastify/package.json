@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-fastify",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Fastify plugin and preHandler guards for rbac-evolution.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
