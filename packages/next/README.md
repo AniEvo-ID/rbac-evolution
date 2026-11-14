@@ -152,7 +152,9 @@ export const DELETE = withRbac(
 )
 ```
 
-Guests get `401 { "error": "Unauthenticated" }`, users without access get `403 { "error": "Forbidden" }`.
+Guests get `401 { "error": "UNAUTHENTICATED", "message": … }`, users without access get
+`403 { "error": "FORBIDDEN", "reason": "permission" | "role" | "role_or_permission", "message": … }` — the same
+bodies as `@anievo-id/rbac-evolution-express`.
 `withRbac` also accepts `guard` and `team`.
 
 ## Guards & teams

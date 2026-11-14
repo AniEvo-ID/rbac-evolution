@@ -92,8 +92,8 @@ A 403 response should tell the caller *that* access was denied, not *what* would
 - **Express:** the default 403 body contains `error`, `reason` (`permission`, `role` or `role_or_permission`) and a
   generic `message`. The required names are only added when you set `exposeRequirements: true` — leave it off in
   production.
-- **Next.js route handlers:** `withRbac` answers with `{ "error": "Forbidden", "message": … }`, naming only the kind
-  of requirement.
+- **Next.js route handlers and middleware:** answer with the same body as Express —
+  `{ "error": "FORBIDDEN", "reason": …, "message": … }` — naming only the kind of requirement.
 - **Next.js pages:** `require*()` calls `notFound()` by default, so a page the user cannot access looks like a page
   that does not exist.
 - **Server actions:** Next.js hides thrown error messages in production; return a value if the UI needs to react.

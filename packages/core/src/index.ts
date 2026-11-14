@@ -4,6 +4,8 @@
  * Framework-agnostic RBAC engine — roles, permissions, guards, wildcards and teams.
  */
 
+import { version } from '../package.json'
+
 export { createRbac, Rbac, RoleRbac, SubjectRbac } from './rbac'
 export type { BeforeContext, BeforeHook, GuardOptions, RbacOptions, ScopeOptions } from './rbac'
 
@@ -63,4 +65,5 @@ export type {
   TeamId,
 } from './types'
 
-export const VERSION = '0.1.0'
+/** Version of this package (read from package.json at build time). */
+export const VERSION: string = version

@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import type { Many, Rbac, RbacSnapshot, ScopeOptions, Subject, TeamId } from '@anievo-id/rbac-evolution'
 import { RbacUnauthorizedError } from './errors'
+import { forbiddenResponse, unauthenticatedResponse } from './responses'
 import type { FailureReason, MaybePromise, Requirement } from './types'
 
 export interface NextRbacOptions {
@@ -34,12 +35,7 @@ export type AuthorizeResult =
 
 export type WithRbacOptions = Requirement & ScopeOptions
 
-/** Like spatie, the message names the kind of requirement but not the role/permission names. */
-export function forbiddenMessage(requirement: Requirement): string {
-  if (requirement.permission !== undefined) return 'User does not have the right permissions.'
-  if (requirement.role !== undefined) return 'User does not have the right roles.'
-  return 'User does not have any of the necessary access rights.'
-}
+export { forbiddenMessage } from './responses'
 
 const EMPTY_SNAPSHOT: RbacSnapshot = { roles: [], permissions: [] }
 
@@ -224,8 +220,8 @@ export function createNextRbac(options: NextRbacOptions) {
         const result = await authorize(requirement as Requirement, scope)
         if (result.ok) return handler(...args)
         return result.reason === 'unauthenticated'
-          ? Response.json({ error: 'Unauthenticated', message: 'Unauthenticated.' }, { status: 401 })
-          : Response.json({ error: 'Forbidden', message: forbiddenMessage(requirement as Requirement) }, { status: 403 })
+          ? unauthenticatedResponse()
+          : forbiddenResponse(requirement as Requirement)
       }
     },
   }

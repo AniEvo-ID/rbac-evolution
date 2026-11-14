@@ -21,12 +21,13 @@ const rbac = createRbac({ adapter }) // cache: new MemoryCache(), cacheTtl: 24h
 
 There is one entry per **subject + guard + team**. It holds that subject's roles, direct permissions, and permissions inherited from its roles. Every read on `rbac.for(subject)` goes through it: `hasRole`, `can`, `hasPermissionTo`, `getRoleNames`, `getAllPermissions`, `snapshot()`, and the rest.
 
+There is also one entry per **guard** with the names of all its permissions. `can()` and `hasPermissionTo()` use it to check that a permission exists (when `wildcard` is off), so repeated checks don't query the database.
+
 Other calls are **not** cached and always reach the adapter:
 
 - `findPermission`, `findRole`, `getRoles`, `getPermissions`, `rbac.role(...).getPermissions()`.
 - Resolving names to rows when you assign or revoke.
 - [`subjectsWithRole` / `subjectsWithPermission`](/advanced/querying-subjects).
-- The existence check in `hasPermissionTo()` and `can()`. With `wildcard` off, the engine looks up the permission name once per check to confirm it exists.
 
 ### When the cache is cleared
 

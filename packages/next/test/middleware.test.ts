@@ -66,7 +66,7 @@ describe('createRbacMiddleware (snapshot loader)', () => {
   it('401 for guests on protected paths', async () => {
     const res = await middleware(req('/dashboard'))
     expect(res?.status).toBe(401)
-    expect(await res?.json()).toEqual({ error: 'Unauthenticated', message: 'Unauthenticated.' })
+    expect(await res?.json()).toEqual({ error: 'UNAUTHENTICATED', message: 'User is not logged in.' })
   })
 
   it('403 when missing role/permission, through when allowed', async () => {
@@ -149,6 +149,37 @@ describe('createRbacMiddleware (rbac instance)', () => {
     expect((await mw(withUser('/reports', '2')))?.status).toBe(403)
     expect(await mw(withUser('/reports/q1', '1'))).toBeUndefined()
     expect(await mw(withUser('/team', '1'))).toBeUndefined()
+  })
+
+  it('applies superAdminRoles and the before hook like the server helpers', async () => {
+    const rbac = createRbac({
+      adapter: new MemoryAdapter(),
+      superAdminRoles: ['super-admin'],
+      before: ({ permission }) => (permission === 'danger.zone' ? false : undefined),
+    })
+    await rbac.createPermission('reports.view')
+    await rbac.createPermission('danger.zone')
+    await rbac.createRole('super-admin')
+    const root: Subject = { type: 'user', id: 1 }
+    await rbac.for(root).assignRole('super-admin')
+
+    const mw = createRbacMiddleware({
+      rbac,
+      getSubject: () => root,
+      rules: [
+        { matcher: '/reports/:path*', permission: 'reports.view' },
+        { matcher: '/danger', permission: 'danger.zone' },
+      ],
+    })
+
+    expect(await mw(new Request('http://localhost/reports/q1'))).toBeUndefined()
+    const denied = await mw(new Request('http://localhost/danger'))
+    expect(denied?.status).toBe(403)
+    expect(await denied?.json()).toEqual({
+      error: 'FORBIDDEN',
+      reason: 'permission',
+      message: 'User does not have the right permissions.',
+    })
   })
 })
 

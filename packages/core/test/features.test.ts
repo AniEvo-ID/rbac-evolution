@@ -311,3 +311,28 @@ describe('queries', () => {
     expect(await teams.subjectsWithPermission('user', 'manage billing', { team: 2 })).toEqual([2])
   })
 })
+
+describe('permission existence check', () => {
+  it('is cached between can() calls and refreshed after changes', async () => {
+    const adapter = new MemoryAdapter()
+    let lookups = 0
+    const original = adapter.findPermissions.bind(adapter)
+    adapter.findPermissions = async (query) => {
+      if (query?.ids === undefined) lookups++
+      return original(query)
+    }
+    const rbac = createRbac({ adapter })
+    await rbac.createPermission('edit articles')
+    const user = rbac.for({ type: 'user', id: 1 })
+    await user.givePermissionTo('edit articles')
+
+    lookups = 0
+    for (let i = 0; i < 5; i++) expect(await user.can('edit articles')).toBe(true)
+    expect(lookups).toBe(1)
+
+    await rbac.createPermission('publish articles')
+    expect(await user.can('publish articles')).toBe(false)
+    expect(await user.hasPermissionTo('edit articles')).toBe(true)
+    await expect(user.hasPermissionTo('nope')).rejects.toThrow('There is no permission named `nope`')
+  })
+})

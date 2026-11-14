@@ -190,12 +190,16 @@ describe('createNextRbac', () => {
 
       let res = await DELETE(req(), ctx)
       expect(res.status).toBe(401)
-      expect(await res.json()).toEqual({ error: 'Unauthenticated', message: 'Unauthenticated.' })
+      expect(await res.json()).toEqual({ error: 'UNAUTHENTICATED', message: 'User is not logged in.' })
 
       current = alice
       res = await DELETE(req(), ctx)
       expect(res.status).toBe(403)
-      expect(await res.json()).toMatchObject({ error: 'Forbidden' })
+      expect(await res.json()).toEqual({
+        error: 'FORBIDDEN',
+        reason: 'permission',
+        message: 'User does not have the right permissions.',
+      })
 
       current = bob
       res = await DELETE(req(), ctx)

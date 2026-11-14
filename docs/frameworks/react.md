@@ -305,5 +305,5 @@ checker.hasRole('admin') // false
   use for server-side checks: `rbac.for(user, { guard: 'web', team: teamId }).snapshot()`.
 - **Freshness.** A snapshot is a copy taken at one moment. After changing a user's roles, give the provider a new
   snapshot (refetch, or `router.refresh()` in Next.js).
-- **Empty lists.** `useCanAny()` with no permissions returns `false`; `useCanAll()` with no permissions returns
-  `true`. Avoid building lists that might be empty.
+- **Empty lists never pass.** `useCanAny()`, `useCanAll()` and `useHasAllRoles()` return `false` for an empty list,
+  and `<Can allOf={[]}>` renders its fallback — the same deny-by-default rule as the Vue package.
