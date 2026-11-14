@@ -568,14 +568,16 @@ export class RoleRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   async syncSubjects(subjectType: string, ids: readonly Id[]): Promise<this> {
     const role = await this.get()
     const scope = { guard: role.guardName, team: this.teamId }
-    const current = new Set((await this.rbac.adapter.getSubjectIdsWithRoles(subjectType, [role.id], this.teamId)).map(String))
+    const before = await this.rbac.adapter.getSubjectIdsWithRoles(subjectType, [role.id], this.teamId)
+    const current = new Set(before.map(String))
     const wanted = new Set(ids.map(String))
     // shortcut: one assign/remove per changed subject; batch in the adapter if roles go to thousands of subjects at once
     // Attach first, then detach the rest: a failure midway leaves extra holders, never none.
     for (const id of ids) {
       if (!current.has(String(id))) await this.rbac.for({ type: subjectType, id }, scope).assignRole(role)
     }
-    for (const id of await this.rbac.adapter.getSubjectIdsWithRoles(subjectType, [role.id], this.teamId)) {
+    // Only detach holders seen before attaching, so a concurrent sync's new holders are never removed.
+    for (const id of before) {
       if (!wanted.has(String(id))) await this.rbac.for({ type: subjectType, id }, scope).removeRole(role)
     }
     return this

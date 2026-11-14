@@ -45,6 +45,7 @@ export default defineConfig({
       {
         text: `v${version}`,
         items: [
+          { text: "What's new", link: '/guide/whats-new' },
           { text: `Release notes v${version}`, link: `${repo}/releases/tag/%40anievo-id%2Frbac-evolution%40${version}` },
           { text: 'Changelog', link: `${repo}/blob/main/packages/core/CHANGELOG.md` },
           { text: 'Releases', link: `${repo}/releases` },
@@ -64,6 +65,7 @@ export default defineConfig({
           { text: 'Quick start', link: '/guide/quick-start' },
           { text: 'Coming from Laravel', link: '/guide/coming-from-laravel' },
           { text: 'Example apps', link: '/guide/examples' },
+          { text: "What's new", link: '/guide/whats-new' },
         ],
       },
       {

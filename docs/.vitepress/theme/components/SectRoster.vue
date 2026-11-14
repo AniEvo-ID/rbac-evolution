@@ -1,13 +1,24 @@
 <script setup lang="ts">
-/** "Meet the Sect": a character select. One guardian at a time, an avatar rail to switch, a 2D/3D toggle. */
+/**
+ * "Meet the Sect": a character select. One guardian at a time, an avatar rail to switch, and a mode switch:
+ * still 2D art, an animated chibi clip or an animated full-size anime clip.
+ */
 import { withBase } from 'vitepress'
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { mascots } from '../mascots'
 
 const index = ref(0)
-const view = ref<'2d' | '3d'>('2d')
+type Mode = 'still' | 'chibi' | 'anime'
+const modes: { id: Mode; label: string }[] = [
+  { id: 'still', label: '2D' },
+  { id: 'chibi', label: 'Chibi' },
+  { id: 'anime', label: 'Anime' },
+]
+const mode = ref<Mode>('still')
 const rail = ref<HTMLElement>()
 const current = computed(() => mascots[index.value]!)
+const reducedMotion = ref(false)
+onMounted(() => (reducedMotion.value = window.matchMedia('(prefers-reduced-motion: reduce)').matches))
 
 function select(i: number) {
   index.value = (i + mascots.length) % mascots.length
@@ -44,10 +55,29 @@ function onKey(e: KeyboardEvent) {
         </Transition>
 
         <Transition name="figure" mode="out-in">
+          <!-- Animated modes play the action once, then rest on the last frame (the starting pose). -->
+          <video
+            v-if="mode !== 'still' && !reducedMotion"
+            :key="`${current.id}-${mode}`"
+            class="figure clip"
+            :class="mode"
+            :poster="withBase(`/mascots/${current.id}-${mode}.webp`)"
+            :aria-label="`${current.name}, the ${current.title}, in action`"
+            autoplay
+            muted
+            playsinline
+            preload="auto"
+          >
+            <!-- Safari: HEVC with alpha; other browsers skip this type and use VP9 with alpha. -->
+            <source :src="withBase(`/mascots/${current.id}-${mode}.mov`)" type='video/quicktime; codecs="hvc1"' />
+            <source :src="withBase(`/mascots/${current.id}-${mode}.webm`)" type="video/webm" />
+          </video>
           <img
-            :key="`${current.id}-${view}`"
+            v-else
+            :key="`${current.id}-${mode}`"
             class="figure"
-            :src="withBase(`/mascots/${current.id}${view === '3d' ? '-3d' : ''}.webp`)"
+            :class="{ clip: mode !== 'still', [mode]: true }"
+            :src="withBase(`/mascots/${current.id}${mode === 'still' ? '' : `-${mode}`}.webp`)"
             :alt="`${current.name}, the ${current.title}`"
             width="480"
             height="560"
@@ -74,18 +104,17 @@ function onKey(e: KeyboardEvent) {
           <button type="button" class="arrow" aria-label="Next guardian" @click="select(index + 1)">›</button>
         </div>
 
-        <button
-          type="button"
-          class="toggle"
-          :class="{ is3d: view === '3d' }"
-          :aria-pressed="view === '3d'"
-          :aria-label="`Show ${view === '3d' ? '2D' : '3D'} art`"
-          @click="view = view === '3d' ? '2d' : '3d'"
-        >
-          <span class="lbl top" aria-hidden="true">3D</span>
-          <span class="lbl bottom" aria-hidden="true">2D</span>
-          <span class="knob" aria-hidden="true">{{ view.toUpperCase() }}</span>
-        </button>
+        <div class="modes" role="group" aria-label="Art style">
+          <button
+            v-for="m in modes"
+            :key="m.id"
+            type="button"
+            :aria-pressed="mode === m.id"
+            @click="mode = m.id"
+          >
+            {{ m.label }}
+          </button>
+        </div>
       </div>
     </div>
   </section>
@@ -93,7 +122,11 @@ function onKey(e: KeyboardEvent) {
 
 <style scoped>
 .roster {
+  /* --gutter: where the 1152px content column starts, so the text lines up with the heading above */
+  --gutter: max(24px, calc((100vw - 1152px) / 2));
   padding: 72px 24px 48px;
+  /* the stage is wider than the page (100vw incl. scrollbar); clip that sliver instead of scrolling */
+  overflow-x: clip;
 }
 .roster-inner {
   max-width: 1152px;
@@ -117,20 +150,17 @@ h2 {
 }
 .stage {
   position: relative;
-  min-height: 600px;
+  min-height: 640px;
+  /* full bleed: no box, the art and its glow run to the right edge of the screen */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
   overflow: hidden;
-  border-radius: 16px;
-  border: 1px solid var(--vp-c-divider);
-  background:
-    radial-gradient(50% 65% at 72% 55%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%),
-    linear-gradient(rgba(148, 163, 184, 0.06) 1px, transparent 1px) 0 0 / 56px 56px,
-    linear-gradient(90deg, rgba(148, 163, 184, 0.06) 1px, transparent 1px) 0 0 / 56px 56px,
-    #0b0e12;
+  background: radial-gradient(45% 75% at 74% 55%, color-mix(in srgb, var(--accent) 32%, transparent), transparent 72%);
   transition: background 0.5s;
 }
 .ghost {
   position: absolute;
-  left: 40px;
+  left: calc(var(--gutter) - 16px);
   top: 40px;
   margin: 0;
   font-family: var(--sect-font-label);
@@ -145,8 +175,8 @@ h2 {
 .info {
   position: relative;
   z-index: 2;
-  width: min(470px, 46%);
-  padding: 96px 0 150px 56px;
+  width: calc(var(--gutter) + min(470px, 40vw));
+  padding: 96px 0 160px var(--gutter);
 }
 .name {
   margin: 0;
@@ -207,9 +237,9 @@ h2 {
 }
 .figure {
   position: absolute;
-  right: 110px;
+  right: max(110px, calc(var(--gutter) - 60px));
   bottom: 36px;
-  height: min(520px, 86%);
+  height: min(580px, 88%);
   width: auto;
   max-width: 48%;
   object-fit: contain;
@@ -219,7 +249,7 @@ h2 {
 .picker {
   position: absolute;
   z-index: 3;
-  left: 40px;
+  left: var(--gutter);
   bottom: 32px;
   display: flex;
   align-items: center;
@@ -280,50 +310,45 @@ h2 {
   transform: scale(1.06);
   box-shadow: 0 0 16px rgba(59, 130, 246, 0.6);
 }
-.toggle {
+.modes {
   position: absolute;
   z-index: 3;
-  right: 36px;
+  right: 40px;
   bottom: 48px;
-  width: 56px;
-  height: 104px;
-  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 5px;
   border-radius: 999px;
   background: rgba(17, 20, 24, 0.88);
   border: 1px solid var(--vp-c-border);
 }
-.lbl {
-  position: absolute;
-  left: 0;
-  right: 0;
+.modes button {
+  min-width: 64px;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
   font-family: var(--sect-font-label);
-  font-size: 12px;
-  color: var(--vp-c-text-3);
+  font-size: 13px;
+  color: var(--vp-c-text-2);
+  transition: background 0.2s, color 0.2s;
 }
-.lbl.top {
-  top: 10px;
+.modes button:hover {
+  color: var(--vp-c-text-1);
 }
-.lbl.bottom {
-  bottom: 10px;
-}
-.knob {
-  position: absolute;
-  left: 5px;
-  top: 53px;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
+.modes button[aria-pressed='true'] {
   background: var(--vp-c-text-1);
   color: #0a0c0e;
-  font-family: var(--sect-font-label);
-  font-size: 15px;
-  transition: top 0.25s;
 }
-.toggle.is3d .knob {
-  top: 5px;
-  background: var(--sect-accent-text);
+/* Animated clips carry empty space for the action; give them more room so nothing gets cut. */
+.figure.clip {
+  /* wide clips (fire, wind, cranes) stop at the text column: viewport minus .info width, right offset and a gap */
+  max-width: min(980px, calc(100vw - var(--gutter) - min(470px, 40vw) - max(40px, calc(var(--gutter) - 140px)) - 16px));
+  right: max(40px, calc(var(--gutter) - 140px));
+  bottom: 20px;
+}
+.figure.anime {
+  height: min(640px, 96%);
 }
 
 /* transitions */
@@ -374,13 +399,13 @@ h2 {
     margin-top: 24px;
   }
   .info {
-    order: 2;
+    order: 3;
     width: auto;
-    padding: 12px 20px 16px;
+    padding: 12px var(--gutter) 16px;
   }
   .picker {
     position: relative;
-    order: 3;
+    order: 4;
     left: auto;
     bottom: auto;
     margin: 0 12px 16px;
@@ -389,16 +414,27 @@ h2 {
     width: auto;
     flex: 1;
   }
-  .toggle {
-    top: 24px;
-    right: 16px;
+  /* phones: the style switch sits under the art instead of on top of it */
+  .modes {
+    position: relative;
+    order: 2;
+    right: auto;
+    bottom: auto;
+    align-self: center;
+    flex-direction: row;
+    margin-top: 8px;
+  }
+  .figure.clip {
+    max-width: 100%;
+    height: 320px;
+    right: auto;
     bottom: auto;
   }
 }
 @media (prefers-reduced-motion: reduce) {
   .stage,
   .avatar,
-  .knob {
+  .modes button {
     transition: none;
   }
   .swap-enter-active,

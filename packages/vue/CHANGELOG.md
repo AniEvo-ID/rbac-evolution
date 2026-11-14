@@ -1,5 +1,19 @@
 # @anievo-id/rbac-evolution-vue
 
+## 0.6.3
+
+### Patch Changes
+
+- ef494f0: While `loading`, every check returns `false`, `cannot()` included (it returned `true`), and a snapshot passed together with `loading: true` grants nothing until `setSnapshot()` is called. Same behaviour as the React package since 0.6.2.
+  - @anievo-id/rbac-evolution@0.6.3
+
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [70a7cf2]
+  - @anievo-id/rbac-evolution@0.6.2
+
 ## 0.6.1
 
 ### Patch Changes

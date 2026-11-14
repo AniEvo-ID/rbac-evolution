@@ -1,5 +1,18 @@
 # @anievo-id/rbac-evolution-prisma
 
+## 0.6.3
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@0.6.3
+
+## 0.6.2
+
+### Patch Changes
+
+- Updated dependencies [70a7cf2]
+  - @anievo-id/rbac-evolution@0.6.2
+
 ## 0.6.1
 
 ### Patch Changes

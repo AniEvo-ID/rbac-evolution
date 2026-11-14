@@ -10,7 +10,7 @@ export interface RbacStateOptions {
   /**
    * Start in the loading state (snapshot still being fetched): `<Can>`, `<HasRole>`, `v-can` and
    * `v-role` render nothing, not even the fallback or a `not` branch, until `setSnapshot()` is called.
-   * Default: `false`.
+   * Every check (`can`, `cannot`, `hasRole`, ...) returns `false` meanwhile. Default: `false`.
    */
   loading?: boolean
   /** Match permissions with wildcard semantics (`articles.*` covers `articles.edit`). Default: `false`. */
@@ -84,15 +84,18 @@ export function createRbacState(options: RbacStateOptions = {}): VueRbac {
     })
   }
 
-  const isSuperAdmin = (): boolean => superAdminRoles.some((r) => state.value.roles.includes(r))
+  // While loading, every check (`cannot` too) is false: neither a stale grant nor "no access" UI shows.
+  const isSuperAdmin = (): boolean => !loading.value && superAdminRoles.some((r) => state.value.roles.includes(r))
 
   const canAny = (permissions: NameList): boolean => {
+    if (loading.value) return false
     const { permissions: granted } = state.value
     if (isSuperAdmin()) return toList(permissions).length > 0
     return toList(permissions).some((p) => matches(granted, p))
   }
 
   const canAll = (permissions: NameList): boolean => {
+    if (loading.value) return false
     const { permissions: granted } = state.value
     const wanted = toList(permissions)
     if (wanted.length === 0) return false
@@ -101,11 +104,13 @@ export function createRbacState(options: RbacStateOptions = {}): VueRbac {
   }
 
   const hasAnyRole = (roles: NameList): boolean => {
+    if (loading.value) return false
     const mine = state.value.roles
     return toRoleList(roles).some((r) => mine.includes(r))
   }
 
   const hasAllRoles = (roles: NameList): boolean => {
+    if (loading.value) return false
     const mine = state.value.roles
     const wanted = toRoleList(roles)
     return wanted.length > 0 && wanted.every((r) => mine.includes(r))
@@ -119,7 +124,7 @@ export function createRbacState(options: RbacStateOptions = {}): VueRbac {
       loading.value = false
     },
     can: canAll,
-    cannot: (permission) => !canAll(permission),
+    cannot: (permission) => !loading.value && !canAll(permission),
     canAny,
     canAll,
     hasRole: hasAnyRole,
