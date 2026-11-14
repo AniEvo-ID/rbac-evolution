@@ -1,0 +1,61 @@
+{
+  "name": "@anievo-id/rbac-evolution-cli",
+  "version": "0.1.1",
+  "description": "Command-line tool for rbac-evolution — create roles & permissions, assign roles, show the permission matrix (like `php artisan permission:*`).",
+  "license": "MIT",
+  "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
+  "homepage": "https://github.com/AniEvo-ID/rbac-evolution/tree/main/packages/cli#readme",
+  "bugs": {
+    "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AniEvo-ID/rbac-evolution.git",
+    "directory": "packages/cli"
+  },
+  "keywords": ["rbac", "permissions", "roles", "authorization", "cli", "artisan"],
+  "sideEffects": false,
+  "bin": {
+    "rbac-evolution": "./dist/cli.js"
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@anievo-id/rbac-evolution": "workspace:^",
+    "jiti": "^2.4.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
