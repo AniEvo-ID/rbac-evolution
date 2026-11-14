@@ -100,7 +100,9 @@ onBeforeUnmount(() => {
   left: 2%;
   bottom: 70px;
   margin: 0;
+  /* Anton is only used for all-caps display text. */
   font-family: var(--sect-font-display);
+  text-transform: uppercase;
   font-size: clamp(120px, 22vw, 340px);
   line-height: 0.8;
   white-space: nowrap;

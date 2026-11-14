@@ -2,8 +2,8 @@
    RBAC Evolution docs — "Sect of Evolution", industrial edition
    Acid yellow on ink, jade as the sect's second color. Solid colors only:
    no glows, no translucent washes.
-   Fonts: Anton (display), Changa One (labels), Plus Jakarta Sans (text),
-   Yellowtail (handwritten accents). Code uses the system monospace.
+   Fonts: Changa One (headings, labels), Plus Jakarta Sans (text), Yellowtail
+   (handwritten accents), Anton only for ALL-CAPS display text. Code uses the system monospace.
    ========================================================================== */
 
 /* ---------- tokens ---------- */
@@ -136,10 +136,10 @@
   background: transparent !important;
 }
 .VPNavBarTitle .title {
-  font-family: var(--sect-font-display);
-  font-size: 20px;
+  font-family: var(--sect-font-label);
+  font-size: 19px;
   font-weight: 400;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
 }
 .VPNavBarTitle .logo {
   height: 30px;
@@ -158,13 +158,13 @@
 /* ---------- typography ---------- */
 .VPHero .name,
 .vp-doc h1 {
-  font-family: var(--sect-font-display);
+  font-family: var(--sect-font-label);
   font-weight: 400;
   letter-spacing: 0.01em;
 }
 .VPHero .name {
-  font-size: clamp(52px, 8vw, 92px) !important;
-  line-height: 0.95 !important;
+  font-size: clamp(44px, 6.4vw, 76px) !important;
+  line-height: 1 !important;
 }
 .VPHero .text {
   font-family: var(--sect-font-label);
@@ -192,8 +192,8 @@
   border-width: 2px !important;
 }
 .vp-doc h1 {
-  font-size: 44px;
-  line-height: 1.05;
+  font-size: 40px;
+  line-height: 1.1;
 }
 .vp-doc h2,
 .vp-doc h3,

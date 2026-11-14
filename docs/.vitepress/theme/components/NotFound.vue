@@ -39,9 +39,9 @@ img {
   background: var(--sect-yellow);
 }
 h1 {
-  font-family: var(--sect-font-display);
+  font-family: var(--sect-font-label);
   font-weight: 400;
-  font-size: clamp(32px, 5vw, 52px);
+  font-size: clamp(28px, 4vw, 42px);
   line-height: 1.05;
   max-width: 640px;
   margin: 0;

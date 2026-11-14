@@ -175,10 +175,10 @@ onBeforeUnmount(() => {
   margin: 0 0 6px;
 }
 h2 {
-  font-family: var(--sect-font-display);
+  font-family: var(--sect-font-label);
   font-weight: 400;
-  font-size: clamp(40px, 6vw, 72px);
-  line-height: 1;
+  font-size: clamp(34px, 4.8vw, 56px);
+  line-height: 1.05;
   margin: 0 0 12px;
 }
 .lede {
