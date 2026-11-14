@@ -35,8 +35,9 @@ img {
   font-family: var(--sect-font-label);
   font-size: 15px;
   letter-spacing: 0.06em;
-  color: var(--sect-ink);
-  background: var(--sect-yellow);
+  color: #fff;
+  background: var(--sect-accent-strong);
+  border-radius: 6px;
 }
 h1 {
   font-family: var(--sect-font-label);
@@ -62,7 +63,7 @@ h1 {
   align-items: center;
   min-height: 44px;
   padding: 0 20px;
-  border-radius: 2px;
+  border-radius: 8px;
   border: 2px solid var(--vp-c-text-1);
   font-family: var(--sect-font-label);
   font-weight: 400;

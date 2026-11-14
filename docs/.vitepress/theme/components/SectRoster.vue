@@ -86,8 +86,8 @@ h2 {
   color: var(--vp-c-bg);
 }
 :global(.dark .roster .switch button[aria-pressed='true']) {
-  background: var(--sect-yellow);
-  color: var(--sect-ink);
+  background: var(--sect-accent-strong);
+  color: #fff;
 }
 .cards {
   list-style: none;
@@ -101,12 +101,11 @@ h2 {
   display: flex;
   flex-direction: column;
   height: 100%;
-  border-radius: 2px;
-  border: 2px solid var(--vp-c-divider);
+  border-radius: 12px;
+  border: 1px solid var(--vp-c-divider);
   background:
     linear-gradient(var(--accent), var(--accent)) top left / 100% 6px no-repeat,
     var(--vp-c-bg-soft);
-  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%);
   color: inherit;
   text-decoration: none;
   overflow: hidden;
@@ -115,7 +114,7 @@ h2 {
 .card-link:hover,
 .card-link:focus-visible {
   transform: translateY(-4px);
-  border-color: var(--vp-c-text-1);
+  border-color: var(--accent);
 }
 .card-link:focus-visible {
   outline: 2px solid var(--vp-c-brand-1);

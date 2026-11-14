@@ -34,25 +34,25 @@ async function copy() {
   gap: 8px;
   margin: 0 0 18px;
   padding: 5px 12px;
-  border-radius: 2px;
-  border-left: 4px solid var(--sect-line);
-  background: var(--sect-ink);
+  border-radius: 999px;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  background: rgba(37, 99, 235, 0.1);
   font-family: var(--sect-font-label);
   font-size: 11px;
   letter-spacing: 0.12em;
   white-space: nowrap;
-  color: #ededed;
+  color: var(--vp-c-text-2);
 }
 .dot {
   width: 7px;
   height: 7px;
-  border-radius: 0;
-  rotate: 45deg;
+  border-radius: 50%;
   background: var(--sect-jade);
+  box-shadow: 0 0 8px var(--sect-jade);
   animation: blink 2.4s ease-in-out infinite;
 }
 .sep {
-  color: var(--sect-yellow);
+  color: var(--sect-accent-text);
 }
 .opt {
   display: contents;
@@ -63,9 +63,9 @@ async function copy() {
   gap: 10px;
   margin-top: 20px;
   padding: 6px 6px 6px 14px;
-  border-radius: 2px;
-  border: 2px solid var(--vp-c-text-1);
-  background: var(--vp-c-bg);
+  border-radius: 10px;
+  border: 1px solid var(--vp-c-border);
+  background: rgba(17, 20, 24, 0.9);
   max-width: 100%;
 }
 .sect-install code {
@@ -84,17 +84,17 @@ async function copy() {
   flex: none;
   min-height: 32px;
   padding: 0 10px;
-  border-radius: 2px;
+  border-radius: 6px;
   font-family: var(--sect-font-label);
   font-size: 11px;
   letter-spacing: 0.1em;
-  color: var(--sect-ink);
-  background: var(--sect-yellow);
+  color: #fff;
+  background: var(--sect-accent-strong);
   border: 0;
   cursor: var(--cursor-copy);
 }
 .copy:hover {
-  background: var(--sect-jade);
+  background: var(--sect-accent);
 }
 .sr-only {
   position: absolute;
