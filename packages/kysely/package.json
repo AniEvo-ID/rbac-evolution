@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-kysely",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Kysely storage adapter (PostgreSQL, MySQL, SQLite & SQL Server) for rbac-evolution.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",

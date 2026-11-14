@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-express",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Express / Node HTTP middleware for rbac-evolution.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
