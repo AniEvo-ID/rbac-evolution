@@ -121,24 +121,23 @@ onBeforeUnmount(() => {
   width: 100%;
   height: 100%;
   fill: none;
-  stroke: var(--sect-jade);
-  filter: drop-shadow(0 0 10px var(--sect-jade-glow));
+  stroke: var(--sect-line);
 }
 .ring-outer { animation: spin 90s linear infinite; }
 .ring-mid { inset: 6%; width: 88%; height: 88%; animation: spin 60s linear infinite reverse; }
 .ring-inner { inset: 18%; width: 64%; height: 64%; animation: spin 40s linear infinite; }
 .thin { stroke-width: 1; opacity: 0.45; }
-.dashed { stroke: var(--sect-gold); stroke-width: 1.4; stroke-dasharray: 3 9; opacity: 0.7; }
+.dashed { stroke: var(--sect-jade); stroke-width: 3; stroke-dasharray: 2 10; }
 .runes {
-  fill: var(--sect-jade);
+  fill: var(--vp-c-text-1);
   stroke: none;
-  font-family: var(--vp-font-family-mono);
+  font-family: var(--sect-font-label);
   font-size: 11px;
   letter-spacing: 3px;
   opacity: 0.55;
 }
 .trigram {
-  fill: var(--sect-gold);
+  fill: var(--sect-jade);
   stroke: none;
   font-size: 20px;
   text-anchor: middle;
@@ -146,13 +145,12 @@ onBeforeUnmount(() => {
 }
 .spoke { stroke-width: 1; opacity: 0.4; }
 .ring-inner polygon { stroke-width: 1.2; opacity: 0.5; }
-.ring-inner .gold { stroke: var(--sect-gold); opacity: 0.35; }
-.core { fill: color-mix(in srgb, var(--sect-jade) 14%, transparent); stroke-width: 1.4; opacity: 0.8; }
+.ring-inner .gold { stroke: var(--sect-jade); opacity: 0.6; }
+.core { fill: var(--sect-yellow); stroke: var(--sect-ink); stroke-width: 3; }
 
 .cast {
   position: absolute;
   height: auto;
-  filter: drop-shadow(0 18px 24px rgba(5, 10, 25, 0.35));
   transition: scale 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
   pointer-events: auto;
   cursor: var(--cursor-grab);
@@ -171,18 +169,17 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   padding: 5px 8px 5px 10px;
-  border-radius: 8px;
-  border: 1px solid color-mix(in srgb, var(--sect-jade) 45%, transparent);
-  background: color-mix(in srgb, var(--vp-c-bg) 72%, transparent);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 8px 24px -12px var(--sect-jade-glow);
+  border-radius: 2px;
+  border: 2px solid var(--sect-ink);
+  border-left: 4px solid var(--sect-line);
+  background: var(--sect-ink);
   font-family: var(--vp-font-family-mono);
   font-size: 11px;
   white-space: nowrap;
   animation: hover-tag 5s ease-in-out infinite;
 }
 .tag code {
-  color: var(--vp-c-text-1);
+  color: #ededed;
   background: none;
   padding: 0;
   font-size: inherit;
@@ -191,14 +188,17 @@ onBeforeUnmount(() => {
   font-weight: 600;
   font-size: 10px;
   padding: 1px 6px;
-  border-radius: 4px;
-  color: var(--vp-c-bg);
-  background: var(--sect-jade);
+  border-radius: 2px;
+  font-family: var(--sect-font-label);
+  font-weight: 400;
+  color: var(--sect-ink);
+  background: var(--sect-yellow);
 }
 .t1 { top: 6%; left: -6%; }
 .t2 { top: 24%; right: -10%; animation-delay: -1.5s; }
 .t3 { bottom: 30%; left: -12%; animation-delay: -3s; }
-.t3 b { background: var(--sect-gold); }
+.t3 b { background: var(--sect-signal); color: #fff; }
+.t1 b { background: var(--sect-jade); }
 .t4 { bottom: 3%; left: 4%; animation-delay: -2.2s; }
 
 @media (max-width: 959px) {

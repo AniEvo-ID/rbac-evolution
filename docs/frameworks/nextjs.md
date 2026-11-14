@@ -1,6 +1,6 @@
 # Next.js
 
-`@anievo-id/rbac-evolution-next` brings rbac-evolution to the Next.js App Router. It gives you:
+`@anievo-id/rbac-evolution-next` brings RBAC Evolution to the Next.js App Router. It gives you:
 
 - **Guards** for server components, server actions and route handlers (`requirePermission`, `withPermission`,
   `withRbac`, …).
@@ -37,7 +37,7 @@ React bindings — install `@anievo-id/rbac-evolution-react` separately if you n
 
 ## Setup
 
-rbac-evolution does not handle authentication. You tell it who the current user is with `getSubject`, using
+RBAC Evolution does not handle authentication. You tell it who the current user is with `getSubject`, using
 whatever session library you already have (Auth.js, Clerk, Lucia, iron-session, …). Create one module that builds
 the engine and the Next.js helpers:
 

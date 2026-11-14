@@ -1,6 +1,6 @@
 # Express
 
-`@anievo-id/rbac-evolution-express` adds rbac-evolution to Express apps: one middleware that resolves the current
+`@anievo-id/rbac-evolution-express` adds RBAC Evolution to Express apps: one middleware that resolves the current
 user's access, and route guards — `requirePermission`, `requireRole` and `requireRoleOrPermission` — that mirror
 spatie/laravel-permission's `permission`, `role` and `role_or_permission` middleware.
 
@@ -222,7 +222,7 @@ app.use(
 
 ::: warning
 The team id usually comes from user input (a header, a URL segment, the session). Make sure the user actually
-belongs to that team — rbac-evolution only checks roles and permissions **within** the team you give it. See
+belongs to that team — RBAC Evolution only checks roles and permissions **within** the team you give it. See
 [Teams](/basic-usage/teams).
 :::
 

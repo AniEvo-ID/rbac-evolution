@@ -1,6 +1,6 @@
 # Runtimes
 
-rbac-evolution ships plain JavaScript (ESM and CommonJS) with no runtime-specific code outside the CLI, so it runs anywhere modern JavaScript does.
+RBAC Evolution ships plain JavaScript (ESM and CommonJS) with no runtime-specific code outside the CLI, so it runs anywhere modern JavaScript does.
 
 | Runtime | Status | Tested in CI |
 | --- | --- | --- |

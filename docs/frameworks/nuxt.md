@@ -1,6 +1,6 @@
 # Nuxt
 
-`@anievo-id/rbac-evolution-nuxt` is a Nuxt 3 / 4 module that wires rbac-evolution into the whole stack:
+`@anievo-id/rbac-evolution-nuxt` is a Nuxt 3 / 4 module that wires RBAC Evolution into the whole stack:
 
 - installs the [Vue](/frameworks/vue) integration — `v-can`, `v-role`, `<Can>`, `<HasRole>`, `$can()` — as a plugin;
 - **hydrates the snapshot from SSR**: the server resolves the user once, the client reuses it through `useState`;

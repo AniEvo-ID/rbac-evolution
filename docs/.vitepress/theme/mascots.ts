@@ -1,4 +1,4 @@
-/** The "Sect of Evolution" cast — original characters for the rbac-evolution docs. */
+/** The "Sect of Evolution" cast — original characters for the RBAC Evolution docs. */
 export interface Mascot {
   id: string
   name: string
@@ -21,7 +21,7 @@ export const mascots: Mascot[] = [
     role: 'Super-admin',
     link: '/basic-usage/super-admin',
     line: 'The seal of the Sect Master opens every gate — use it sparingly.',
-    accent: '#2dd4a7',
+    accent: '#00c896',
   },
   {
     id: 'gatekeeper',
@@ -30,7 +30,7 @@ export const mascots: Mascot[] = [
     role: 'Guards & middleware',
     link: '/frameworks/express',
     line: 'No permission, no passage. I check every request on the server.',
-    accent: '#14b8a6',
+    accent: '#00c2e0',
   },
   {
     id: 'scroll-keeper',
@@ -39,7 +39,7 @@ export const mascots: Mascot[] = [
     role: 'Permissions',
     link: '/basic-usage/direct-permissions',
     line: 'Each scroll is one permission. Roles are just bundles of scrolls!',
-    accent: '#a78bfa',
+    accent: '#a07bff',
   },
   {
     id: 'twins',
@@ -48,7 +48,7 @@ export const mascots: Mascot[] = [
     role: 'Teams',
     link: '/basic-usage/teams',
     line: 'Same sect, different branches — roles stay inside their team.',
-    accent: '#f87171',
+    accent: '#ff5c74',
   },
   {
     id: 'disciple',
@@ -57,7 +57,7 @@ export const mascots: Mascot[] = [
     role: 'Quick start',
     link: '/guide/quick-start',
     line: 'Lv.1 → first role assigned in five minutes. Let’s go!',
-    accent: '#fb923c',
+    accent: '#ff8a1f',
   },
   {
     id: 'weaver',
@@ -66,7 +66,7 @@ export const mascots: Mascot[] = [
     role: 'Database adapters',
     link: '/adapters/overview',
     line: 'Prisma, Drizzle, Kysely, Mongoose — I bind them all to the same five tables.',
-    accent: '#e7b75f',
+    accent: '#ffc21a',
   },
   {
     id: 'alchemist',
@@ -75,7 +75,7 @@ export const mascots: Mascot[] = [
     role: 'Cache',
     link: '/advanced/cache',
     line: 'Refined once, served many times. Change a role and I brew a fresh batch.',
-    accent: '#34d399',
+    accent: '#3ddc6e',
   },
   {
     id: 'messenger',
@@ -84,7 +84,7 @@ export const mascots: Mascot[] = [
     role: 'Events',
     link: '/advanced/events',
     line: 'role.attached! permission.detached! I announce every change.',
-    accent: '#60a5fa',
+    accent: '#3d8bff',
   },
   {
     id: 'spirit-fox',
@@ -93,7 +93,7 @@ export const mascots: Mascot[] = [
     role: 'Lost pages & hints',
     link: '/guide/introduction',
     line: 'Kyu? Lost your way? Follow my tails back home.',
-    accent: '#c4b5fd',
+    accent: '#d29bff',
   },
 ]
 

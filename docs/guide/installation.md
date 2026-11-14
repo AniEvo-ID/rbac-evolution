@@ -1,6 +1,6 @@
 # Installation
 
-`rbac-evolution` is split into a core package plus optional adapters and framework integrations. Install the core, then add what your stack needs.
+RBAC Evolution is split into a core package plus optional adapters and framework integrations. Install the core, then add what your stack needs.
 
 ::: info Requirements
 Node.js **20 or later**. The core ships both ESM and CommonJS builds with TypeScript types.

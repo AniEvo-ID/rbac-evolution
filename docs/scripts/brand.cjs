@@ -1,97 +1,97 @@
-// Generates the rbac-evolution brand SVGs (mark, favicon, wordmark) + og image.
-// Usage (repo root): node docs/scripts/brand.cjs docs/public/brand "$PWD/node_modules/.pnpm/sharp@<version>/node_modules/sharp"
+// Generates the RBAC Evolution brand assets (mark, favicon, wordmarks, og image).
+// Text is converted to outlines, so the SVGs render the same everywhere (GitHub, npm).
+// Usage (repo root):
+//   FONTS=<dir with Anton-Regular.ttf, ChangaOne-Regular.ttf, PlusJakartaSans.ttf, Yellowtail-Regular.ttf> \
+//   OPENTYPE=<path to opentype.js package> SHARP=<path to sharp package> \
+//   node docs/scripts/brand.cjs docs/public/brand
 const fs = require('fs')
 const path = require('path')
-const sharp = require(process.argv[3])
+const opentype = require(process.env.OPENTYPE)
+const sharp = require(process.env.SHARP)
 const out = process.argv[2]
+const font = (f) => opentype.loadSync(path.join(process.env.FONTS, f))
+const anton = font('Anton-Regular.ttf')
+const jakarta = font('PlusJakartaSans.ttf')
+const script = font('Yellowtail-Regular.ttf')
+
+const C = { yellow: '#FFF000', jade: '#00C896', ink: '#141414', paper: '#EDEDED', grey: '#8A8A8A' }
+
+/** Text as an outlined path; returns { d, width }. letterSpacing in em. */
+function text(f, str, x, y, size, letterSpacing = 0) {
+  let cx = x
+  let d = ''
+  for (const ch of str) {
+    const g = f.charToGlyph(ch)
+    d += g.getPath(cx, y, size).toPathData(2)
+    cx += (g.advanceWidth / f.unitsPerEm) * size + letterSpacing * size
+  }
+  return { d, width: cx - x }
+}
+
+/** 64×64 mark: chamfered yellow badge, ink key with a hexagon bow, jade core, three realm bars. */
+function mark() {
+  const hex = [0, 60, 120, 180, 240, 300]
+    .map((a) => {
+      const r = (a - 90) * (Math.PI / 180)
+      return `${(32 + 9 * Math.cos(r)).toFixed(2)},${(21 + 9 * Math.sin(r)).toFixed(2)}`
+    })
+    .join(' ')
+  return `<path d="M12 2H62V52L52 62H2V12Z" fill="${C.yellow}"/>
+  <polygon points="${hex}" fill="none" stroke="${C.ink}" stroke-width="4" stroke-linejoin="miter"/>
+  <circle cx="32" cy="21" r="3" fill="${C.jade}"/>
+  <path d="M30 29.5H34V54H30Z M34 42H41V46H34Z M34 49H39V53H34Z" fill="${C.ink}"/>
+  <path d="M10 54H14V48H10Z M16 54H20V43H16Z M22 54H26V38H22Z" fill="${C.ink}"/>`
+}
+
+const svg = (w, h, body) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">${body}</svg>\n`
+
 fs.mkdirSync(out, { recursive: true })
+for (const f of fs.readdirSync(out)) fs.unlinkSync(path.join(out, f))
 
-const pt = (deg, r = 26, c = 32) => {
-  const a = (deg * Math.PI) / 180
-  return [+(c + r * Math.cos(a)).toFixed(2), +(c + r * Math.sin(a)).toFixed(2)]
-}
-const hex = [30, 90, 150, 210, 270, 330].map((d) => pt(d, 16.5))
+fs.writeFileSync(path.join(out, 'mark.svg'), svg(64, 64, mark()))
+fs.writeFileSync(path.join(out, 'favicon.svg'), svg(64, 64, mark()))
 
-function mark({ jade, gold, ink, grid, bg }) {
-  const [sx, sy] = pt(112)
-  const [ex, ey] = pt(298)
-  const [gx1, gy1] = pt(322)
-  const [gx2, gy2] = pt(68)
-  // Arrowhead at the end of the jade arc, pointing clockwise.
-  const t = [-Math.sin((298 * Math.PI) / 180), Math.cos((298 * Math.PI) / 180)]
-  const n = [Math.cos((298 * Math.PI) / 180), Math.sin((298 * Math.PI) / 180)]
-  const tip = [ex + 5 * t[0], ey + 5 * t[1]]
-  const b = [ex - 1.2 * t[0], ey - 1.2 * t[1]]
-  const a1 = [b[0] + 4.2 * n[0], b[1] + 4.2 * n[1]]
-  const a2 = [b[0] - 4.2 * n[0], b[1] - 4.2 * n[1]]
-  const f = (p) => p.map((v) => v.toFixed(2)).join(' ')
-  return `
-  ${bg ? `<circle cx="32" cy="32" r="31" fill="${bg}"/>` : ''}
-  <circle cx="32" cy="32" r="21" fill="${ink}" stroke="${grid}" stroke-width="0.8"/>
-  <g stroke="${grid}" stroke-width="0.6">${[24, 28, 32, 36, 40].map((y) => `<line x1="13" y1="${y}" x2="51" y2="${y}" opacity="0.5"/>`).join('')}</g>
-  <polygon points="${hex.map(f).join(' ')}" fill="none" stroke="${jade}" stroke-width="1.4" stroke-linejoin="round"/>
-  <g stroke="${jade}" stroke-width="0.8" opacity="0.7">${hex.map(([x, y]) => `<line x1="32" y1="32" x2="${x}" y2="${y}"/>`).join('')}</g>
-  <g fill="${jade}">${hex.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="1.6"/>`).join('')}</g>
-  <path d="M${sx} ${sy} A26 26 0 1 1 ${ex} ${ey}" fill="none" stroke="${jade}" stroke-width="4" stroke-linecap="round"/>
-  <polygon points="${f(tip)} ${f(a1)} ${f(a2)}" fill="${jade}" stroke="${jade}" stroke-width="1" stroke-linejoin="round"/>
-  <path d="M${gx1} ${gy1} A26 26 0 0 1 ${gx2} ${gy2}" fill="none" stroke="${gold}" stroke-width="4" stroke-linecap="round"/>
-  <rect x="29.4" y="55.4" width="5.2" height="5.2" transform="rotate(45 32 58)" fill="${gold}"/>
-  <g fill="none" stroke="${gold}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-    <circle cx="32" cy="23.5" r="5.2"/>
-    <path d="M32 28.7V46.5M32 41.5h4.6M32 45.6h3.4"/>
-  </g>
-  <circle cx="32" cy="23.5" r="1.6" fill="${jade}"/>`
-}
-
-const dark = { jade: '#34d3a6', gold: '#e7b75f', ink: '#0b1020', grid: '#1d3b44' }
-const light = { jade: '#0b7f62', gold: '#b07a1f', ink: '#f2efe4', grid: '#cfe3da' }
-const svg = (body, w = 64, h = 64) =>
-  `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">${body}\n</svg>\n`
-
-fs.writeFileSync(path.join(out, 'mark-dark.svg'), svg(mark(dark)))
-fs.writeFileSync(path.join(out, 'mark-light.svg'), svg(mark(light)))
-fs.writeFileSync(path.join(out, 'favicon.svg'), svg(mark({ ...dark, bg: '#0b1020' })))
-
-// Wordmark for README / social: mark + "rbac" outline + "evolution" bold + tagline.
-function wordmark(c, textFill) {
+function wordmark(textColor) {
+  const name = text(anton, 'RBAC Evolution', 92, 58, 56)
+  const tag = text(jakarta, 'ROLES · PERMISSIONS · CULTIVATED', 94, 88, 12, 0.32)
+  const w = Math.ceil(Math.max(name.width, tag.width) + 104)
   return svg(
-    `<g transform="translate(8 8) scale(1.5)">${mark(c)}</g>
-  <text x="118" y="70" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="52" font-weight="300" fill="none" stroke="${c.gold}" stroke-width="1.6" letter-spacing="1">rbac</text>
-  <text x="232" y="70" font-family="'Space Grotesk','Helvetica Neue',Arial,sans-serif" font-size="52" font-weight="700" fill="${c.jade}">evolution</text>
-  <text x="120" y="96" font-family="'JetBrains Mono',Menlo,monospace" font-size="12" letter-spacing="4.2" fill="${textFill}">ROLES · PERMISSIONS · CULTIVATED</text>
-  <line x1="120" y1="106" x2="470" y2="106" stroke="${c.jade}" stroke-width="1" opacity="0.5"/>
-  <rect x="472" y="103" width="6" height="6" transform="rotate(45 475 106)" fill="${c.gold}"/>`,
-    500,
-    112,
+    w,
+    104,
+    `<g transform="translate(4 14) scale(1.1)">${mark()}</g>
+  <path d="${name.d}" fill="${textColor}"/>
+  <path d="${tag.d}" fill="${C.grey}"/>
+  <path d="M94 96H${w - 18}V99H94Z" fill="${C.yellow}"/>
+  <path d="M${w - 12} 91.5L${w - 5} 97.5L${w - 12} 103.5L${w - 19} 97.5Z" fill="${C.jade}" transform="translate(0 -1)"/>`,
   )
 }
-fs.writeFileSync(path.join(out, 'wordmark-dark.svg'), wordmark(dark, '#a8b3c7'))
-fs.writeFileSync(path.join(out, 'wordmark-light.svg'), wordmark(light, '#4b5563'))
+fs.writeFileSync(path.join(out, 'wordmark-light.svg'), wordmark(C.ink))
+fs.writeFileSync(path.join(out, 'wordmark-dark.svg'), wordmark(C.paper))
 
-// Open Graph image 1200x630.
+// Open Graph image, 1200×630.
+const contours = Array.from({ length: 9 }, (_, i) => {
+  const r = 60 + i * 46
+  return `<path d="M${980 - r} 300 C ${980 - r} ${300 - r * 0.9}, ${980 + r * 0.8} ${300 - r * 1.05}, ${980 + r} 290 S ${980 + r * 0.2} ${300 + r * 1.1}, ${980 - r} 300Z" fill="none" stroke="#2A2A2A" stroke-width="2"/>`
+}).join('')
+const stripes = Array.from({ length: 40 }, (_, i) => `<path d="M${i * 36 - 40} 630L${i * 36} 582H${i * 36 + 18}L${i * 36 - 22} 630Z" fill="${C.yellow}"/>`).join('')
+const ogName = text(anton, 'RBAC Evolution', 400, 300, 132)
+const ogScript = text(script, 'roles & permissions, cultivated.', 404, 380, 58)
+const ogLine = text(jakarta, 'Node.js & Bun  ·  every framework  ·  every database', 406, 450, 26)
 const og = svg(
-  `<defs>
-    <radialGradient id="g" cx="0.28" cy="0.5" r="0.7"><stop offset="0" stop-color="#123a3a"/><stop offset="1" stop-color="#0b1020"/></radialGradient>
-    <pattern id="p" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0H0V40" fill="none" stroke="#1b3340" stroke-width="1"/></pattern>
-  </defs>
-  <rect width="1200" height="630" fill="url(#g)"/>
-  <rect width="1200" height="630" fill="url(#p)" opacity="0.6"/>
-  <path d="M0 560 L140 470 L240 520 L380 430 L520 540 L680 460 L820 530 L980 450 L1200 540 V630 H0Z" fill="#0f1a2a" opacity="0.9"/>
-  <g transform="translate(90 155) scale(5)">${mark(dark)}</g>
-  <text x="470" y="290" font-family="'Helvetica Neue',Arial,sans-serif" font-size="92" font-weight="300" fill="none" stroke="#e7b75f" stroke-width="2.5">rbac</text>
-  <text x="470" y="390" font-family="'Helvetica Neue',Arial,sans-serif" font-size="104" font-weight="700" fill="#34d3a6">evolution</text>
-  <text x="474" y="450" font-family="Menlo,monospace" font-size="24" letter-spacing="6" fill="#a8b3c7">ROLES · PERMISSIONS · CULTIVATED</text>
-  <text x="474" y="510" font-family="'Helvetica Neue',Arial,sans-serif" font-size="25" fill="#d6dbe6">Node.js &amp; Bun · every framework · every database</text>
-  <g stroke="#34d3a6" stroke-width="3" fill="none"><path d="M30 70V30H70"/><path d="M1130 30H1170V70"/><path d="M30 560V600H70"/><path d="M1130 600H1170V560"/></g>`,
   1200,
   630,
+  `<rect width="1200" height="630" fill="${C.ink}"/>
+  ${contours}
+  ${stripes}
+  <rect y="572" width="1200" height="10" fill="${C.ink}"/>
+  <g transform="translate(70 150) scale(4.6)">${mark()}</g>
+  <path d="${ogName.d}" fill="${C.paper}"/>
+  <path d="${ogScript.d}" fill="${C.jade}"/>
+  <path d="${ogLine.d}" fill="${C.grey}"/>
+  <g fill="${C.yellow}"><path d="M40 40H96V46H46V96H40Z"/><path d="M1160 40H1104V46H1154V96H1160Z"/></g>`,
 )
-fs.writeFileSync(path.join(out, 'og-src.svg'), og)
 sharp(Buffer.from(og))
   .png()
   .toFile(path.join(out, 'og-image.png'))
-  .then(() => sharp(Buffer.from(svg(mark({ ...dark, bg: '#0b1020' })))).resize(180, 180).png().toFile(path.join(out, 'apple-touch-icon.png')))
-  .then(() => {
-    fs.unlinkSync(path.join(out, 'og-src.svg'))
-    console.log('ok')
-  })
+  .then(() => sharp(Buffer.from(svg(64, 64, `<rect width="64" height="64" fill="${C.ink}"/><g transform="translate(6 6) scale(0.8125)">${mark()}</g>`))).resize(180, 180).png().toFile(path.join(out, 'apple-touch-icon.png')))
+  .then(() => console.log('ok'))

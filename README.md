@@ -1,11 +1,11 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/public/brand/wordmark-dark.svg">
-    <img src="docs/public/brand/wordmark-light.svg" alt="rbac-evolution" width="460">
+    <img src="docs/public/brand/wordmark-light.svg" alt="RBAC Evolution" width="460">
   </picture>
 </p>
 
-# rbac-evolution
+# RBAC Evolution
 
 > Role & permission management (RBAC) for the JavaScript / TypeScript ecosystem.
 > Inspired by [spatie/laravel-permission](https://github.com/spatie/laravel-permission), built for JS.

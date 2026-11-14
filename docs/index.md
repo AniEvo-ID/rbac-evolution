@@ -2,7 +2,7 @@
 layout: home
 
 hero:
-  name: rbac-evolution
+  name: RBAC Evolution
   text: Roles & permissions, cultivated.
   tagline: Everything you love about spatie/laravel-permission — for Node.js and Bun, every framework, every database.
   actions:

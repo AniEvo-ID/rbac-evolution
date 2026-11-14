@@ -31,7 +31,6 @@ const mascot = computed(() => mascotForPath(route.path))
   flex: none;
   height: 128px;
   width: auto;
-  filter: drop-shadow(0 8px 12px rgba(5, 10, 25, 0.25));
   cursor: var(--cursor-grab);
   transition: transform 0.3s ease;
 }
@@ -41,9 +40,10 @@ const mascot = computed(() => mascotForPath(route.path))
 .bubble {
   position: relative;
   padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--vp-c-divider));
-  background: color-mix(in srgb, var(--accent) 10%, var(--vp-c-bg-soft));
+  border-radius: 2px;
+  border: 2px solid var(--vp-c-text-1);
+  border-top: 6px solid var(--accent);
+  background: var(--vp-c-bg-soft);
   margin-bottom: 28px;
 }
 .bubble::before {
@@ -64,7 +64,9 @@ const mascot = computed(() => mascotForPath(route.path))
   color: var(--vp-c-text-2);
 }
 .who strong {
-  font-family: var(--sect-font-display);
+  font-family: var(--sect-font-label);
+  font-weight: 400;
+  font-size: 15px;
   color: var(--vp-c-text-1);
 }
 .say {

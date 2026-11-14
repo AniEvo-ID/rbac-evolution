@@ -1,6 +1,6 @@
 # Coming from Laravel
 
-If you know [spatie/laravel-permission](https://github.com/spatie/laravel-permission), you already know most of `rbac-evolution`. This page maps the Laravel concepts to their JS equivalents.
+If you know [spatie/laravel-permission](https://github.com/spatie/laravel-permission), you already know most of RBAC Evolution. This page maps the Laravel concepts to their JS equivalents.
 
 ## The main differences
 
@@ -11,7 +11,7 @@ If you know [spatie/laravel-permission](https://github.com/spatie/laravel-permis
 
 ## Concepts
 
-| Laravel / spatie | rbac-evolution |
+| Laravel / spatie | RBAC Evolution |
 | --- | --- |
 | `HasRoles` trait on the `User` model | `rbac.for({ type: 'user', id })` |
 | `model_type` + `model_id` | `Subject`: `{ type, id }` |
@@ -39,7 +39,7 @@ The [Prisma](/adapters/prisma) and [Drizzle](/adapters/drizzle) adapters use the
 
 ## Roles and permissions
 
-| Laravel / spatie | rbac-evolution |
+| Laravel / spatie | RBAC Evolution |
 | --- | --- |
 | `Permission::create(['name' => 'edit articles'])` | `rbac.createPermission('edit articles')` |
 | `Role::create(['name' => 'writer'])` | `rbac.createRole('writer')` |
@@ -56,7 +56,7 @@ The [Prisma](/adapters/prisma) and [Drizzle](/adapters/drizzle) adapters use the
 
 ## Users (subjects)
 
-| Laravel / spatie | rbac-evolution |
+| Laravel / spatie | RBAC Evolution |
 | --- | --- |
 | `$user->assignRole('writer')` | `rbac.for(user).assignRole('writer')` |
 | `$user->removeRole('writer')` | `rbac.for(user).removeRole('writer')` |
@@ -117,7 +117,7 @@ The spatie-style names (`permission:create-role`, ...) are accepted as aliases. 
 
 ## Cache and exceptions
 
-| Laravel / spatie | rbac-evolution |
+| Laravel / spatie | RBAC Evolution |
 | --- | --- |
 | `app(PermissionRegistrar::class)->forgetCachedPermissions()` | `rbac.forgetCachedPermissions()` |
 | `PermissionDoesNotExist` | `PermissionDoesNotExist` |

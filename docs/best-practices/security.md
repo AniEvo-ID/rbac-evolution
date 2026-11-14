@@ -1,6 +1,6 @@
 # Security
 
-rbac-evolution answers one question — *does this subject have this role or permission?* — and it answers it
+RBAC Evolution answers one question — *does this subject have this role or permission?* — and it answers it
 correctly only if you ask in the right place, with fresh data. This page collects the practices that matter most.
 
 ## Enforce on the server, decorate on the client
@@ -106,7 +106,7 @@ user to a login page or show an access-denied message.
 ## Caching across processes
 
 The engine caches each subject's roles and permissions (by default in memory, for 24 hours). Any change made
-through rbac-evolution — `assignRole()`, `givePermissionTo()`, and so on — clears the cache **of the process that
+through RBAC Evolution — `assignRole()`, `givePermissionTo()`, and so on — clears the cache **of the process that
 made the change**.
 
 That is enough for a single server. With several processes (clustered Node.js, multiple containers, serverless
@@ -129,17 +129,17 @@ const rbac = createRbac({
 })
 ```
 
-Also call `rbac.forgetCachedPermissions()` if roles or permissions are changed **outside** rbac-evolution — a SQL
+Also call `rbac.forgetCachedPermissions()` if roles or permissions are changed **outside** RBAC Evolution — a SQL
 migration, a seed script, an admin tool talking to the database directly. See [Cache](/advanced/cache).
 
 ::: warning
-A shared cache store must be dedicated to rbac-evolution (or namespaced), because the engine calls `clear()` on
+A shared cache store must be dedicated to RBAC Evolution (or namespaced), because the engine calls `clear()` on
 every change.
 :::
 
 ## Teams
 
-With `teams: true`, every check is scoped to the team you pass. rbac-evolution does **not** know whether a user is a
+With `teams: true`, every check is scoped to the team you pass. RBAC Evolution does **not** know whether a user is a
 member of that team. If the team id comes from the request (a URL segment, a header, a cookie), verify membership
 before using it, or a user could switch to a team where they happen to have a powerful role. See
 [Teams](/basic-usage/teams).

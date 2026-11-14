@@ -9,7 +9,7 @@ import { mascots } from '../mascots'
       <p class="eyebrow">Meet the Sect</p>
       <h2 id="roster-title">Every part of the docs has a guardian</h2>
       <p class="lede">
-        rbac-evolution is a sect: roles are ranks, permissions are technique scrolls, and these nine keep watch over
+        RBAC Evolution is a sect: roles are ranks, permissions are technique scrolls, and these nine keep watch over
         each chapter.
       </p>
       <ul class="cards">
@@ -40,17 +40,17 @@ import { mascots } from '../mascots'
   margin: 0 auto;
 }
 .eyebrow {
-  font-family: var(--vp-font-family-mono);
-  font-size: 13px;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-  color: var(--vp-c-brand-1);
-  margin: 0 0 8px;
+  font-family: var(--sect-font-script);
+  font-size: 30px;
+  line-height: 1;
+  color: var(--sect-jade);
+  margin: 0 0 6px;
 }
 h2 {
   font-family: var(--sect-font-display);
-  font-size: clamp(26px, 4vw, 36px);
-  line-height: 1.2;
+  font-weight: 400;
+  font-size: clamp(40px, 6vw, 72px);
+  line-height: 1;
   margin: 0 0 12px;
   border: 0;
   padding: 0;
@@ -72,11 +72,12 @@ h2 {
   display: flex;
   flex-direction: column;
   height: 100%;
-  border-radius: 18px;
-  border: 1px solid var(--vp-c-divider);
+  border-radius: 2px;
+  border: 2px solid var(--vp-c-divider);
   background:
-    radial-gradient(120% 70% at 50% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 70%),
+    linear-gradient(var(--accent), var(--accent)) top left / 100% 6px no-repeat,
     var(--vp-c-bg-soft);
+  clip-path: polygon(0 0, calc(100% - 20px) 0, 100% 20px, 100% 100%, 0 100%);
   color: inherit;
   text-decoration: none;
   overflow: hidden;
@@ -85,8 +86,7 @@ h2 {
 .card-link:hover,
 .card-link:focus-visible {
   transform: translateY(-4px);
-  border-color: var(--accent);
-  box-shadow: 0 14px 34px -14px var(--accent);
+  border-color: var(--vp-c-text-1);
 }
 .card-link:focus-visible {
   outline: 2px solid var(--vp-c-brand-1);
@@ -101,7 +101,6 @@ h2 {
 .portrait img {
   height: 196px;
   width: auto;
-  filter: drop-shadow(0 10px 14px rgba(5, 10, 25, 0.28));
   transition: transform 0.3s ease;
 }
 .card-link:hover .portrait img {
@@ -115,20 +114,19 @@ h2 {
 }
 .role {
   align-self: flex-start;
-  font-family: var(--vp-font-family-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
+  font-family: var(--sect-font-label);
+  font-size: 12px;
+  letter-spacing: 0.04em;
   padding: 2px 8px;
-  border-radius: 999px;
-  color: var(--vp-c-text-1);
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  border-radius: 2px;
+  color: var(--sect-ink);
+  background: var(--accent);
   margin-bottom: 6px;
 }
 .name {
-  font-family: var(--sect-font-display);
-  font-size: 20px;
-  font-weight: 700;
+  font-family: var(--sect-font-label);
+  font-size: 24px;
+  font-weight: 400;
 }
 .title {
   font-size: 13px;

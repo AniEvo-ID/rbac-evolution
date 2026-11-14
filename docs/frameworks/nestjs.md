@@ -1,6 +1,6 @@
 # NestJS
 
-`@anievo-id/rbac-evolution-nestjs` adds rbac-evolution to NestJS apps: a global `RbacModule`, an `RbacGuard`, and
+`@anievo-id/rbac-evolution-nestjs` adds RBAC Evolution to NestJS apps: a global `RbacModule`, an `RbacGuard`, and
 decorators — `@RequirePermissions()`, `@RequireRoles()` and `@RequireRoleOrPermission()` — that mirror
 spatie/laravel-permission's `permission`, `role` and `role_or_permission` middleware. `@CurrentRbac()` injects the
 current subject's `SubjectRbac` into a handler.
