@@ -1,3 +1,9 @@
 packages:
   - "packages/*"
   - "examples/*"
+
+onlyBuiltDependencies:
+  - esbuild
+  - prisma
+  - "@prisma/client"
+  - "@prisma/engines"

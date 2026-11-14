@@ -16,13 +16,13 @@ and integrations for your framework.
 
 | Package | Description | Status |
 | --- | --- | --- |
-| [`@anievo-id/rbac-evolution`](./packages/core) | Framework-agnostic RBAC engine | 🚧 in progress |
-| `@anievo-id/rbac-evolution-prisma` | Prisma storage adapter | 📋 planned |
-| `@anievo-id/rbac-evolution-drizzle` | Drizzle storage adapter | 📋 planned |
-| `@anievo-id/rbac-evolution-next` | Next.js middleware, server helpers & action guards | 📋 planned |
-| `@anievo-id/rbac-evolution-react` | `<Can>`, `useCan()`, `useRole()` | 📋 planned |
-| `@anievo-id/rbac-evolution-vue` | `v-can` directive & composables | 📋 planned |
-| `@anievo-id/rbac-evolution-express` | Express / Node HTTP middleware | 📋 planned |
+| [`@anievo-id/rbac-evolution`](./packages/core) | Framework-agnostic RBAC engine | 🧪 beta |
+| [`@anievo-id/rbac-evolution-prisma`](./packages/prisma) | Prisma storage adapter | 🧪 beta |
+| [`@anievo-id/rbac-evolution-drizzle`](./packages/drizzle) | Drizzle storage adapter | 🧪 beta |
+| [`@anievo-id/rbac-evolution-next`](./packages/next) | Next.js middleware, server helpers & action guards | 🧪 beta |
+| [`@anievo-id/rbac-evolution-react`](./packages/react) | `<Can>`, `useCan()`, `useRole()` | 🧪 beta |
+| [`@anievo-id/rbac-evolution-vue`](./packages/vue) | `v-can` directive & composables | 🧪 beta |
+| [`@anievo-id/rbac-evolution-express`](./packages/express) | Express / Node HTTP middleware | 🧪 beta |
 
 Install only what you need — e.g. for a Next.js + Prisma app:
 
@@ -60,8 +60,11 @@ See the [core package README](./packages/core#readme) for guards, wildcards, tea
 - [x] Caching layer
 - [x] Teams / multi-tenancy
 - [x] In-memory adapter
-- [ ] Prisma & Drizzle adapters
-- [ ] Next.js, React, Vue, Express integrations
+- [x] Prisma & Drizzle adapters
+- [x] Super-admin, events, typed names (enums)
+- [x] Next.js, React, Vue, Express integrations
+- [ ] CLI (like `php artisan permission:*`)
+- [ ] MySQL support for Drizzle
 - [ ] Documentation site
 
 ## Contributing
