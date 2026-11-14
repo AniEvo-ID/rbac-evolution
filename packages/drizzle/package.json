@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-drizzle",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Drizzle ORM storage adapter (PostgreSQL & SQLite) for rbac-evolution.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
