@@ -59,9 +59,11 @@ export default defineConfig({
           { text: 'React', link: '/frameworks/react' },
           { text: 'Next.js', link: '/frameworks/nextjs' },
           { text: 'Vue', link: '/frameworks/vue' },
+          { text: 'Nuxt', link: '/frameworks/nuxt' },
           { text: 'Express', link: '/frameworks/express' },
           { text: 'Hono', link: '/frameworks/hono' },
           { text: 'Fastify', link: '/frameworks/fastify' },
+          { text: 'NestJS', link: '/frameworks/nestjs' },
         ],
       },
       {

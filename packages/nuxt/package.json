@@ -1,0 +1,79 @@
+{
+  "name": "@anievo-id/rbac-evolution-nuxt",
+  "version": "0.2.1",
+  "description": "Nuxt 3/4 module for rbac-evolution: SSR-hydrated permissions, auto-imported composables, route middleware & Nitro helpers.",
+  "license": "MIT",
+  "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
+  "homepage": "https://github.com/AniEvo-ID/rbac-evolution/tree/main/packages/nuxt#readme",
+  "bugs": {
+    "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AniEvo-ID/rbac-evolution.git",
+    "directory": "packages/nuxt"
+  },
+  "keywords": [
+    "rbac",
+    "permissions",
+    "roles",
+    "authorization",
+    "nuxt",
+    "nuxt-module",
+    "nitro",
+    "vue"
+  ],
+  "sideEffects": false,
+  "module": "./dist/module.js",
+  "types": "./dist/module.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/module.d.ts",
+      "default": "./dist/module.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    },
+    "./rule": {
+      "types": "./dist/runtime/rule.d.ts",
+      "default": "./dist/runtime/rule.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup && tsc -p tsconfig.build.json",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@anievo-id/rbac-evolution": "workspace:^",
+    "@anievo-id/rbac-evolution-vue": "workspace:^",
+    "@nuxt/kit": "^3.13.0 || ^4.0.0"
+  },
+  "peerDependencies": {
+    "nuxt": "^3.0.0 || ^4.0.0",
+    "vue": ">=3.3"
+  },
+  "devDependencies": {
+    "@nuxt/schema": "^4.6.4",
+    "h3": "^1.15.11",
+    "nuxt": "^4.6.4",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0",
+    "vue": "^3.5.45"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
