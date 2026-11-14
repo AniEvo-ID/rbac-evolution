@@ -1,5 +1,7 @@
 # @anievo-id/rbac-evolution-vue
 
+📖 **[Documentation](https://app.anievo.id/rbac-evolution/frameworks/vue)**
+
 Vue 3 bindings for [rbac-evolution](../core): a `v-can` / `v-role` directive, `<Can>` / `<HasRole>` components,
 composables and template helpers — the Vue counterpart of spatie/laravel-permission's `@can` / `@role` Blade directives.
 

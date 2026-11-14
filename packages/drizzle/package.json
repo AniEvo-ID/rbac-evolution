@@ -4,7 +4,7 @@
   "description": "Drizzle ORM storage adapter (PostgreSQL, SQLite & MySQL) for rbac-evolution.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
-  "homepage": "https://github.com/AniEvo-ID/rbac-evolution/tree/main/packages/drizzle#readme",
+  "homepage": "https://app.anievo.id/rbac-evolution/adapters/drizzle",
   "bugs": {
     "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
   },

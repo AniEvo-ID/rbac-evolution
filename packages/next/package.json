@@ -4,7 +4,7 @@
   "description": "Next.js helpers for rbac-evolution: middleware, server components & server action guards.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
-  "homepage": "https://github.com/AniEvo-ID/rbac-evolution/tree/main/packages/next#readme",
+  "homepage": "https://app.anievo.id/rbac-evolution/frameworks/nextjs",
   "bugs": {
     "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
   },
