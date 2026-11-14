@@ -9,7 +9,7 @@ export default defineConfig({
   title: 'RBAC Evolution',
   description: 'Role & permission management (RBAC) for JavaScript & TypeScript — inspired by spatie/laravel-permission.',
   lang: 'en-US',
-  // served from https://anievo-id.github.io/rbac-evolution/
+  // served from https://app.anievo.id/rbac-evolution/
   base: '/rbac-evolution/',
   cleanUrls: true,
   // dark only: no light theme, no theme switch
@@ -21,7 +21,7 @@ export default defineConfig({
     ['link', { rel: 'apple-touch-icon', href: '/rbac-evolution/brand/apple-touch-icon.png' }],
     ['meta', { property: 'og:type', content: 'website' }],
     ['meta', { property: 'og:title', content: 'RBAC Evolution — roles & permissions, cultivated' }],
-    ['meta', { property: 'og:image', content: 'https://anievo-id.github.io/rbac-evolution/brand/og-image.png' }],
+    ['meta', { property: 'og:image', content: 'https://app.anievo.id/rbac-evolution/brand/og-image.png' }],
     ['meta', { name: 'twitter:card', content: 'summary_large_image' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
     ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
