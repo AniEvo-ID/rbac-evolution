@@ -40,6 +40,7 @@ jobs:
       - run: npm install -g npm@latest
       - run: pnpm install --frozen-lockfile
       - name: Create release PR or publish to npm
+        id: changesets
         uses: changesets/action@v1
         with:
           version: pnpm version-packages
@@ -49,3 +50,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           NPM_CONFIG_PROVENANCE: true
+
+      # changesets/action creates one GitHub Release per package, and the last one created
+      # becomes "Latest". Point "Latest" at the core package instead.
+      - name: Mark the core release as Latest
+        if: steps.changesets.outputs.published == 'true'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          version=$(node -p "require('./packages/core/package.json').version")
+          gh release edit "@anievo-id/rbac-evolution@${version}" --latest
