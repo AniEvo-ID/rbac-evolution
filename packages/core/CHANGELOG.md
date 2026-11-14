@@ -1,5 +1,38 @@
 # @anievo-id/rbac-evolution
 
+## 0.4.0
+
+### Minor Changes
+
+- 5812866: spatie v8 parity:
+
+  - `canAny()` / `canAll()` route guards in Express, Fastify and Hono, `@CanAny` / `@CanAll` decorators in NestJS, and `canAny` / `canAll` server helpers in Nuxt (spatie v8.5 route macros).
+  - `rbac.role(name).syncSubjects(subjectType, ids)` makes the given subjects the role's only holders of that type (spatie `Role::syncModels()`).
+
+### Patch Changes
+
+- 9f8a114: Adapter fixes:
+
+  - **drizzle, kysely**: `deleteRole()` / `deletePermission()` run their three deletes in one transaction on
+    PostgreSQL, MySQL (and SQL Server for Kysely), so a failure midway can no longer strip a permission from every role
+    while the permission itself survives. SQLite keeps running them without a transaction (sync-only drivers and
+    libsql `:memory:` can't share one). Passing an existing transaction to the adapter still works.
+  - **drizzle, kysely**: string ids must be written as integers. `'1e3'`, `'0x1A'` or `'7.0'` no longer resolve to a
+    role or permission (same rule as the Prisma adapter).
+  - **mongoose**: a failed first index build (e.g. a transient connection error) is retried on the next call instead
+    of failing every later operation until the process restarts.
+  - **core**: the shared adapter test suite (`runAdapterTests`) checks that ids only match when written exactly as stored.
+
+- ed88963: CLI and cache fixes:
+
+  - **cli**: `sync --prune` now requires `--yes` (or `--dry-run` to preview), so a typo in `--file` can't delete every
+    role and permission without asking. **Scripts that run `sync --prune` need to add `--yes`.**
+  - **cli**: subject and team ids become numbers only when that is lossless. `9007199254740993` (beyond
+    `Number.MAX_SAFE_INTEGER`) and `007` stay strings instead of silently pointing at another subject.
+  - **core**: `MemoryCache` keeps at most `maxEntries` entries (default 10 000) and drops the oldest write when full,
+    so a long-running process checking many different users no longer grows without bound. Configure it with
+    `new MemoryCache({ maxEntries })`.
+
 ## 0.3.1
 
 ### Patch Changes

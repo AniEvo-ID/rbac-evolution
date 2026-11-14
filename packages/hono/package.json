@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-hono",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "description": "Hono middleware for rbac-evolution — runs on Node, Bun, Deno, Cloudflare Workers and other edge runtimes.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
