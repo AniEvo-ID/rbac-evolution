@@ -14,6 +14,11 @@ export interface RbacProviderProps {
   wildcard?: boolean
   /** Roles that pass every `can` check (super admin). */
   superAdminRoles?: readonly string[]
+  /**
+   * The snapshot is still being fetched. `<Can>`, `<Cannot>` and `<HasRole>` then render nothing
+   * (not even `fallback`), so nothing flashes before the real permissions arrive. Default: `false`.
+   */
+  loading?: boolean
   children?: ReactNode
 }
 
@@ -22,13 +27,13 @@ export interface RbacProviderProps {
  *
  * UI only: this hides and shows elements. Always enforce authorization on the server.
  */
-export function RbacProvider({ snapshot, wildcard = false, superAdminRoles, children }: RbacProviderProps) {
+export function RbacProvider({ snapshot, wildcard = false, superAdminRoles, loading = false, children }: RbacProviderProps) {
   const superKey = superAdminRoles?.join('\u0000') ?? ''
   const checker = useMemo(
-    () => createRbacChecker(snapshot, superAdminRoles ? { wildcard, superAdminRoles } : { wildcard }),
+    () => createRbacChecker(snapshot, superAdminRoles ? { wildcard, superAdminRoles, loading } : { wildcard, loading }),
     // `superKey` keeps inline arrays (`superAdminRoles={['admin']}`) from recomputing every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [snapshot, wildcard, superKey],
+    [snapshot, wildcard, superKey, loading],
   )
   return <RbacContext.Provider value={checker}>{children}</RbacContext.Provider>
 }

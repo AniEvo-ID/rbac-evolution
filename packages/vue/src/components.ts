@@ -27,6 +27,7 @@ export const Can = defineComponent({
   setup(props, { slots }) {
     const rbac = useRbac()
     return () => {
+      if (rbac.loading.value) return null
       let allowed = true
       let checked = false
       if (props.permission !== undefined) {
@@ -68,6 +69,7 @@ export const HasRole = defineComponent({
   setup(props, { slots }) {
     const rbac = useRbac()
     return () => {
+      if (rbac.loading.value) return null
       let allowed = true
       let checked = false
       if (props.role !== undefined) {

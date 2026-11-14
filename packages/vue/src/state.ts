@@ -7,6 +7,12 @@ export type NameList = string | readonly string[]
 export interface RbacStateOptions {
   /** Initial snapshot, usually `await rbac.for(user).snapshot()` sent by the server. `null` = guest. */
   snapshot?: RbacSnapshot | null
+  /**
+   * Start in the loading state (snapshot still being fetched): `<Can>`, `<HasRole>`, `v-can` and
+   * `v-role` render nothing, not even the fallback or a `not` branch, until `setSnapshot()` is called.
+   * Default: `false`.
+   */
+  loading?: boolean
   /** Match permissions with wildcard semantics (`articles.*` covers `articles.edit`). Default: `false`. */
   wildcard?: boolean
   /** Roles that pass every permission check, like a `Gate::before` super-admin rule. Default: `[]`. */
@@ -24,7 +30,9 @@ export interface RbacStateOptions {
 export interface VueRbac {
   /** Current snapshot (read-only, reactive). */
   readonly snapshot: Readonly<Ref<DeepReadonly<RbacSnapshot>>>
-  /** Replaces the snapshot, e.g. after login (`snapshot`) or logout (`null`). */
+  /** `true` until the first `setSnapshot()` when created with `loading: true` (reactive). */
+  readonly loading: Readonly<Ref<boolean>>
+  /** Replaces the snapshot, e.g. after login (`snapshot`) or logout (`null`). Ends the loading state. */
   setSnapshot(snapshot: RbacSnapshot | null): void
   /** `true` if the user has the permission (or, for a list, ALL of them). */
   can(permission: NameList): boolean
@@ -61,6 +69,7 @@ const toRoleList = (value: NameList): string[] => toList(value).flatMap((v) => t
 /** Creates the reactive RBAC state without installing it (used by `createRbacPlugin`). */
 export function createRbacState(options: RbacStateOptions = {}): VueRbac {
   const state = shallowRef<Readonly<RbacSnapshot>>(normalizeSnapshot(options.snapshot))
+  const loading = shallowRef(options.loading ?? false)
   const wildcard = options.wildcard ?? false
   const superAdminRoles = toList(options.superAdminRoles ?? [])
 
@@ -104,8 +113,10 @@ export function createRbacState(options: RbacStateOptions = {}): VueRbac {
 
   return {
     snapshot: readonly(state),
+    loading: readonly(loading),
     setSnapshot(snapshot) {
       state.value = normalizeSnapshot(snapshot)
+      loading.value = false
     },
     can: canAll,
     cannot: (permission) => !canAll(permission),

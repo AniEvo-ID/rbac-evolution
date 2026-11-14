@@ -246,3 +246,27 @@ describe('composables', () => {
     expect(admin.wrapper.find('#b').exists()).toBe(true)
   })
 })
+
+describe('loading state', () => {
+  it('renders nothing (no fallback, no `not` branch) until the first setSnapshot()', async () => {
+    const { rbac, wrapper } = setup(
+      `<div>
+        <Can permission="edit articles" not><span id="cannot">Read-only</span></Can>
+        <Can permission="edit articles"><span id="can">Edit</span><template #fallback><span id="fb">No</span></template></Can>
+        <span id="dir-not" v-can.not="'edit articles'">D</span>
+      </div>`,
+      { loading: true },
+    )
+    expect(rbac.loading.value).toBe(true)
+    expect(wrapper.find('#cannot').exists()).toBe(false)
+    expect(wrapper.find('#fb').exists()).toBe(false)
+    expect(visible(wrapper.find('#dir-not').element)).toBe(false)
+
+    rbac.setSnapshot(null)
+    await nextTick()
+    expect(rbac.loading.value).toBe(false)
+    expect(wrapper.find('#cannot').exists()).toBe(true)
+    expect(wrapper.find('#fb').exists()).toBe(true)
+    expect(visible(wrapper.find('#dir-not').element)).toBe(true)
+  })
+})

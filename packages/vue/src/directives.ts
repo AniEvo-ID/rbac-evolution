@@ -22,7 +22,7 @@ function createVisibilityDirective(rbac: VueRbac, check: Check): Directive<HTMLE
       const display = el.style.display === 'none' ? '' : el.style.display
       const stop = watchEffect(
         () => {
-          el.style.display = check(rbac, current.value) ? display : 'none'
+          el.style.display = !rbac.loading.value && check(rbac, current.value) ? display : 'none'
         },
         { flush: 'sync' },
       )
@@ -37,7 +37,7 @@ function createVisibilityDirective(rbac: VueRbac, check: Check): Directive<HTMLE
       states.delete(el)
     },
     getSSRProps(binding) {
-      return check(rbac, binding) ? {} : { style: { display: 'none' } }
+      return !rbac.loading.value && check(rbac, binding) ? {} : { style: { display: 'none' } }
     },
   }
 }

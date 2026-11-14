@@ -44,7 +44,8 @@ Requires React 18 or newer.
    ```
 
 2. **Client:** pass it to `<RbacProvider snapshot={...}>` near the root of your tree.
-3. **Anywhere below:** call `useCan()`, render `<Can>`, and so on. Checks are synchronous — no loading states.
+3. **Anywhere below:** call `useCan()`, render `<Can>`, and so on. Checks are synchronous. While you fetch the
+   snapshot on the client, pass `loading` so nothing flashes (see below).
 
 ## Setting up the provider
 
@@ -66,15 +67,17 @@ import type { RbacSnapshot } from '@anievo-id/rbac-evolution'
 
 export function Root() {
   const [snapshot, setSnapshot] = useState<RbacSnapshot | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     fetch('/api/me/permissions')
       .then((r) => r.json())
       .then(setSnapshot)
+      .finally(() => setLoading(false))
   }, [])
 
   return (
-    <RbacProvider snapshot={snapshot} wildcard>
+    <RbacProvider snapshot={snapshot} loading={loading} wildcard>
       <App />
     </RbacProvider>
   )
@@ -88,6 +91,7 @@ export function Root() {
 | `snapshot`        | `RbacSnapshot \| null \| undefined` | Roles & permissions of the current user. `null` / `undefined` = guest.            |
 | `wildcard`        | `boolean`                     | Treat granted permissions as wildcard patterns (`articles.*`). Default `false`.         |
 | `superAdminRoles` | `string[]`                    | Users with any of these roles pass every **permission** check.                          |
+| `loading`         | `boolean`                     | Snapshot still being fetched: `<Can>`, `<Cannot>`, `<HasRole>` render nothing, not even `fallback`. Hooks return `false`; `useRbac().loading` is `true`. Default `false`. |
 | `children`        | `ReactNode`                   |                                                                                         |
 
 Providers can be nested; components use the nearest one.
