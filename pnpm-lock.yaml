@@ -92,7 +92,7 @@ importers:
         version: 0.15.15
       drizzle-orm:
         specifier: ^0.44.0
-        version: 0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))
+        version: 0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))
       express:
         specifier: ^5.0.0
         version: 5.3.0
@@ -182,7 +182,7 @@ importers:
         version: 8.23.1
       drizzle-orm:
         specifier: ^0.44.0
-        version: 0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))
+        version: 0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))
       mysql2:
         specifier: ^3.24.6
         version: 3.24.6(@types/node@22.20.5)
@@ -403,7 +403,7 @@ importers:
         version: 1.15.11
       nuxt:
         specifier: ^4.6.4
-        version: 4.6.4(2642c259bcde78fc5bec4a33996d5027)
+        version: 4.6.4(53c2a5639a8695ca46b60cd7a4189055)
       tsup:
         specifier: ^8.3.0
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.33)(tsx@4.23.15)(typescript@5.9.3)
@@ -497,6 +497,31 @@ importers:
       vue:
         specifier: ^3.5.0
         version: 3.5.45(typescript@5.9.3)
+
+  tests/bun:
+    dependencies:
+      '@anievo-id/rbac-evolution':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@anievo-id/rbac-evolution-cli':
+        specifier: workspace:*
+        version: link:../../packages/cli
+      '@anievo-id/rbac-evolution-drizzle':
+        specifier: workspace:*
+        version: link:../../packages/drizzle
+      '@anievo-id/rbac-evolution-hono':
+        specifier: workspace:*
+        version: link:../../packages/hono
+      drizzle-orm:
+        specifier: ^0.44.0
+        version: 0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))
+      hono:
+        specifier: ^4.6.0
+        version: 4.13.18
+    devDependencies:
+      '@types/bun':
+        specifier: ^1.3.0
+        version: 1.4.4
 
 packages:
 
@@ -2416,6 +2441,9 @@ packages:
   '@types/body-parser@1.19.6':
     resolution: {integrity: sha512-HLFeCYgz89uk22N5Qg3dvGvsv46B8GLvKKo1zKG4NybA8U2DiEO3w9lqGg29t/tfLRJpJ6iQxnVw4OnB7MoM9g==}
 
+  '@types/bun@1.4.4':
+    resolution: {integrity: sha512-9wkRDXUXK124pEnAutE6n/l18j+i9GC5IAHK8TmX/2nlySETmky0OU6yL5U8pW1AoKh++AN9auDCr647BfurjQ==}
+
   '@types/connect@3.4.38':
     resolution: {integrity: sha512-K6uROf1LD88uDQqJCktA4yzL1YYAK6NgfsI0v/mTgyPKWsX1CnJ0XPSDhViejru1GcRkLWb8RlzFYJRqGUbaug==}
 
@@ -3016,6 +3044,9 @@ packages:
 
   buffer@6.0.3:
     resolution: {integrity: sha512-FTiCpNxtwiZZHEZbcbTIcZjERVICn9yq/pDFkTl95/AxzD1naBctN7YO68riM/gLSDY7sdrMby8hofADYuuqOA==}
+
+  bun-types@1.4.4:
+    resolution: {integrity: sha512-yjrJh5oGX7mMPKGd19YXyIjmEuj4G4zNC30bs7PM9Az7NQ3ndF3j6hbeRdvJTRQEhJ/FYQwW0a2moweEi2hMxQ==}
 
   bundle-name@4.1.1:
     resolution: {integrity: sha512-DdH81/zPLVS11EUgWq3tEu/xn+EzljlMYooDNdzWEnFha3R3NBMpMV1UqYIpjYHV/SgpFKMIX1Oh7o06SjM/oA==}
@@ -7637,7 +7668,7 @@ snapshots:
       pkg-types: 2.4.0
       semver: 7.8.6
 
-  '@nuxt/devtools@3.4.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(db0@0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5)))(dotenv@17.4.2)(giget@3.3.1)(ioredis@5.11.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))(vue@3.5.45(typescript@5.9.3))':
+  '@nuxt/devtools@3.4.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(db0@0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5)))(dotenv@17.4.2)(giget@3.3.1)(ioredis@5.11.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))(vue@3.5.45(typescript@5.9.3))':
     dependencies:
       '@nuxt/devtools-kit': 3.4.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))
       '@nuxt/devtools-wizard': 3.4.4
@@ -7667,7 +7698,7 @@ snapshots:
       structured-clone-es: 2.0.1
       tinyexec: 1.3.1
       tinyglobby: 0.2.17
-      unstorage: 1.17.6(db0@0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5)))(ioredis@5.11.1)
+      unstorage: 1.17.6(db0@0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5)))(ioredis@5.11.1)
       vite: 8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)
       vite-plugin-inspect: 11.4.1(@nuxt/kit@4.6.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))))(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))
       vite-plugin-vue-tracer: 1.7.0(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))(vue@3.5.45(typescript@5.9.3))
@@ -7739,7 +7770,7 @@ snapshots:
       - magic-string
       - unplugin
 
-  '@nuxt/nitro-server@4.6.4(e17d33d9ed30fd0e99fdf4bca70e7d23)':
+  '@nuxt/nitro-server@4.6.4(1daf4901a4668b44a29fbb0a157fca24)':
     dependencies:
       '@nuxt/kit': 4.6.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))
       '@unhead/vue': 3.4.3(@oxc-project/types@0.156.0)(esbuild@0.28.2)(lightningcss@1.33.0)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))(vue@3.5.45(typescript@5.9.3))
@@ -7756,9 +7787,9 @@ snapshots:
       klona: 2.0.6
       mocked-exports: 0.1.1
       my-bad: 0.2.12(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))
-      nitropack: 2.13.6(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5))(rolldown@1.2.19)(srvx@1.0.8)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))
+      nitropack: 2.13.6(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5))(rolldown@1.2.19)(srvx@1.0.8)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))
       nostics: 1.3.0
-      nuxt: 4.6.4(2642c259bcde78fc5bec4a33996d5027)
+      nuxt: 4.6.4(53c2a5639a8695ca46b60cd7a4189055)
       ohash: 2.0.12
       pathe: 2.0.3
       radix3: 1.1.2
@@ -7767,7 +7798,7 @@ snapshots:
       ufo: 1.6.4
       unctx: 3.0.1(magic-string@1.4.5)(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))
       unrouting: 0.3.2
-      unstorage: 1.17.6(db0@0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5)))(ioredis@5.11.1)
+      unstorage: 1.17.6(db0@0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5)))(ioredis@5.11.1)
       vue: 3.5.45(typescript@5.9.3)
       vue-bundle-renderer: 2.5.0
       vue-devtools-stub: 0.1.0
@@ -7849,7 +7880,7 @@ snapshots:
       rc9: 3.1.0
       std-env: 4.3.0
 
-  '@nuxt/vite-builder@4.6.4(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.13))(@nuxt/schema@4.6.4)(@types/node@22.20.5)(confbox@0.3.2)(dotenv@17.4.2)(esbuild@0.28.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.4(2642c259bcde78fc5bec4a33996d5027))(rolldown@1.2.19)(rollup-plugin-visualizer@7.1.3(rolldown@1.2.19)(rollup@4.68.3))(terser@5.51.2)(tsx@4.23.15)(typescript@5.9.3)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))(vue-tsc@2.2.12(typescript@5.9.3))(vue@3.5.45(typescript@5.9.3))':
+  '@nuxt/vite-builder@4.6.4(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.13))(@nuxt/schema@4.6.4)(@types/node@22.20.5)(confbox@0.3.2)(dotenv@17.4.2)(esbuild@0.28.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.4(53c2a5639a8695ca46b60cd7a4189055))(rolldown@1.2.19)(rollup-plugin-visualizer@7.1.3(rolldown@1.2.19)(rollup@4.68.3))(terser@5.51.2)(tsx@4.23.15)(typescript@5.9.3)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))(vue-tsc@2.2.12(typescript@5.9.3))(vue@3.5.45(typescript@5.9.3))':
     dependencies:
       '@nuxt/kit': 4.6.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))
       '@vitejs/plugin-vue': 6.0.11(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))(vue@3.5.45(typescript@5.9.3))
@@ -7867,7 +7898,7 @@ snapshots:
       knitwork: 1.3.0
       mocked-exports: 0.1.1
       my-bad: 0.2.12(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))
-      nuxt: 4.6.4(2642c259bcde78fc5bec4a33996d5027)
+      nuxt: 4.6.4(53c2a5639a8695ca46b60cd7a4189055)
       pathe: 2.0.3
       pkg-types: 2.4.0
       postcss: 8.5.33
@@ -7916,7 +7947,7 @@ snapshots:
       - vue-tsc
       - yaml
 
-  '@nuxt/vite-server@4.6.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.4(2642c259bcde78fc5bec4a33996d5027))(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))':
+  '@nuxt/vite-server@4.6.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.4(53c2a5639a8695ca46b60cd7a4189055))(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))':
     dependencies:
       '@nuxt/kit': 4.6.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))
       clickable-path: 0.1.1
@@ -7924,7 +7955,7 @@ snapshots:
       exsolve: 1.2.0
       mocked-exports: 0.1.1
       my-bad: 0.2.12(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))
-      nuxt: 4.6.4(2642c259bcde78fc5bec4a33996d5027)
+      nuxt: 4.6.4(53c2a5639a8695ca46b60cd7a4189055)
       pathe: 2.0.3
       rou3: 0.9.2
       srvx: 1.0.5
@@ -8310,6 +8341,10 @@ snapshots:
     dependencies:
       '@types/connect': 3.4.38
       '@types/node': 22.20.5
+
+  '@types/bun@1.4.4':
+    dependencies:
+      bun-types: 1.4.4
 
   '@types/connect@3.4.38':
     dependencies:
@@ -8981,6 +9016,11 @@ snapshots:
       base64-js: 1.5.1
       ieee754: 1.2.1
 
+  bun-types@1.4.4:
+    dependencies:
+      '@types/node': 22.20.5
+      undici-types: 6.21.0
+
   bundle-name@4.1.1:
     dependencies:
       run-applescript: 7.1.0
@@ -9239,11 +9279,11 @@ snapshots:
       whatwg-mimetype: 4.0.0
       whatwg-url: 14.2.0
 
-  db0@0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5)):
+  db0@0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5)):
     optionalDependencies:
       '@electric-sql/pglite': 0.3.16
       '@libsql/client': 0.15.15
-      drizzle-orm: 0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))
+      drizzle-orm: 0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))
       mysql2: 3.24.6(@types/node@22.20.5)
 
   de-indent@1.0.2: {}
@@ -9309,12 +9349,13 @@ snapshots:
 
   dotenv@17.4.2: {}
 
-  drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)):
+  drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)):
     optionalDependencies:
       '@electric-sql/pglite': 0.3.16
       '@libsql/client': 0.15.15
       '@prisma/client': 6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3)
       '@types/pg': 8.23.1
+      bun-types: 1.4.4
       kysely: 0.28.20
       mysql2: 3.24.6(@types/node@22.20.5)
       pg: 8.23.1
@@ -10576,7 +10617,7 @@ snapshots:
       - '@types/node'
       - babel-plugin-macros
 
-  nitropack@2.13.6(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5))(rolldown@1.2.19)(srvx@1.0.8)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)):
+  nitropack@2.13.6(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5))(rolldown@1.2.19)(srvx@1.0.8)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)):
     dependencies:
       '@cloudflare/kv-asset-handler': 0.4.2
       '@rollup/plugin-alias': 6.0.1(rollup@4.68.3)
@@ -10597,7 +10638,7 @@ snapshots:
       cookie-es: 2.0.1
       croner: 10.0.1
       crossws: 0.3.5
-      db0: 0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5))
+      db0: 0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5))
       defu: 6.1.7
       destr: 2.0.5
       dot-prop: 10.2.0
@@ -10643,7 +10684,7 @@ snapshots:
       unenv: 2.0.0-rc.24
       unimport: 6.5.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))
       unplugin-utils: 0.3.2
-      unstorage: 1.17.6(db0@0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5)))(ioredis@5.11.1)
+      unstorage: 1.17.6(db0@0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5)))(ioredis@5.11.1)
       untyped: 2.0.0
       unwasm: 0.5.3
       youch: 4.1.1
@@ -10732,19 +10773,19 @@ snapshots:
       path-key: 4.0.0
       unicorn-magic: 0.3.0
 
-  nuxt@4.6.4(2642c259bcde78fc5bec4a33996d5027):
+  nuxt@4.6.4(53c2a5639a8695ca46b60cd7a4189055):
     dependencies:
       '@dxup/nuxt': 0.5.11(@nuxt/schema@4.6.4)(confbox@0.3.2)(dotenv@17.4.2)(esbuild@0.28.2)(giget@3.3.1)(jiti@2.7.0)(mlly@1.8.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))
       '@jridgewell/trace-mapping': 0.3.31
       '@nuxt/cli': 4.0.3(@nuxt/schema@4.6.4)(jiti@2.7.0)(rolldown@1.2.19)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))
       '@nuxt/devalue': 2.0.2
-      '@nuxt/devtools': 3.4.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(db0@0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5)))(dotenv@17.4.2)(giget@3.3.1)(ioredis@5.11.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))(vue@3.5.45(typescript@5.9.3))
+      '@nuxt/devtools': 3.4.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(db0@0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5)))(dotenv@17.4.2)(giget@3.3.1)(ioredis@5.11.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))(vue@3.5.45(typescript@5.9.3))
       '@nuxt/kit': 4.6.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))
-      '@nuxt/nitro-server': 4.6.4(e17d33d9ed30fd0e99fdf4bca70e7d23)
+      '@nuxt/nitro-server': 4.6.4(1daf4901a4668b44a29fbb0a157fca24)
       '@nuxt/schema': 4.6.4
       '@nuxt/telemetry': 2.9.1(@nuxt/kit@4.6.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))))
-      '@nuxt/vite-builder': 4.6.4(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.13))(@nuxt/schema@4.6.4)(@types/node@22.20.5)(confbox@0.3.2)(dotenv@17.4.2)(esbuild@0.28.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.4(2642c259bcde78fc5bec4a33996d5027))(rolldown@1.2.19)(rollup-plugin-visualizer@7.1.3(rolldown@1.2.19)(rollup@4.68.3))(terser@5.51.2)(tsx@4.23.15)(typescript@5.9.3)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))(vue-tsc@2.2.12(typescript@5.9.3))(vue@3.5.45(typescript@5.9.3))
-      '@nuxt/vite-server': 4.6.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.4(2642c259bcde78fc5bec4a33996d5027))(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))
+      '@nuxt/vite-builder': 4.6.4(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.13))(@nuxt/schema@4.6.4)(@types/node@22.20.5)(confbox@0.3.2)(dotenv@17.4.2)(esbuild@0.28.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.4(53c2a5639a8695ca46b60cd7a4189055))(rolldown@1.2.19)(rollup-plugin-visualizer@7.1.3(rolldown@1.2.19)(rollup@4.68.3))(terser@5.51.2)(tsx@4.23.15)(typescript@5.9.3)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))(vue-tsc@2.2.12(typescript@5.9.3))(vue@3.5.45(typescript@5.9.3))
+      '@nuxt/vite-server': 4.6.4(@nuxt/schema@4.6.4)(confbox@0.3.2)(dotenv@17.4.2)(giget@3.3.1)(jiti@2.7.0)(magic-string@1.4.5)(mlly@1.8.2)(nuxt@4.6.4(53c2a5639a8695ca46b60cd7a4189055))(rolldown@1.2.19)(unplugin@3.7.0(esbuild@0.28.2)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)))(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))
       '@unhead/vue': 3.4.3(@oxc-project/types@0.156.0)(esbuild@0.28.2)(lightningcss@1.33.0)(rolldown@1.2.19)(rollup@4.68.3)(vite@8.3.8(@types/node@22.20.5)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15))(vue@3.5.45(typescript@5.9.3))
       '@vue/shared': 3.5.45
       chokidar: 5.0.0
@@ -12060,7 +12101,7 @@ snapshots:
       escape-string-regexp: 5.0.0
       ufo: 1.6.4
 
-  unstorage@1.17.6(db0@0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5)))(ioredis@5.11.1):
+  unstorage@1.17.6(db0@0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5)))(ioredis@5.11.1):
     dependencies:
       anymatch: 3.1.3
       chokidar: 5.0.0
@@ -12071,7 +12112,7 @@ snapshots:
       ofetch: 1.5.1
       ufo: 1.6.4
     optionalDependencies:
-      db0: 0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5))
+      db0: 0.3.4(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(drizzle-orm@0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@6.19.3(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(prisma@6.19.3(magicast@0.5.5)(typescript@5.9.3)))(mysql2@3.24.6(@types/node@22.20.5))
       ioredis: 5.11.1
 
   untun@0.2.2: {}
