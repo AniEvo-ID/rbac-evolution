@@ -1,11 +1,13 @@
 import 'reflect-metadata'
 import { createRbac, MemoryAdapter, type Rbac, type SubjectRbac } from '@anievo-id/rbac-evolution'
 import { Controller, type ExecutionContext, Get, Inject, Injectable, type INestApplication, Module } from '@nestjs/common'
+import { Reflector } from '@nestjs/core'
 import { Test } from '@nestjs/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   CurrentRbac,
   RBAC,
+  RbacGuard,
   RbacModule,
   type RbacModuleOptions,
   RequirePermissions,
@@ -283,5 +285,51 @@ describe('decorator validation', () => {
   it('throws when no name is given', () => {
     expect(() => RequirePermissions()).toThrow(TypeError)
     expect(() => RequireRoles(' | ')).toThrow(TypeError)
+  })
+})
+
+describe('RbacGuard on long-lived contexts (WebSocket / GraphQL)', () => {
+  class Gateway {
+    @RequirePermissions('edit articles')
+    onEdit() {}
+  }
+
+  // A WebSocket client object is shared by every message of the connection.
+  const wsContext = (client: object): ExecutionContext =>
+    ({
+      getType: () => 'ws',
+      switchToWs: () => ({ getClient: () => client }),
+      getHandler: () => Gateway.prototype.onEdit,
+      getClass: () => Gateway,
+    }) as unknown as ExecutionContext
+
+  async function setup() {
+    const rbac = createRbac({ adapter: new MemoryAdapter() })
+    await rbac.createPermission('edit articles')
+    await rbac.createRole('writer')
+    await rbac.role('writer').givePermissionTo('edit articles')
+    const guard = new RbacGuard(new Reflector(), {
+      rbac,
+      getSubject: (ctx) => (ctx.switchToWs().getClient() as { userId: number }).userId
+        ? { type: 'user', id: (ctx.switchToWs().getClient() as { userId: number }).userId }
+        : null,
+    } as RbacModuleOptions)
+    return { rbac, guard }
+  }
+
+  it('keeps denying a client on its next message', async () => {
+    const { guard } = await setup()
+    const client = { userId: 7 }
+    await expect(guard.canActivate(wsContext(client))).rejects.toMatchObject({ status: 403 })
+    await expect(guard.canActivate(wsContext(client))).rejects.toMatchObject({ status: 403 })
+  })
+
+  it('sees a role revoked during the connection', async () => {
+    const { rbac, guard } = await setup()
+    const client = { userId: 8 }
+    await rbac.for({ type: 'user', id: 8 }).assignRole('writer')
+    await expect(guard.canActivate(wsContext(client))).resolves.toBe(true)
+    await rbac.for({ type: 'user', id: 8 }).removeRole('writer')
+    await expect(guard.canActivate(wsContext(client))).rejects.toMatchObject({ status: 403 })
   })
 })
