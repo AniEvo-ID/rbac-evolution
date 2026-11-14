@@ -61,4 +61,10 @@ export interface RbacAdapter {
     permissionIds: readonly Id[] | undefined,
     teamId: TeamId,
   ): Promise<void>
+
+  // reverse lookups (spatie: `User::role('writer')->get()`, `User::permission('edit')->get()`)
+  /** Ids of subjects of `subjectType` that have ANY of the given roles in the given team. Unique. */
+  getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]>
+  /** Ids of subjects of `subjectType` that have ANY of the given DIRECT permissions in the given team. Unique. */
+  getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]>
 }

@@ -2,7 +2,8 @@ import type { FindPermissionsQuery, FindRolesQuery, RbacAdapter, RolePermissionL
 import type { Id, Permission, Role, Subject, TeamId } from '../types'
 
 interface SubjectLink {
-  subject: string
+  subjectType: string
+  subjectId: Id
   targetId: Id
   teamId: TeamId
 }
@@ -10,7 +11,7 @@ interface SubjectLink {
 const key = (id: Id | null): string => (id === null ? '\u0000null' : String(id))
 const same = (a: Id | null, b: Id | null): boolean => key(a) === key(b)
 const inIds = (ids: readonly (Id | null)[], id: Id | null): boolean => ids.some((x) => same(x, id))
-const subjectKey = (s: Subject): string => `${s.type}\u0000${String(s.id)}`
+const isSubject = (l: SubjectLink, s: Subject): boolean => l.subjectType === s.type && same(l.subjectId, s.id)
 
 /**
  * In-memory adapter. Great for tests, prototypes, or apps whose roles are defined in code.
@@ -124,18 +125,24 @@ export class MemoryAdapter implements RbacAdapter {
     this.subjectPermissions = MemoryAdapter.detach(this.subjectPermissions, subject, permissionIds, teamId)
   }
 
+  async getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
+    return MemoryAdapter.reverse(this.subjectRoles, subjectType, roleIds, teamId)
+  }
+
+  async getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
+    return MemoryAdapter.reverse(this.subjectPermissions, subjectType, permissionIds, teamId)
+  }
+
   // -------------------------------------------------------------------- helpers
 
   private static getLinks(links: SubjectLink[], subject: Subject, teamId: TeamId): Id[] {
-    const s = subjectKey(subject)
-    return links.filter((l) => l.subject === s && same(l.teamId, teamId)).map((l) => l.targetId)
+    return links.filter((l) => isSubject(l, subject) && same(l.teamId, teamId)).map((l) => l.targetId)
   }
 
   private static attach(links: SubjectLink[], subject: Subject, ids: readonly Id[], teamId: TeamId): void {
-    const s = subjectKey(subject)
     for (const targetId of ids) {
-      const exists = links.some((l) => l.subject === s && same(l.targetId, targetId) && same(l.teamId, teamId))
-      if (!exists) links.push({ subject: s, targetId, teamId })
+      const exists = links.some((l) => isSubject(l, subject) && same(l.targetId, targetId) && same(l.teamId, teamId))
+      if (!exists) links.push({ subjectType: subject.type, subjectId: subject.id, targetId, teamId })
     }
   }
 
@@ -145,9 +152,21 @@ export class MemoryAdapter implements RbacAdapter {
     ids: readonly Id[] | undefined,
     teamId: TeamId,
   ): SubjectLink[] {
-    const s = subjectKey(subject)
     return links.filter(
-      (l) => !(l.subject === s && same(l.teamId, teamId) && (ids === undefined || inIds(ids, l.targetId))),
+      (l) => !(isSubject(l, subject) && same(l.teamId, teamId) && (ids === undefined || inIds(ids, l.targetId))),
     )
+  }
+
+  private static reverse(links: SubjectLink[], subjectType: string, ids: readonly Id[], teamId: TeamId): Id[] {
+    const seen = new Set<string>()
+    const out: Id[] = []
+    for (const l of links) {
+      if (l.subjectType !== subjectType || !same(l.teamId, teamId) || !inIds(ids, l.targetId)) continue
+      const k = key(l.subjectId)
+      if (seen.has(k)) continue
+      seen.add(k)
+      out.push(l.subjectId)
+    }
+    return out
   }
 }

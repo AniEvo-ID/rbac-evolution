@@ -1,0 +1,90 @@
+{
+  "name": "@anievo-id/rbac-evolution-drizzle",
+  "version": "0.0.0",
+  "description": "Drizzle ORM storage adapter (PostgreSQL & SQLite) for rbac-evolution.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AniEvo-ID/rbac-evolution.git",
+    "directory": "packages/drizzle"
+  },
+  "keywords": [
+    "rbac",
+    "permissions",
+    "roles",
+    "authorization",
+    "drizzle",
+    "drizzle-orm",
+    "postgresql",
+    "sqlite",
+    "libsql"
+  ],
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./pg": {
+      "import": {
+        "types": "./dist/pg.d.ts",
+        "default": "./dist/pg.js"
+      },
+      "require": {
+        "types": "./dist/pg.d.cts",
+        "default": "./dist/pg.cjs"
+      }
+    },
+    "./sqlite": {
+      "import": {
+        "types": "./dist/sqlite.d.ts",
+        "default": "./dist/sqlite.js"
+      },
+      "require": {
+        "types": "./dist/sqlite.d.cts",
+        "default": "./dist/sqlite.cjs"
+      }
+    },
+    "./sql/pg.sql": "./sql/pg.sql",
+    "./sql/sqlite.sql": "./sql/sqlite.sql",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "sql"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@anievo-id/rbac-evolution": "workspace:^"
+  },
+  "peerDependencies": {
+    "drizzle-orm": ">=0.36"
+  },
+  "devDependencies": {
+    "drizzle-orm": "^0.44.0",
+    "@electric-sql/pglite": "^0.3.0",
+    "@libsql/client": "^0.15.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

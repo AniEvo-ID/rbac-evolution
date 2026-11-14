@@ -28,11 +28,51 @@ export interface Subject {
   id: Id
 }
 
-/** A permission can be referenced by its name or by the permission object itself. */
-export type PermissionInput = string | Permission
+/**
+ * A permission can be referenced by its name or by the permission object itself.
+ * `P` narrows the accepted names (see {@link RbacTypeConfig}); defaults to any string.
+ */
+export type PermissionInput<P extends string = string> = P | Permission
 
-/** A role can be referenced by its name or by the role object itself. */
-export type RoleInput = string | Role
+/**
+ * A role can be referenced by its name or by the role object itself.
+ * `R` narrows the accepted names (see {@link RbacTypeConfig}); defaults to any string.
+ */
+export type RoleInput<R extends string = string> = R | Role
+
+/**
+ * Type-level configuration of an `Rbac` instance — the equivalent of spatie's enums.
+ *
+ * ```ts
+ * const rbac = createRbac<{ permissions: 'edit articles' | 'delete articles'; roles: 'writer' }>({ adapter })
+ * await rbac.for(user).can('edit articles') // ok
+ * await rbac.for(user).can('fly')           // type error
+ * ```
+ *
+ * Both keys are optional; a missing key accepts any string. TS string enums work too.
+ */
+export interface RbacTypeConfig {
+  permissions?: string
+  roles?: string
+}
+
+/** Default type configuration: any string is a valid permission / role name. */
+export interface DefaultRbacTypes {
+  permissions: string
+  roles: string
+}
+
+/** Permission names accepted by an `Rbac<T>` (string enums also accept their literal values). */
+export type PermissionName<T extends RbacTypeConfig = DefaultRbacTypes> = T extends {
+  permissions: infer P extends string
+}
+  ? P | `${P}`
+  : string
+
+/** Role names accepted by an `Rbac<T>` (string enums also accept their literal values). */
+export type RoleName<T extends RbacTypeConfig = DefaultRbacTypes> = T extends { roles: infer R extends string }
+  ? R | `${R}`
+  : string
 
 /** Lets methods accept both `fn('a', 'b')` and `fn(['a', 'b'])`. */
 export type Many<T> = T | readonly T[]

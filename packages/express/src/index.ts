@@ -1,0 +1,26 @@
+/**
+ * @anievo-id/rbac-evolution-express
+ *
+ * Express middleware for rbac-evolution — works with Express 4 and 5.
+ */
+
+export { asyncHandler, rbacMiddleware } from './middleware'
+export type { RbacMiddlewareOptions } from './middleware'
+
+export {
+  createGuards,
+  RbacMiddlewareMissingError,
+  requirePermission,
+  requireRole,
+  requireRoleOrPermission,
+} from './guards'
+export type {
+  GuardContext,
+  GuardHandler,
+  GuardHandlers,
+  GuardKind,
+  GuardNames,
+  PermissionGuardOptions,
+  RoleGuardOptions,
+  RoleOrPermissionGuardOptions,
+} from './guards'
