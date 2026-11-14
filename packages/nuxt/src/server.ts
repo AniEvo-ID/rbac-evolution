@@ -80,8 +80,9 @@ export class RbacHttpError extends Error {
 
 export interface RbacServer<E extends RbacEvent = RbacEvent> {
   /**
-   * Resolves the subject once per request and stores it on `event.context.rbac`
-   * (a `SubjectRbac`, or `null` for guests). The Nuxt plugin reads it to hydrate the client.
+   * Resolves the subject once per request (cached per helper instance) and stores it on
+   * `event.context.rbac` (a `SubjectRbac`, or `null` for guests) unless another instance did
+   * first. The Nuxt plugin reads it to hydrate the client.
    */
   resolve(event: E): Promise<SubjectRbac | null>
   /** The current subject's `{ roles, permissions }`, or `null` for guests. */
@@ -135,11 +136,12 @@ async function passes(rbac: SubjectRbac, kind: RequirementKind, group: string[])
  */
 export function createRbacServer<E extends RbacEvent = RbacEvent>(options: RbacServerOptions<E>): RbacServer<E> {
   const { rbac, getSubject, guard, team, exposeRequirements = false } = options
+  // Per instance, so a second server (e.g. guard 'api') never reuses another guard's subject.
+  const resolved = new WeakMap<object, SubjectRbac | null>()
 
   async function resolve(event: E): Promise<SubjectRbac | null> {
     const context = event.context as Record<string, unknown>
-    const cached = context[CONTEXT_KEY]
-    if (cached !== undefined) return cached as SubjectRbac | null
+    if (resolved.has(context)) return resolved.get(context)!
 
     const subject = await getSubject(event)
     let result: SubjectRbac | null = null
@@ -150,7 +152,9 @@ export function createRbacServer<E extends RbacEvent = RbacEvent>(options: RbacS
         ...(teamId !== undefined && { team: teamId }),
       })
     }
-    context[CONTEXT_KEY] = result
+    resolved.set(context, result)
+    // The client plugin hydrates from `event.context.rbac`: the first instance to resolve fills it.
+    if (context[CONTEXT_KEY] === undefined) context[CONTEXT_KEY] = result
     return result
   }
 

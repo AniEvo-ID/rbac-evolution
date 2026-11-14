@@ -114,7 +114,8 @@ export interface PrismaRbacClient {
   rbacRoleHasPermission: PrismaRbacRoleHasPermissionDelegate
   rbacModelHasRole: PrismaRbacModelHasRoleDelegate
   rbacModelHasPermission: PrismaRbacModelHasPermissionDelegate
-  $transaction(queries: PromiseLike<unknown>[]): PromiseLike<unknown>
+  /** Missing on an interactive-transaction client (`prisma.$transaction(async (tx) => ...)`). */
+  $transaction?(queries: PromiseLike<unknown>[]): PromiseLike<unknown>
 }
 
 export interface PrismaAdapterOptions {
@@ -198,6 +199,15 @@ export class PrismaAdapter implements RbacAdapter {
     this.#skipDuplicates = options.skipDuplicates ?? false
   }
 
+  /** A `tx` client is already inside a transaction: run the (lazy) queries in order instead. */
+  async #atomically(queries: PromiseLike<unknown>[]): Promise<void> {
+    if (this.#db.$transaction) {
+      await this.#db.$transaction(queries)
+      return
+    }
+    for (const query of queries) await query
+  }
+
   // ---------------------------------------------------------------- permissions
 
   async createPermission(data: { name: string; guardName: string }): Promise<Permission> {
@@ -225,7 +235,7 @@ export class PrismaAdapter implements RbacAdapter {
   async deletePermission(id: Id): Promise<void> {
     const permissionId = toIntId(id)
     if (permissionId === undefined) return
-    await this.#db.$transaction([
+    await this.#atomically([
       this.#db.rbacRoleHasPermission.deleteMany({ where: { permissionId } }),
       this.#db.rbacModelHasPermission.deleteMany({ where: { permissionId } }),
       this.#db.rbacPermission.deleteMany({ where: { id: permissionId } }),
@@ -265,7 +275,7 @@ export class PrismaAdapter implements RbacAdapter {
   async deleteRole(id: Id): Promise<void> {
     const roleId = toIntId(id)
     if (roleId === undefined) return
-    await this.#db.$transaction([
+    await this.#atomically([
       this.#db.rbacRoleHasPermission.deleteMany({ where: { roleId } }),
       this.#db.rbacModelHasRole.deleteMany({ where: { roleId } }),
       this.#db.rbacRole.deleteMany({ where: { id: roleId } }),
