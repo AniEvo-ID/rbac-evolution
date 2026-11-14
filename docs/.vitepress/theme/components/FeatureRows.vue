@@ -2,6 +2,25 @@
 import { withBase } from 'vitepress'
 import { byId } from '../mascots'
 
+// Tiny highlighter for the five snippets above, using the same colors as the docs' code blocks.
+// shortcut: knows TS keywords/strings/calls and shell flags only; switch to shiki if snippets get richer.
+const TS =
+  /(\/\/.*$)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")|\b(const|let|await|async|import|from|export|new|return)\b|\b(true|false|null|\d+)\b|\b([A-Za-z_$][\w$]*)(?=\s*\()/gm
+const SHELL = /("(?:[^"\\]|\\.)*")|(--[\w-]+)|^(npx|pnpm|bunx)\b|\b(rbac-evolution)\b/gm
+const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
+
+function highlight(code: string, shell: boolean): string {
+  const classes = shell ? ['s', 'n', 'k', 'f'] : ['c', 's', 'k', 'n', 'f']
+  let out = ''
+  let last = 0
+  for (const m of code.matchAll(shell ? SHELL : TS)) {
+    const group = m.slice(1).findIndex((g) => g !== undefined)
+    out += esc(code.slice(last, m.index)) + `<span class="tk-${classes[group]}">${esc(m[0])}</span>`
+    last = m.index! + m[0].length
+  }
+  return out + esc(code.slice(last))
+}
+
 const rows = [
   {
     no: '01',
@@ -83,7 +102,8 @@ npx rbac-evolution sync --dry-run`,
     mascot: 'disciple',
     link: '/basic-usage/cli',
   },
-].map((r) => ({ ...r, guardian: byId[r.mascot]! }))
+].map((r) => ({ ...r, guardian: byId[r.mascot]!, html: highlight(r.code, r.file === 'terminal') }))
+
 </script>
 
 <template>
@@ -103,7 +123,7 @@ npx rbac-evolution sync --dry-run`,
           <span class="dots" aria-hidden="true"><i /><i /><i /></span>
           <span class="file">{{ r.file }}</span>
         </figcaption>
-        <pre><code>{{ r.code }}</code></pre>
+        <pre><code v-html="r.html" /></pre>
         <p class="result"><span class="ok">→</span> {{ r.result }}</p>
         <img class="peek" :src="withBase(`/mascots/${r.mascot}.webp`)" alt="" width="90" height="120" loading="lazy" />
       </figure>
@@ -229,8 +249,13 @@ pre {
 }
 code {
   font-family: var(--vp-font-family-mono);
-  color: var(--vp-c-text-1);
+  color: #e1e4e8;
 }
+code :deep(.tk-k) { color: #f97583; }
+code :deep(.tk-s) { color: #9ecbff; }
+code :deep(.tk-c) { color: #6a737d; }
+code :deep(.tk-n) { color: #79b8ff; }
+code :deep(.tk-f) { color: #b392f0; }
 .result {
   margin: 0;
   padding: 10px 18px;
