@@ -4,7 +4,8 @@ name: Docs
 # (https://anievo-id.github.io/rbac-evolution/).
 # Runs on every push to main (not only docs changes) so the Test report page always
 # reflects the latest code: scripts/test-report.mjs runs every package's tests with
-# coverage, against real databases, and writes docs/public/reports/unit.json.
+# coverage, against real databases, and writes docs/public/reports/unit.json; the Playwright
+# E2E run writes docs/public/reports/e2e.json.
 on:
   push:
     branches: [main]
@@ -76,6 +77,12 @@ jobs:
       # main is protected by the CI checks anyway.
       - name: Test report
         run: node scripts/test-report.mjs || echo "::warning::Some test suites failed, see the Test report page."
+      - name: E2E report
+        run: |
+          pnpm --filter rbac-evolution-e2e exec playwright install --with-deps chromium
+          pnpm --filter rbac-evolution-e2e prepare:apps
+          pnpm --filter rbac-evolution-e2e test:e2e || echo "::warning::Some E2E tests failed, see the Test report page."
+      # Rebuild so the site ships the fresh reports in docs/public/reports.
       - run: pnpm --filter @anievo-id/rbac-evolution-docs build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
