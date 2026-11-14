@@ -6,9 +6,9 @@
 | --- | --- | --- |
 | PostgreSQL | `@anievo-id/rbac-evolution-drizzle/pg` | node-postgres, postgres.js, Neon, Vercel Postgres, PGlite, ... |
 | SQLite | `@anievo-id/rbac-evolution-drizzle/sqlite` | libsql / Turso, better-sqlite3, Bun SQLite, Cloudflare D1, ... |
-| MySQL | — | Not supported yet |
+| MySQL | `@anievo-id/rbac-evolution-drizzle/mysql` | mysql2, PlanetScale, TiDB Serverless, ... (MySQL 8, MariaDB) |
 
-The package root (`@anievo-id/rbac-evolution-drizzle`) re-exports everything from both entry points.
+The package root (`@anievo-id/rbac-evolution-drizzle`) re-exports everything from all three entry points.
 
 ## Install
 
@@ -36,7 +36,7 @@ bun add @anievo-id/rbac-evolution @anievo-id/rbac-evolution-drizzle drizzle-orm
 
 ## Schema
 
-The tables are built by a factory function, `pgRbacSchema()` or `sqliteRbacSchema()`. Each returns the five tables described in the [adapters overview](/adapters/overview#the-five-tables):
+The tables are built by a factory function, `pgRbacSchema()`, `sqliteRbacSchema()` or `mysqlRbacSchema()`. Each returns the five tables described in the [adapters overview](/adapters/overview#the-five-tables):
 
 ```ts
 { permissions, roles, roleHasPermissions, modelHasRoles, modelHasPermissions }
@@ -62,6 +62,15 @@ export const { permissions, roles, roleHasPermissions, modelHasRoles, modelHasPe
 import { sqliteRbacSchema } from '@anievo-id/rbac-evolution-drizzle/sqlite'
 
 export const { permissions, roles, roleHasPermissions, modelHasRoles, modelHasPermissions } = sqliteRbacSchema()
+
+// ...your own tables
+```
+
+```ts [MySQL]
+// db/schema.ts
+import { mysqlRbacSchema } from '@anievo-id/rbac-evolution-drizzle/mysql'
+
+export const { permissions, roles, roleHasPermissions, modelHasRoles, modelHasPermissions } = mysqlRbacSchema()
 
 // ...your own tables
 ```
@@ -107,24 +116,33 @@ If you manage migrations with another tool, use the DDL files that ship with the
 | --- | --- | --- |
 | PostgreSQL | `node_modules/@anievo-id/rbac-evolution-drizzle/sql/pg.sql` | `@anievo-id/rbac-evolution-drizzle/sql/pg.sql` |
 | SQLite | `node_modules/@anievo-id/rbac-evolution-drizzle/sql/sqlite.sql` | `@anievo-id/rbac-evolution-drizzle/sql/sqlite.sql` |
+| MySQL | `node_modules/@anievo-id/rbac-evolution-drizzle/sql/mysql.sql` | `@anievo-id/rbac-evolution-drizzle/sql/mysql.sql` |
 
-Both files use `CREATE ... IF NOT EXISTS`, so running them twice is harmless. For example, with `psql`:
+All files use `CREATE ... IF NOT EXISTS`, so running them twice is harmless. For example:
 
 ```bash
 psql "$DATABASE_URL" -f node_modules/@anievo-id/rbac-evolution-drizzle/sql/pg.sql
+mysql -u root -p my_app < node_modules/@anievo-id/rbac-evolution-drizzle/sql/mysql.sql
 ```
 
 If you use a prefix, add it to every table, constraint and index name in the file.
 
 ### Column types
 
-| Column | PostgreSQL | SQLite |
-| --- | --- | --- |
-| `id` | `serial` | `integer PRIMARY KEY AUTOINCREMENT` |
-| `name`, `guard_name`, `subject_type`, `subject_id`, `team_id` | `text` | `text` |
-| `created_at`, `updated_at` | `timestamp with time zone DEFAULT now()` | `integer` unix seconds (Drizzle `mode: 'timestamp'` → `Date`) |
+| Column | PostgreSQL | SQLite | MySQL |
+| --- | --- | --- | --- |
+| `id` | `serial` | `integer PRIMARY KEY AUTOINCREMENT` | `int AUTO_INCREMENT` |
+| `name`, `guard_name` | `text` | `text` | `varchar(255)` |
+| `subject_type`, `subject_id`, `team_id` | `text` | `text` | `varchar(191)` |
+| `created_at`, `updated_at` | `timestamp with time zone DEFAULT now()` | `integer` unix seconds (Drizzle `mode: 'timestamp'` → `Date`) | `timestamp DEFAULT CURRENT_TIMESTAMP` |
 
 `team_id` is `NOT NULL DEFAULT ''`, and `''` means global. See [storage conventions](/adapters/overview#storage-conventions).
+
+::: info MySQL specifics
+- **Bounded `varchar`s.** MySQL can't index a whole `TEXT` column, and InnoDB caps an index key at 3072 bytes (768 `utf8mb4` characters). The lengths above keep the `roles` unique key (701 characters) and the `model_has_*` primary keys (573 characters plus the integer id) under that limit. Subject ids and team ids longer than 191 characters are rejected by MySQL.
+- **Exact comparisons.** The string columns use `CHARACTER SET utf8mb4 COLLATE utf8mb4_bin`, so names, subject ids and team ids are compared case-sensitively, the same as on PostgreSQL and SQLite. With MySQL's default case-insensitive collation, `'aBc'` and `'ABC'` would be the same subject id. `utf8mb4_bin` ignores trailing spaces when comparing, so don't rely on trailing whitespace in names or ids.
+- **Short prefixes.** MySQL identifiers are limited to 64 characters. drizzle-kit names foreign keys after the table and column (`rbac_model_has_permissions_permission_id_rbac_permissions_id_fk` is 63), so keep prefixes to about five characters.
+:::
 
 ## Adapter
 
@@ -133,6 +151,7 @@ Each dialect has a factory function that takes a Drizzle database instance and, 
 ```ts
 drizzlePgAdapter(db, schema?: PgRbacSchema): RbacAdapter
 drizzleSqliteAdapter(db, schema?: SqliteRbacSchema): RbacAdapter
+drizzleMysqlAdapter(db, schema?: MysqlRbacSchema): RbacAdapter
 ```
 
 ::: code-group
@@ -155,6 +174,16 @@ import { drizzle } from 'drizzle-orm/libsql'
 const db = drizzle({ connection: { url: 'file:local.db' } })
 
 export const rbac = createRbac({ adapter: drizzleSqliteAdapter(db) })
+```
+
+```ts [MySQL]
+import { createRbac } from '@anievo-id/rbac-evolution'
+import { drizzleMysqlAdapter } from '@anievo-id/rbac-evolution-drizzle/mysql'
+import { drizzle } from 'drizzle-orm/mysql2'
+
+const db = drizzle(process.env.DATABASE_URL!)
+
+export const rbac = createRbac({ adapter: drizzleMysqlAdapter(db) })
 ```
 
 :::
@@ -188,8 +217,9 @@ export const rbac = createRbac({ adapter: drizzlePgAdapter(db, rbacTables) })
 | --- | --- | --- |
 | `pgRbacSchema(options?)`, `drizzlePgAdapter(db, schema?)` | `/pg` | functions |
 | `sqliteRbacSchema(options?)`, `drizzleSqliteAdapter(db, schema?)` | `/sqlite` | functions |
-| `PgRbacSchema`, `SqliteRbacSchema`, `RbacSchemaOptions` | `/pg`, `/sqlite` | types |
-| `DrizzleRbacAdapter`, `RbacTables`, `RbacTableNames` | package root | class / types |
+| `mysqlRbacSchema(options?)`, `drizzleMysqlAdapter(db, schema?)` | `/mysql` | functions |
+| `PgRbacSchema`, `SqliteRbacSchema`, `MysqlRbacSchema`, `RbacSchemaOptions` | `/pg`, `/sqlite`, `/mysql` | types |
+| `DrizzleRbacAdapter`, `DrizzleDialect`, `RbacTables`, `RbacTableNames` | package root | class / types |
 
 `RbacSchemaOptions` has one field, `prefix?: string` (default `''`).
 
@@ -197,9 +227,31 @@ export const rbac = createRbac({ adapter: drizzlePgAdapter(db, rbacTables) })
 
 - **Ids.** Role and permission ids are integers and come back as `number`. Reverse lookups (`getSubjectIdsWithRoles`, `getSubjectIdsWithPermissions`) return subject ids as **strings**.
 - **Non-integer ids are ignored.** If the engine passes an id that can't be an integer, the adapter drops it instead of throwing, because no row could match it anyway.
-- **Idempotent attach.** Every `attach*` method is a single `INSERT ... ON CONFLICT DO NOTHING`, so it is safe when requests race.
+- **Idempotent attach.** Every `attach*` method is a single `INSERT ... ON CONFLICT DO NOTHING` (on MySQL, `INSERT ... ON DUPLICATE KEY UPDATE col = col`, a no-op update), so it is safe when requests race. Unlike `INSERT IGNORE`, the MySQL form still reports foreign-key errors.
+- **Inserts on MySQL.** MySQL has no `INSERT ... RETURNING`, so `createPermission` / `createRole` read the generated id with Drizzle's `$returningId()`.
 - **Link cleanup.** `deleteRole` and `deletePermission` delete the link rows themselves before deleting the row. This works even when SQLite foreign keys are off (the default). The `ON DELETE CASCADE` clauses take effect on SQLite only after `PRAGMA foreign_keys = ON` for each connection.
 - **Timestamps.** The adapter never writes or returns `created_at` / `updated_at`. They keep their default values.
+
+## Supported databases and how they are tested
+
+Every dialect runs the shared conformance suite (`runAdapterTests` from `@anievo-id/rbac-evolution/testing`) plus dialect-specific tests:
+
+| Dialect | Tested against | When |
+| --- | --- | --- |
+| PostgreSQL | PGlite (embedded PostgreSQL) | every test run |
+| PostgreSQL | PostgreSQL 16 via node-postgres | when `PG_URL` is set (CI `databases` job) |
+| SQLite | libsql in memory, foreign keys on and off | every test run |
+| MySQL | MySQL 8 via mysql2 | when `MYSQL_URL` is set (CI `databases` job) |
+
+Without `PG_URL` / `MYSQL_URL`, those suites show up as skipped (`... (skipped: MYSQL_URL not set)`). To run them locally, point the variables at a server you can create databases on; the tests work in their own `rbac_evolution_drizzle_test` database:
+
+```bash
+PG_URL=postgresql://postgres:postgres@localhost:5432/postgres \
+MYSQL_URL=mysql://root:root@127.0.0.1:3306/mysql \
+pnpm --filter @anievo-id/rbac-evolution-drizzle test
+```
+
+MariaDB uses the same schema but isn't covered by CI.
 
 ## Transactions
 

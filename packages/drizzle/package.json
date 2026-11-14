@@ -1,7 +1,7 @@
 {
   "name": "@anievo-id/rbac-evolution-drizzle",
   "version": "0.2.1",
-  "description": "Drizzle ORM storage adapter (PostgreSQL & SQLite) for rbac-evolution.",
+  "description": "Drizzle ORM storage adapter (PostgreSQL, SQLite & MySQL) for rbac-evolution.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
   "homepage": "https://github.com/AniEvo-ID/rbac-evolution/tree/main/packages/drizzle#readme",
@@ -23,7 +23,8 @@
     "drizzle-orm",
     "postgresql",
     "sqlite",
-    "libsql"
+    "libsql",
+    "mysql"
   ],
   "sideEffects": false,
   "main": "./dist/index.cjs",
@@ -60,8 +61,19 @@
         "default": "./dist/sqlite.cjs"
       }
     },
+    "./mysql": {
+      "import": {
+        "types": "./dist/mysql.d.ts",
+        "default": "./dist/mysql.js"
+      },
+      "require": {
+        "types": "./dist/mysql.d.cts",
+        "default": "./dist/mysql.cjs"
+      }
+    },
     "./sql/pg.sql": "./sql/pg.sql",
     "./sql/sqlite.sql": "./sql/sqlite.sql",
+    "./sql/mysql.sql": "./sql/mysql.sql",
     "./package.json": "./package.json"
   },
   "files": [
@@ -85,9 +97,12 @@
     "drizzle-orm": ">=0.36"
   },
   "devDependencies": {
-    "drizzle-orm": "^0.44.0",
     "@electric-sql/pglite": "^0.3.0",
     "@libsql/client": "^0.15.0",
+    "@types/pg": "^8.23.1",
+    "drizzle-orm": "^0.44.0",
+    "mysql2": "^3.24.6",
+    "pg": "^8.23.1",
     "tsup": "^8.3.0",
     "typescript": "^5.7.0",
     "vitest": "^2.1.0"

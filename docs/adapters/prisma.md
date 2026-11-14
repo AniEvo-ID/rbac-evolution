@@ -199,7 +199,7 @@ When the engine passes an id that isn't an integer to an attach method, the adap
 | Database | Notes |
 | --- | --- |
 | **PostgreSQL / CockroachDB** | `String` maps to `text`, no changes needed. Turn on `skipDuplicates: true`. |
-| **MySQL / MariaDB** | `String` maps to `VARCHAR(191)`, which keeps the composite keys under InnoDB's 3072-byte index limit with `utf8mb4`. Don't change these fields to `@db.Text`, because MySQL can't index a whole `TEXT` column. Turn on `skipDuplicates: true`. |
+| **MySQL / MariaDB** | `String` maps to `VARCHAR(191)`, which keeps the composite keys under InnoDB's 3072-byte index limit with `utf8mb4`. Don't change these fields to `@db.Text`, because MySQL can't index a whole `TEXT` column. Turn on `skipDuplicates: true`. The columns use the database's default collation, which is usually case-insensitive: `'Edit'` and `'edit'` are then the same name and `'aBc'` and `'ABC'` the same subject id. If your ids are case-sensitive, give the database or tables a binary collation such as `utf8mb4_bin`. |
 | **SQLite** | Keep the default `skipDuplicates: false`. The connector doesn't support it. |
 | **SQL Server** | Keep the default `skipDuplicates: false`. The connector doesn't support it. |
 | **MongoDB** | Not supported. The schema relies on autoincrement ids and composite primary keys. |
@@ -213,6 +213,26 @@ More things to know:
 ::: tip Cache across instances
 The default cache lives in process memory. If you run several app instances against one database, read [Cache: multiple processes](/advanced/cache#multiple-processes).
 :::
+
+## How it's tested
+
+The adapter runs the shared conformance suite (`runAdapterTests` from `@anievo-id/rbac-evolution/testing`) against clients generated from the shipped `schema/rbac.prisma`:
+
+| Database | When |
+| --- | --- |
+| SQLite | every test run |
+| PostgreSQL 16 | when `PG_URL` is set (CI `databases` job) |
+| MySQL 8 | when `MYSQL_URL` is set (CI `databases` job) |
+
+PostgreSQL and MySQL are tested with both `skipDuplicates: false` and `skipDuplicates: true`. Without the variables, those suites show up as skipped. To run them locally, point the variables at a server you can create databases on; the schema is pushed into a dedicated `rbac_evolution_prisma_test` database, which is reset on every run:
+
+```bash
+PG_URL=postgresql://postgres:postgres@localhost:5432/postgres \
+MYSQL_URL=mysql://root:root@127.0.0.1:3306/mysql \
+pnpm --filter @anievo-id/rbac-evolution-prisma test
+```
+
+The other connectors (MariaDB, SQL Server, CockroachDB) use the same models but aren't covered by CI.
 
 ## Seeding
 

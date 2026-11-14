@@ -22,3 +22,48 @@ jobs:
       - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm test
+
+  # Runs every package's tests against real PostgreSQL and MySQL servers (the PG_URL / MYSQL_URL suites,
+  # which are skipped when those variables are absent).
+  databases:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: rbac
+          POSTGRES_PASSWORD: rbac
+          POSTGRES_DB: rbac
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rbac -d rbac"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: rbac
+          MYSQL_DATABASE: rbac
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -prbac --silent"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+    env:
+      PG_URL: postgresql://rbac:rbac@localhost:5432/rbac
+      MYSQL_URL: mysql://root:rbac@127.0.0.1:3306/rbac
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      # Turborepo's strict env mode hides undeclared variables from tasks; loose mode passes PG_URL / MYSQL_URL through.
+      - run: pnpm test --env-mode=loose

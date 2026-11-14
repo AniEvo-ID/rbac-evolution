@@ -1,2 +1,4 @@
 test/generated/
+test/generated-pg/
+test/generated-mysql/
 test/.tmp/
