@@ -1,5 +1,7 @@
 # @anievo-id/rbac-evolution-nuxt
 
+📖 **[Documentation](https://app.anievo.id/rbac-evolution/frameworks/nuxt)**
+
 Nuxt 3 / 4 module for [rbac-evolution](../core). It installs [`@anievo-id/rbac-evolution-vue`](../vue)
 (`v-can`, `v-role`, `<Can>`, `<HasRole>`, `$can`), hydrates the user's snapshot from SSR, auto-imports
 `useRbac()` / `useCan()` & co., adds a route middleware for `definePageMeta({ rbac })`, and ships Nitro helpers

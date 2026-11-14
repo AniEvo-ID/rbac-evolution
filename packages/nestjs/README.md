@@ -1,5 +1,7 @@
 # @anievo-id/rbac-evolution-nestjs
 
+📖 **[Documentation](https://app.anievo.id/rbac-evolution/frameworks/nestjs)**
+
 NestJS integration for [rbac-evolution](../core): a global `RbacModule`, an `RbacGuard`, and the
 `@RequirePermissions()`, `@RequireRoles()` and `@RequireRoleOrPermission()` decorators — the Nest counterpart of
 spatie/laravel-permission's `permission`, `role` and `role_or_permission` middleware. Semantics and error bodies are

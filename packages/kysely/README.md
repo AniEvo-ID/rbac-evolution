@@ -1,5 +1,7 @@
 # @anievo-id/rbac-evolution-kysely
 
+📖 **[Documentation](https://app.anievo.id/rbac-evolution/adapters/kysely)**
+
 [Kysely](https://kysely.dev) storage adapter for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution) — roles & permissions for JS/TS, inspired by spatie/laravel-permission.
 
 One adapter class for every Kysely dialect:

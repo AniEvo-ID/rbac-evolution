@@ -4,7 +4,7 @@
   "description": "Nuxt 3/4 module for rbac-evolution: SSR-hydrated permissions, auto-imported composables, route middleware & Nitro helpers.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
-  "homepage": "https://github.com/AniEvo-ID/rbac-evolution/tree/main/packages/nuxt#readme",
+  "homepage": "https://app.anievo.id/rbac-evolution/frameworks/nuxt",
   "bugs": {
     "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
   },

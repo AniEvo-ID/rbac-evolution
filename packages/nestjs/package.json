@@ -4,7 +4,7 @@
   "description": "NestJS module, guard & decorators for rbac-evolution.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
-  "homepage": "https://github.com/AniEvo-ID/rbac-evolution/tree/main/packages/nestjs#readme",
+  "homepage": "https://app.anievo.id/rbac-evolution/frameworks/nestjs",
   "bugs": {
     "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
   },
