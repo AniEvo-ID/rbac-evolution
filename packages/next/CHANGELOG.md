@@ -1,5 +1,12 @@
 # @anievo-id/rbac-evolution-next
 
+## 0.3.0
+
+### Patch Changes
+
+- Updated dependencies [b20a7cf]
+  - @anievo-id/rbac-evolution@0.3.0
+
 ## 0.2.1
 
 ### Patch Changes
