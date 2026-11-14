@@ -50,18 +50,21 @@ function checkRoles(rbac: RbacChecker, p: LooseCondition & { role?: string | und
 
 /** Renders `children` if the user has the permission(s) — like spatie's `@can` / `@canany`. */
 export function Can(props: CanProps) {
-  const allowed = checkPermissions(useRbac(), props)
-  return <>{allowed ? props.children : props.fallback}</>
+  const rbac = useRbac()
+  if (rbac.loading) return null
+  return <>{checkPermissions(rbac, props) ? props.children : props.fallback}</>
 }
 
 /** Renders `children` if the user does NOT have the permission(s) — like spatie's `@cannot`. */
 export function Cannot(props: CannotProps) {
-  const allowed = checkPermissions(useRbac(), props)
-  return <>{allowed ? props.fallback : props.children}</>
+  const rbac = useRbac()
+  if (rbac.loading) return null
+  return <>{checkPermissions(rbac, props) ? props.fallback : props.children}</>
 }
 
 /** Renders `children` if the user has the role(s) — like spatie's `@role` / `@hasanyrole` / `@hasallroles`. */
 export function HasRole(props: HasRoleProps) {
-  const allowed = checkRoles(useRbac(), props)
-  return <>{allowed ? props.children : props.fallback}</>
+  const rbac = useRbac()
+  if (rbac.loading) return null
+  return <>{checkRoles(rbac, props) ? props.children : props.fallback}</>
 }

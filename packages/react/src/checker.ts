@@ -6,6 +6,8 @@ export interface RbacCheckerOptions {
   wildcard?: boolean
   /** Roles that pass every permission check (like spatie's `Gate::before` super-admin pattern). */
   superAdminRoles?: readonly string[]
+  /** The snapshot is still being fetched: `<Can>`, `<Cannot>` and `<HasRole>` render nothing. Default: `false`. */
+  loading?: boolean
 }
 
 /** Synchronous checks against a {@link RbacSnapshot}. */
@@ -14,6 +16,8 @@ export interface RbacChecker {
   readonly permissions: readonly string[]
   /** `true` if the subject has one of the configured `superAdminRoles`. */
   readonly isSuperAdmin: boolean
+  /** `true` while the snapshot is still being fetched (the `loading` option). Checks return `false` meanwhile. */
+  readonly loading: boolean
   can(permission: string): boolean
   cannot(permission: string): boolean
   /** `true` if ANY of the permissions is granted. `false` for an empty list. */
@@ -72,6 +76,7 @@ export function createRbacChecker(
     roles,
     permissions,
     isSuperAdmin,
+    loading: options.loading ?? false,
     can,
     cannot: (permission) => !can(permission),
     canAny: (...list) => flatten(list).some(can),

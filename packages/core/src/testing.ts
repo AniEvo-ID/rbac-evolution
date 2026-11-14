@@ -38,6 +38,7 @@ export function runAdapterTests(
     let adapter: RbacAdapter
     const alice = { type: 'user', id: 1 }
     const bob = { type: 'user', id: 2 }
+    const carol = { type: 'user', id: 3 }
     const robot = { type: 'client', id: 1 }
 
     beforeEach(async () => {
@@ -230,6 +231,25 @@ export function runAdapterTests(
         expect(await adapter.getSubjectIdsWithRoles('user', [], null)).toHaveLength(0)
         expect(s(await adapter.getSubjectIdsWithPermissions('user', [p.id], null))).toEqual(['2'])
       })
+
+      if (teams) {
+        it('only finds subjects linked in the given team', async () => {
+          const r = await adapter.createRole({ name: 'r', guardName: 'web', teamId: null })
+          const p = await adapter.createPermission({ name: 'p', guardName: 'web' })
+          await adapter.attachSubjectRoles(alice, [r.id], 1)
+          await adapter.attachSubjectRoles(bob, [r.id], 2)
+          await adapter.attachSubjectRoles(carol, [r.id], null)
+          await adapter.attachSubjectPermissions(alice, [p.id], 1)
+          await adapter.attachSubjectPermissions(bob, [p.id], null)
+
+          expect(s(await adapter.getSubjectIdsWithRoles('user', [r.id], 1))).toEqual(['1'])
+          expect(s(await adapter.getSubjectIdsWithRoles('user', [r.id], 2))).toEqual(['2'])
+          expect(s(await adapter.getSubjectIdsWithRoles('user', [r.id], null))).toEqual(['3'])
+          expect(s(await adapter.getSubjectIdsWithPermissions('user', [p.id], 1))).toEqual(['1'])
+          expect(s(await adapter.getSubjectIdsWithPermissions('user', [p.id], null))).toEqual(['2'])
+          expect(await adapter.getSubjectIdsWithPermissions('user', [p.id], 3)).toHaveLength(0)
+        })
+      }
     })
 
     describe('engine integration', () => {

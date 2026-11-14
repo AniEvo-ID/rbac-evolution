@@ -74,6 +74,7 @@ createApp(App).use(rbac).use(router).mount('#app')
 | `snapshot`         | `RbacSnapshot \| null`  | `null`  | Initial snapshot. `null` = guest.                                    |
 | `wildcard`         | `boolean`               | `false` | Treat granted permissions as wildcard patterns (`articles.*`).       |
 | `superAdminRoles`  | `string[]`              | `[]`    | Roles that pass every permission check (not role checks).            |
+| `loading`          | `boolean`               | `false` | Start in the loading state: `<Can>`, `<HasRole>`, `v-can`, `v-role` render nothing (no fallback, no `not` branch) until the first `setSnapshot()`. |
 | `directives`       | `boolean`               | `true`  | Register `v-can` and `v-role` globally.                              |
 | `components`       | `boolean`               | `true`  | Register `<Can>` and `<HasRole>` globally.                           |
 | `globalProperties` | `boolean`               | `true`  | Add `$can`, `$hasRole`, … to templates.                              |
@@ -94,6 +95,9 @@ function onLogout() {
   rbac.setSnapshot(null)
 }
 ```
+
+When the snapshot is fetched on the client, create the plugin with `loading: true`: nothing flashes before
+`setSnapshot()` runs, and `rbac.loading.value` tells you it is still loading.
 
 The current snapshot is available read-only as `rbac.snapshot.value`, and `rbac.isSuperAdmin()` tells you whether
 the user has one of the `superAdminRoles`.

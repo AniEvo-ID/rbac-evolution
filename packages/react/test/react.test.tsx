@@ -155,3 +155,33 @@ describe('components', () => {
     expect(screen.queryByText('guest')).not.toBeNull()
   })
 })
+
+describe('loading state', () => {
+  const gates = (loading: boolean) => (
+    <RbacProvider snapshot={null} loading={loading}>
+      <Cannot permission="articles.edit"><span>read-only</span></Cannot>
+      <Can permission="articles.edit" fallback={<span>no-edit</span>}>edit</Can>
+      <HasRole role="admin" fallback={<span>not-admin</span>}>admin</HasRole>
+    </RbacProvider>
+  )
+
+  it('renders nothing (not even the fallback) while loading, then the normal result', () => {
+    const { rerender } = render(gates(true))
+    for (const text of ['read-only', 'no-edit', 'not-admin']) expect(screen.queryByText(text)).toBeNull()
+
+    rerender(gates(false))
+    for (const text of ['read-only', 'no-edit', 'not-admin']) expect(screen.queryByText(text)).not.toBeNull()
+  })
+
+  it('exposes loading on the checker; checks still deny', () => {
+    const { result } = renderHook(() => useRbac(), {
+      wrapper: ({ children }: { children: ReactNode }) => (
+        <RbacProvider snapshot={null} loading>
+          {children}
+        </RbacProvider>
+      ),
+    })
+    expect(result.current.loading).toBe(true)
+    expect(result.current.can('articles.edit')).toBe(false)
+  })
+})
