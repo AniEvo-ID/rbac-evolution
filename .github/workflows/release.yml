@@ -20,7 +20,17 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      # Token of the "rbac-evolution release bot" GitHub App (installed only on this repo).
+      # Used instead of GITHUB_TOKEN so the bot can open the "version packages" PR
+      # and so CI runs on that PR (events from GITHUB_TOKEN don't trigger workflows).
+      - uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ vars.RELEASE_APP_ID }}
+          private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
       - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -37,5 +47,5 @@ jobs:
           title: "chore(release): version packages"
           commit: "chore(release): version packages"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           NPM_CONFIG_PROVENANCE: true
