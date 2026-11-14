@@ -1,0 +1,35 @@
+{
+  "name": "rbac-evolution-example-next-prisma",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "rbac-evolution example: Next.js App Router + Prisma (SQLite) + <Can>.",
+  "scripts": {
+    "db:setup": "prisma db push && tsx prisma/seed.ts",
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "typecheck": "prisma generate && tsc --noEmit",
+    "rbac": "node node_modules/@anievo-id/rbac-evolution-cli/dist/cli.js",
+    "clean": "rm -rf .next .turbo prisma/dev.db prisma/dev.db-journal"
+  },
+  "dependencies": {
+    "@anievo-id/rbac-evolution": "workspace:*",
+    "@anievo-id/rbac-evolution-next": "workspace:*",
+    "@anievo-id/rbac-evolution-prisma": "workspace:*",
+    "@anievo-id/rbac-evolution-react": "workspace:*",
+    "@prisma/client": "^6.19.0",
+    "next": "^15.5.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@anievo-id/rbac-evolution-cli": "workspace:*",
+    "@types/node": "^22.20.5",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "prisma": "^6.19.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}
