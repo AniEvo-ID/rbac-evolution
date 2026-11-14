@@ -9,11 +9,15 @@ import HomeHero from './components/HomeHero.vue'
 import MotionLayer from './components/MotionLayer.vue'
 import NotFound from './components/NotFound.vue'
 import PageGuide from './components/PageGuide.vue'
+import QualityReport from './components/QualityReport.vue'
 import SectRoster from './components/SectRoster.vue'
 import './style.css'
 
 export default {
   extends: DefaultTheme,
+  enhanceApp({ app }) {
+    app.component('QualityReport', QualityReport)
+  },
   Layout: () =>
     h(DefaultTheme.Layout, null, {
       'layout-top': () => h(MotionLayer),

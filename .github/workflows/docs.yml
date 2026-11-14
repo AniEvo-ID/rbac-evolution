@@ -2,12 +2,12 @@ name: Docs
 
 # Builds the VitePress site in docs/ and deploys it to GitHub Pages
 # (https://anievo-id.github.io/rbac-evolution/).
+# Runs on every push to main (not only docs changes) so the Test report page always
+# reflects the latest code: scripts/test-report.mjs runs every package's tests with
+# coverage, against real databases, and writes docs/public/reports/unit.json.
 on:
   push:
     branches: [main]
-    paths:
-      - "docs/**"
-      - ".github/workflows/docs.yml"
   workflow_dispatch:
 
 permissions:
@@ -22,6 +22,45 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: rbac
+          POSTGRES_PASSWORD: rbac
+          POSTGRES_DB: rbac
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U rbac -d rbac"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: rbac
+          MYSQL_DATABASE: rbac
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h 127.0.0.1 -uroot -prbac --silent"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
+      mongo:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 }).ok'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      PG_URL: postgresql://rbac:rbac@localhost:5432/rbac
+      MYSQL_URL: mysql://root:rbac@127.0.0.1:3306/rbac
+      MONGO_URL: mongodb://localhost:27017/rbac
     steps:
       - uses: actions/checkout@v4
         with:
@@ -32,6 +71,11 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run build --filter=./packages/*
+      # A failing suite is published on the report page instead of blocking the docs deploy;
+      # main is protected by the CI checks anyway.
+      - name: Test report
+        run: node scripts/test-report.mjs || echo "::warning::Some test suites failed, see the Test report page."
       - run: pnpm --filter @anievo-id/rbac-evolution-docs build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

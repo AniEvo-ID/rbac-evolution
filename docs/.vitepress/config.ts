@@ -38,6 +38,7 @@ export default defineConfig({
       { text: 'Frameworks', link: '/frameworks/react' },
       { text: 'Adapters', link: '/adapters/overview' },
       { text: 'CLI', link: '/basic-usage/cli' },
+      { text: 'Test report', link: '/quality' },
       {
         text: 'Links',
         items: [
