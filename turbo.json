@@ -20,7 +20,8 @@
       "env": [
         "PG_URL",
         "MYSQL_URL",
-        "MONGO_URL"
+        "MONGO_URL",
+        "MSSQL_URL"
       ]
     },
     "lint": {},
