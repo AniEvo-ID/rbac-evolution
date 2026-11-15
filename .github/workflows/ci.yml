@@ -62,10 +62,24 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          # Test-only container password (SQL Server requires a complex one).
+          MSSQL_SA_PASSWORD: Rbac_Test_2026
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P Rbac_Test_2026 -C -b -Q 'SELECT 1'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 30
     env:
       PG_URL: postgresql://rbac:rbac@localhost:5432/rbac
       MYSQL_URL: mysql://root:rbac@127.0.0.1:3306/rbac
       MONGO_URL: mongodb://localhost:27017/rbac
+      MSSQL_URL: mssql://sa:Rbac_Test_2026@localhost:1433/master
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -75,7 +89,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      # PG_URL / MYSQL_URL / MONGO_URL are declared in turbo.json, so turbo passes them to the test tasks.
+      # PG_URL / MYSQL_URL / MONGO_URL / MSSQL_URL are declared in turbo.json, so turbo passes them to the test tasks.
       - run: pnpm test
 
   bun:

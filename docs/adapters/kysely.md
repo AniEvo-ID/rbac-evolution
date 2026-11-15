@@ -99,10 +99,14 @@ The adapter reads the unprefixed tables unless you pass the same `prefix` to `ky
 | Column | PostgreSQL | MySQL | SQLite | SQL Server |
 | --- | --- | --- | --- | --- |
 | `id` | `serial` | `integer auto_increment` | `integer autoincrement` | `integer identity` |
-| `name`, `guard_name`, `subject_type`, `subject_id`, `team_id` | `text` | `varchar(255)` utf8mb4, `utf8mb4_bin` | `text` | `nvarchar(255)` |
+| `name`, `guard_name`, `subject_type`, `subject_id`, `team_id` | `text` | `varchar(255)` utf8mb4, `utf8mb4_bin` | `text` | `nvarchar(255)`, `Latin1_General_100_BIN2` |
 | `created_at`, `updated_at` | `timestamptz` | `datetime` | `integer` (unix seconds) | `datetime2` |
 
-On MySQL the string columns use the binary collation `utf8mb4_bin`, so `'Edit'` and `'edit'` are different names, as on PostgreSQL and SQLite. SQL Server uses the database's default collation, which is usually case-insensitive.
+On MySQL and SQL Server the string columns use a binary collation (`utf8mb4_bin`, `Latin1_General_100_BIN2`), so `'Edit'` and `'edit'` are different names, as on PostgreSQL and SQLite.
+
+::: warning SQL Server tables created before 0.6.6
+Older versions created the SQL Server columns with the database's default collation, which is usually case-insensitive: `'Edit'` and `'edit'` were treated as the same name. `createRbacTables` skips tables that already exist, so recreate them (or change the column collation) to get case-sensitive names.
+:::
 
 ## Typing your `Database`
 
@@ -211,7 +215,7 @@ await user.can('edit articles') // true
 - **New ids** come from `RETURNING` on PostgreSQL and SQLite (3.35 or later), `OUTPUT` on SQL Server, and the driver's insert id on MySQL.
 - **Link cleanup.** `deleteRole` and `deletePermission` delete the link rows themselves before deleting the row, so cleanup works even when SQLite foreign keys are off (the default).
 - **Timestamps.** The adapter never writes or returns `created_at` / `updated_at`. They keep their default values.
-- **SQL Server is experimental.** The generated SQL is covered by unit tests, but the conformance suite doesn't run against a real SQL Server yet.
+- **SQL Server is experimental.** The conformance suite runs against SQL Server 2022 in CI, but it has seen less real-world use than the other dialects.
 
 ## Transactions
 

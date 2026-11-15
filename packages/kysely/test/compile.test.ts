@@ -53,7 +53,7 @@ describe('kysely: generated SQL', () => {
     await createRbacTables(db)
     const ddl = queries.join('\n')
     expect(ddl).toContain('identity')
-    expect(ddl).toContain('nvarchar(255)')
+    expect(ddl).toContain('nvarchar(255) collate Latin1_General_100_BIN2')
     expect(ddl).not.toContain('if not exists')
 
     queries.length = 0
