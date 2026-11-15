@@ -1,5 +1,11 @@
 # @anievo-id/rbac-evolution-next
 
+## 0.6.6
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@0.6.6
+
 ## 0.6.5
 
 ### Patch Changes
