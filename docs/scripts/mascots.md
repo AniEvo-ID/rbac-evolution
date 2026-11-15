@@ -59,20 +59,31 @@ the previous message instead of the latest one.
    about 70% of the height, on the same screen.
 2. Attach that image and ask Veo for a 6-second 16:9 video: flat 2D cel animation (not 3D), static camera, the
    screen color throughout, the image as first and last frame, the action in between, everything inside the frame.
-3. Download the 720p MP4 and run `docs/scripts/key-video.sh` with `CROP` set to the area the action uses
-   (every frame keyed, union of the visible pixels, plus 3% of the height), `HEIGHT=580` for chibi and
-   `HEIGHT=640` for anime (the largest the page shows them; wide clips are also capped at 960 px). WebM and
-   MOV are capped at 1.5 Mbit/s, about 1-2 MB per clip. `KEY` defaults to the color in the top-left corner,
-   since Veo's green drifts.
+3. Download the **1080p** MP4 (Download > 1080p, upscaled, no credits) and run
+   `python -I docs/scripts/matte-video.py <clip>.mp4 docs/public/mascots/<id>-<mode> CROP HEIGHT` with
+   `HEIGHT=870` for chibi and `960` for anime (twice the size the page shows, so it stays sharp on Retina).
+   The matte is AI segmentation, so outfits in the screen color are kept, and the screen color is unmixed from
+   the edges, so no green outline is left. WebM and MOV are capped at 3 Mbit/s, about 2-3 MB per clip.
 
-Screens and key settings that differ from the defaults (`SIM=0.38`, green screen):
+`CROP` at 1080p (the area the action uses, plus 3% of the height):
 
-| Clip | Why |
-| --- | --- |
-| alchemist-*, spirit-fox-* | Magenta screen (`#FF00FF`): Xia's hair and Kitsu's tail tips are green. |
-| weaver-anime `SIM=0.20`, weaver-chibi `SIM=0.28` | Lan's dark jade robe is close to the screen color. |
-| disciple-anime `SIM=0.16` | Tao's trousers are green. |
-| gatekeeper-anime `CROP=1554:1068:146:6`, gatekeeper-chibi `CROP=822:666:194:10` | Rin was made at 1080p (anime). |
+| Clip | CROP | Clip | CROP |
+| --- | --- | --- | --- |
+| sect-master-chibi | 1788:978:12:24 | sect-master-anime | 1014:1062:465:9 |
+| gatekeeper-chibi | 1232:998:292:15 | gatekeeper-anime | 1554:1068:146:6 |
+| scroll-keeper-chibi | 858:1044:508:24 | scroll-keeper-anime | 1302:1062:292:9 |
+| twins-chibi | 1468:986:206:9 | twins-anime | 1896:1062:12:9 |
+| disciple-chibi | 962:1062:442:9 | disciple-anime | 1398:1062:182:9 |
+| weaver-chibi | 1124:1062:384:9 | weaver-anime | 1896:1062:12:9 |
+| alchemist-chibi | 908:960:486:110 | alchemist-anime | 888:1032:462:38 |
+| messenger-chibi | 1896:1034:12:9 | messenger-anime | 1896:1062:12:9 |
+| spirit-fox-chibi | 1140:972:414:32 | spirit-fox-anime | 1872:1062:22:9 |
+
+Xia's and Kitsu's clips use a magenta screen (`#FF00FF`): her hair and its tail tips are green.
+
+So far sect-master-chibi, gatekeeper-chibi and disciple-anime are made this way. The other clips still come from
+the older color key, `docs/scripts/key-video.sh` on the 720p download, which leaves a thin green edge; they are
+being redone with `matte-video.py`.
 
 Actions: Yue raises her jade seal and a sigil spins; Rin swings her sword; Mei opens her scroll and glyphs
 orbit; Hana and Sora swirl fire and water; Tao kicks and flashes a talisman; Lan casts a jade rune circle;
