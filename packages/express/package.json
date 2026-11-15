@@ -4,7 +4,7 @@
   "description": "Express / Node HTTP middleware for rbac-evolution.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
-  "homepage": "https://app.anievo.id/rbac-evolution/frameworks/express",
+  "homepage": "https://creation.anievo.id/rbac-evolution/frameworks/express",
   "bugs": {
     "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
   },

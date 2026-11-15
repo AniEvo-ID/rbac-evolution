@@ -1,6 +1,6 @@
 # @anievo-id/rbac-evolution-cli
 
-📖 **[Documentation](https://app.anievo.id/rbac-evolution/basic-usage/cli)**
+📖 **[Documentation](https://creation.anievo.id/rbac-evolution/basic-usage/cli)**
 
 Command-line tool for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution) — the JS/TS
 equivalent of spatie/laravel-permission's `php artisan permission:*` commands.

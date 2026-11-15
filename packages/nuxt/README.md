@@ -1,6 +1,6 @@
 # @anievo-id/rbac-evolution-nuxt
 
-📖 **[Documentation](https://app.anievo.id/rbac-evolution/frameworks/nuxt)**
+📖 **[Documentation](https://creation.anievo.id/rbac-evolution/frameworks/nuxt)**
 
 Nuxt 3 / 4 module for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution). It installs [`@anievo-id/rbac-evolution-vue`](https://www.npmjs.com/package/@anievo-id/rbac-evolution-vue)
 (`v-can`, `v-role`, `<Can>`, `<HasRole>`, `$can`), hydrates the user's snapshot from SSR, auto-imports

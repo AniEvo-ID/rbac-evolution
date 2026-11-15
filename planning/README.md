@@ -32,7 +32,7 @@ Files 2, 4 and 6 do not depend on the API freeze and can run in parallel with it
 - MIT license, Code of Conduct, contributing guide, security policy, PR template, issue templates
 - CI on Node 20 and 22, Bun, real PostgreSQL 16, MySQL 8, MongoDB 7 and SQL Server 2022, E2E with Playwright
 - Changesets with fixed versioning, npm Trusted Publishing with provenance, a daily npm/GitHub sync check
-- Documentation site at https://app.anievo.id/rbac-evolution/ with a public test report
+- Documentation site at https://creation.anievo.id/rbac-evolution/ with a public test report
 - Two independent audits of the code; every finding fixed or deliberately documented
 
 ## Housekeeping found while writing this

@@ -4,7 +4,7 @@
   "description": "Fastify plugin and preHandler guards for rbac-evolution.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
-  "homepage": "https://app.anievo.id/rbac-evolution/frameworks/fastify",
+  "homepage": "https://creation.anievo.id/rbac-evolution/frameworks/fastify",
   "bugs": {
     "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
   },

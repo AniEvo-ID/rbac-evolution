@@ -4,7 +4,7 @@
   "description": "Kysely storage adapter (PostgreSQL, MySQL, SQLite & SQL Server) for rbac-evolution.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
-  "homepage": "https://app.anievo.id/rbac-evolution/adapters/kysely",
+  "homepage": "https://creation.anievo.id/rbac-evolution/adapters/kysely",
   "bugs": {
     "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
   },
