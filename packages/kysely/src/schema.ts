@@ -45,7 +45,8 @@ const types = (dialect: RbacDialect): Types => {
     case 'mssql':
       return {
         id: { type: 'integer', build: (c) => c.primaryKey().identity() },
-        text: sql.raw('nvarchar(255)'),
+        // Binary collation, like MySQL: the server default (e.g. SQL_Latin1_General_CP1_CI_AS) ignores case.
+        text: sql.raw('nvarchar(255) collate Latin1_General_100_BIN2'),
         timestamp: sql.raw('datetime2'),
         now: sql.raw('CURRENT_TIMESTAMP'),
       }
