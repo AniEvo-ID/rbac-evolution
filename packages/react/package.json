@@ -4,7 +4,7 @@
   "description": "React bindings for rbac-evolution: <Can>, useCan(), useHasRole().",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
-  "homepage": "https://app.anievo.id/rbac-evolution/frameworks/react",
+  "homepage": "https://creation.anievo.id/rbac-evolution/frameworks/react",
   "bugs": {
     "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
   },

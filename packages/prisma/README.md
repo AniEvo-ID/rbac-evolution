@@ -1,6 +1,6 @@
 # @anievo-id/rbac-evolution-prisma
 
-📖 **[Documentation](https://app.anievo.id/rbac-evolution/adapters/prisma)**
+📖 **[Documentation](https://creation.anievo.id/rbac-evolution/adapters/prisma)**
 
 [Prisma](https://www.prisma.io) storage adapter for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution), a TypeScript port of spatie/laravel-permission.
 

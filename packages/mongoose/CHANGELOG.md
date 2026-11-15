@@ -16,7 +16,7 @@
 
 ### Patch Changes
 
-- d449204: Each package's npm page now links to its own page on the documentation site at https://app.anievo.id/rbac-evolution/: the `homepage` field (shown as "Homepage" on npm) and a Documentation link at the top of the README. No code changes.
+- d449204: Each package's npm page now links to its own page on the documentation site at https://creation.anievo.id/rbac-evolution/: the `homepage` field (shown as "Homepage" on npm) and a Documentation link at the top of the README. No code changes.
 - Updated dependencies [d449204]
   - @anievo-id/rbac-evolution@0.6.4
 

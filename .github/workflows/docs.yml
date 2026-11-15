@@ -1,7 +1,7 @@
 name: Docs
 
 # Builds the VitePress site in docs/ and deploys it to GitHub Pages
-# (https://app.anievo.id/rbac-evolution/).
+# (https://creation.anievo.id/rbac-evolution/).
 # Runs on every push to main (not only docs changes) so the Test report page always
 # reflects the latest code: scripts/test-report.mjs runs every package's tests with
 # coverage, against real databases, and writes docs/public/reports/unit.json; the Playwright

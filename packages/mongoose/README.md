@@ -1,6 +1,6 @@
 # @anievo-id/rbac-evolution-mongoose
 
-📖 **[Documentation](https://app.anievo.id/rbac-evolution/adapters/mongoose)**
+📖 **[Documentation](https://creation.anievo.id/rbac-evolution/adapters/mongoose)**
 
 [Mongoose](https://mongoosejs.com) (MongoDB) storage adapter for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution) — roles & permissions for JS/TS, inspired by spatie/laravel-permission.
 
