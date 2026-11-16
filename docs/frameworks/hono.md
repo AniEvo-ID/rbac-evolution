@@ -336,6 +336,48 @@ app.get('/api/articles', requirePermission('articles.edit', { guard: 'api' }), h
 app.get('/api/reports', canAny('reports.view', 'reports.export', { guard: 'api' }), handler)
 ```
 
+### Names per guard
+
+With [typed names per guard](/basic-usage/typed-names#names-per-guard), `rbacMiddleware({ rbac, guard: 'api' })`
+types `c.var.rbac` with the names of `api`, and `createGuards<AppRbac, 'api'>()` checks the names of the routes
+behind it. A route's `{ guard }` option takes the names of that guard:
+
+```ts
+import { createRbac } from '@anievo-id/rbac-evolution'
+import { createGuards, rbacMiddleware } from '@anievo-id/rbac-evolution-hono'
+
+type AppRbac = {
+  guards: {
+    web: { roles: 'admin' | 'editor'; permissions: 'articles.edit' | 'api-keys.manage' }
+    api: { roles: 'read-only' | 'full-access'; permissions: 'orders.read' | 'orders.write' }
+  }
+  defaultGuard: 'web'
+}
+
+const engine = createRbac<AppRbac>({ adapter })
+const { requirePermission: requireScope } = createGuards<AppRbac, 'api'>()
+
+const api = new Hono()
+  .use(
+    rbacMiddleware({
+      rbac: engine,
+      guard: 'api', // c.var.rbac: the `api` names
+      getSubject: (c) => {
+        const id = c.req.header('x-api-key')
+        return id ? { type: 'api_key', id } : null
+      },
+    }),
+  )
+  .get('/orders', requireScope('orders.read'), async (c) => c.json({ write: await c.var.rbac?.can('orders.write') }))
+
+requireScope('api-keys.manage') // type error: a `web` permission
+requireScope('api-keys.manage', { guard: 'web' }) // ok: checked in `web`
+```
+
+The second type argument of `createGuards()` is a type only: at runtime the middleware's `guard` decides, as before.
+A `guard` that is a `string` variable accepts the names of every guard. `RbacEnv<typeof engine, 'api'>` types a
+`new Hono<...>()` app in that guard.
+
 See [Multiple guards](/basic-usage/multiple-guards).
 
 Full API: [reference](/api/hono/)

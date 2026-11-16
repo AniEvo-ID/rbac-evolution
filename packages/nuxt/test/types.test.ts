@@ -28,6 +28,7 @@ import type {
   RbacErrorBody,
   RbacEvent,
   RbacServer,
+  RbacServerFor,
   RbacServerOptions,
   RequireGuardOptions,
   RequirePermissionOptions,
@@ -35,6 +36,7 @@ import type {
   RequirementKind,
   RequirementNames,
   RoleRequirementOptions,
+  ScopedRbacServer,
 } from '../src/server'
 // auto-imported composables
 import type * as composables from '../src/runtime/composables'
@@ -355,5 +357,61 @@ describe('nuxt server types: per-route guard option', () => {
       // @ts-expect-error -- typed names are still checked with options
       await typed.requireRole(event, 'admn', { guard: 'api' })
     }
+  })
+})
+
+// ------------------------------------------------------------------------------------- per-guard names (1.2)
+
+describe('per-guard names: createRbacServer()', () => {
+  type GuardedRbac = {
+    guards: {
+      web: { roles: 'admin' | 'editor'; permissions: 'articles.edit' | 'api-keys.manage' }
+      api: { roles: 'read-only' | 'full-access'; permissions: 'orders.read' | 'orders.write' }
+    }
+    defaultGuard: 'web'
+  }
+  type FlatTypes = { permissions: 'articles.edit'; roles: 'admin' }
+  const guarded = createRbac<GuardedRbac>({ adapter: new MemoryAdapter() })
+  const web = createRbacServer({ rbac: guarded, getSubject: () => null })
+  const api = createRbacServer({ rbac: guarded, guard: 'api', getSubject: () => null })
+
+  it('returns ScopedRbacServer for a per-guard engine, and the 1.1 RbacServer otherwise', () => {
+    expectTypeOf(web).toEqualTypeOf<ScopedRbacServer<RbacEvent, GuardedRbac, 'web'>>()
+    expectTypeOf(api).toEqualTypeOf<ScopedRbacServer<RbacEvent, GuardedRbac, 'api'>>()
+    const flat = createRbac<FlatTypes>({ adapter: new MemoryAdapter() })
+    expectTypeOf(createRbacServer({ rbac: flat, guard: 'api', getSubject: () => null })).toEqualTypeOf<
+      RbacServer<RbacEvent, FlatTypes>
+    >()
+    expectTypeOf<RbacServerFor<RbacEvent, FlatTypes>>().toEqualTypeOf<RbacServer<RbacEvent, FlatTypes>>()
+    expectTypeOf<RbacServerFor>().toEqualTypeOf<RbacServer>()
+  })
+
+  it('checks names against the guard of the call, and types the returned subject for it', () => {
+    async function handler(event: H3Event) {
+      expectTypeOf(await web.resolve(event)).toEqualTypeOf<SubjectRbac<GuardedRbac, 'web'> | null>()
+      expectTypeOf(await api.resolve(event)).toEqualTypeOf<SubjectRbac<GuardedRbac, 'api'> | null>()
+      const key = await web.requirePermission(event, 'orders.read', { guard: 'api' })
+      await key.can('orders.write')
+      // @ts-expect-error -- the returned subject is in guard `api`
+      await key.can('articles.edit')
+      await api.requireRole(event, 'read-only|full-access')
+      await api.canAll(event, 'orders.read', 'orders.write')
+      await web.requireRoleOrPermission(event, 'admin|api-keys.manage')
+
+      // @ts-expect-error -- `api-keys.manage` is a `web` permission
+      await api.requirePermission(event, 'api-keys.manage')
+      // @ts-expect-error -- `api-keys.manage` is a `web` permission
+      await web.canAny(event, 'api-keys.manage', { guard: 'api' })
+      // @ts-expect-error -- `admin` is a `web` role
+      await api.requireRole(event, 'admin')
+      // @ts-expect-error -- not a typed guard
+      await web.requirePermission(event, 'orders.read', { guard: 'apii' })
+    }
+    function options() {
+      // @ts-expect-error -- not a typed guard
+      createRbacServer({ rbac: guarded, guard: 'apii', getSubject: () => null })
+    }
+    expectTypeOf(handler).toBeFunction()
+    expectTypeOf(options).toBeFunction()
   })
 })

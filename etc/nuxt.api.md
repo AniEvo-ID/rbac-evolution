@@ -125,7 +125,7 @@ declare function evaluateRouteRule(rbac: VueRbac, rule: RbacRouteRule, isGuest: 
 
 ## `@anievo-id/rbac-evolution-nuxt/server`
 
-13 exports.
+15 exports.
 
 ```ts
 // RbacErrorBody: type
@@ -173,11 +173,16 @@ interface RbacServer<E extends RbacEvent = RbacEvent, T extends RbacTypeConfig =
     canAll<const A extends readonly (RequirementNames | RequireGuardOptions)[]>(event: E, ...args: A & RequirementArgs<A, PermissionName<T>, RequireGuardOptions>): Promise<SubjectRbac<T>>;
 }
 
+// RbacServerFor: type
+type RbacServerFor<E extends RbacEvent = RbacEvent, T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>> = T extends {
+    guards: object;
+} ? ScopedRbacServer<E, T, G> : RbacServer<E, T>;
+
 // RbacServerOptions: interface
-interface RbacServerOptions<E extends RbacEvent = RbacEvent, T extends RbacTypeConfig = DefaultRbacTypes> {
+interface RbacServerOptions<E extends RbacEvent = RbacEvent, T extends RbacTypeConfig = DefaultRbacTypes, G extends string = string> {
     rbac: Rbac<T>;
     getSubject: (event: E) => MaybePromise<Subject | null | undefined>;
-    guard?: string | undefined;
+    guard?: G | undefined;
     team?: (event: E) => MaybePromise<TeamId | undefined>;
     exposeRequirements?: boolean | undefined;
 }
@@ -195,8 +200,21 @@ interface RequirePermissionOptions extends PermissionRequirementOptions, Require
 interface RequireRoleOptions extends RoleRequirementOptions, RequireGuardOptions {
 }
 
+// ScopedRbacServer: interface
+interface ScopedRbacServer<E extends RbacEvent = RbacEvent, T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>> {
+    resolve(event: E): Promise<SubjectRbac<T, G> | null>;
+    snapshot(event: E): Promise<RbacSnapshot | null>;
+    requirePermission<const A extends readonly (RequirementNames | RequirePermissionOptions)[]>(event: E, ...args: A & GuardRequirementArgs<A, T, 'permission', G, RequirePermissionOptions>): Promise<SubjectRbac<T, ScopedGuardName<T, RequirementGuard<A, G>>>>;
+    requireRole<const A extends readonly (RequirementNames | RequireRoleOptions)[]>(event: E, ...args: A & GuardRequirementArgs<A, T, 'role', G, RequireRoleOptions>): Promise<SubjectRbac<T, ScopedGuardName<T, RequirementGuard<A, G>>>>;
+    requireRoleOrPermission<const A extends readonly (RequirementNames | RequireGuardOptions)[]>(event: E, ...args: A & GuardRequirementArgs<A, T, 'role_or_permission', G, RequireGuardOptions>): Promise<SubjectRbac<T, ScopedGuardName<T, RequirementGuard<A, G>>>>;
+    canAny<const A extends readonly (RequirementNames | RequireGuardOptions)[]>(event: E, ...args: A & GuardRequirementArgs<A, T, 'permission', G, RequireGuardOptions>): Promise<SubjectRbac<T, ScopedGuardName<T, RequirementGuard<A, G>>>>;
+    canAll<const A extends readonly (RequirementNames | RequireGuardOptions)[]>(event: E, ...args: A & GuardRequirementArgs<A, T, 'permission', G, RequireGuardOptions>): Promise<SubjectRbac<T, ScopedGuardName<T, RequirementGuard<A, G>>>>;
+}
+
 // createRbacServer: function
-declare function createRbacServer<E extends RbacEvent = RbacEvent, T extends RbacTypeConfig = DefaultRbacTypes>(options: RbacServerOptions<E, T>): RbacServer<E, T>;
+declare function createRbacServer<E extends RbacEvent = RbacEvent, T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>>(options: RbacServerOptions<E, T, G> & (T extends {
+    guards: object;
+} ? GuardOptions<CheckGuard<T, G>> : unknown)): RbacServerFor<E, T, ScopedGuardName<T, G>>;
 ```
 
 Re-exported from other packages:

@@ -94,7 +94,7 @@ async function emitDetached<T extends RbacTypeConfig>(
 export async function revokeAll<T extends RbacTypeConfig>(
   rbac: Rbac<T>,
   core: RbacInternals<T>,
-  scope: SubjectRbac<T>,
+  scope: SubjectRbac<T, string>,
   options: RevokeAllOptions,
 ): Promise<void> {
   const { adapter } = rbac
@@ -148,7 +148,7 @@ export async function revokeAll<T extends RbacTypeConfig>(
 export async function subjectTeams<T extends RbacTypeConfig>(
   rbac: Rbac<T>,
   core: RbacInternals<T>,
-  scope: SubjectRbac<T>,
+  scope: SubjectRbac<T, string>,
   options: SubjectTeamsOptions,
 ): Promise<Id[]> {
   if (!rbac.teams) throw teamsNotEnabled('`teams()`')

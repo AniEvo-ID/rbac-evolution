@@ -1,21 +1,23 @@
 // Stub: a copy of the `src/dashboard.ts` block of docs/use-cases/public-api.md.
 import { Hono } from 'hono'
+import { isPermissionName } from '@anievo-id/rbac-evolution'
 import { rbacMiddleware, type RbacVariables } from '@anievo-id/rbac-evolution-hono'
 import { db } from './db'
-import { rbac, requirePermission } from './rbac'
-import { SCOPES, type Scope } from './seed'
+import { type ApiRbac, rbac, requirePermission, type Scope } from './rbac'
 
-type DashboardEnv = { Variables: RbacVariables & { user: { id: number; accountId: number } | undefined } }
+type DashboardEnv = { Variables: RbacVariables<ApiRbac> & { user: { id: number; accountId: number } | undefined } }
 
-const isScope = (name: unknown): name is Scope => SCOPES.includes(name as Scope)
+/** One of `SCOPES`: the `api` list of `names`. */
+const isScope = (name: unknown): name is Scope => isPermissionName(rbac, name, { guard: 'api' })
 const isPreset = (name: unknown): name is 'read-only' | 'full-access' => name === 'read-only' || name === 'full-access'
+/** A key's access, in the `api` guard: it takes the `api` names only. */
 const keyAccess = (keyId: string) => rbac.for({ type: 'api_key', id: keyId }, { guard: 'api' })
 
 export const dashboard = new Hono<DashboardEnv>()
 
 // dashboard.use(yourSessionMiddleware) sets c.var.user
 dashboard.use(
-  rbacMiddleware<DashboardEnv>({
+  rbacMiddleware<DashboardEnv, ApiRbac>({
     rbac,
     getSubject: (c) => (c.var.user ? { type: 'user', id: c.var.user.id } : null), // web guard
   }),

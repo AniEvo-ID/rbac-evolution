@@ -174,13 +174,155 @@ What they check, and what they don't:
   for a seed that did not run). To ask the database, use `findRole()` / `findPermission()`.
 - **Exact names.** No wildcards, no pipes, no trimming or case folding: `'Admin'`, `' admin'` and `'admin|editor'`
   are rejected. With `wildcard: true`, `'articles.*'` passes only if it is in the list.
-- **One list per engine**, like the typed names: they do not look at guards or teams.
+- **One list per engine**, like flat typed names: without `names.guards` they do not look at guards or teams.
+  With [names per guard](#checking-user-input-per-guard), give each guard its own list.
 - **The engine needs the list.** Without `names.roles`, `isRoleName()` throws a `TypeError`: a guard that passes
   everything (or nothing) would hide the mistake.
 
 With string enums, pass `Object.values(...)`: `names: { roles: Object.values(Role) }`. Each entry is checked
 against the typed names, but the compiler can't check that the list is complete. Deriving the type from the list,
 as above, makes it complete by construction.
+
+## Names per guard
+
+With [several guards](/basic-usage/multiple-guards), each guard usually has its own names: people in `web` manage API
+keys, API keys in `api` read orders. With one `permissions` union, `rbac.for(key, { guard: 'api' })` accepts the
+`web` names too, and a `web` permission on an `api` route compiles and only fails at runtime. Since 1.2 you can type
+the names of each guard instead, with `guards`:
+
+```ts
+// src/rbac.ts
+import { createRbac, MemoryAdapter } from '@anievo-id/rbac-evolution'
+
+export type AppRbac = {
+  guards: {
+    web: { roles: 'admin' | 'editor'; permissions: 'articles.edit' | 'api-keys.manage' }
+    api: { roles: 'read-only' | 'full-access'; permissions: 'orders.read' | 'orders.write' }
+  }
+  defaultGuard: 'web' // optional when it is 'web'; must match createRbac({ defaultGuard })
+}
+
+export const rbac = createRbac<AppRbac>({ adapter: new MemoryAdapter() })
+```
+
+The names then follow the guard in use:
+
+```ts
+import { rbac } from './rbac'
+
+const key = { type: 'api_key', id: 'k_1' }
+
+await rbac.for(user).can('articles.edit')                        // the default guard: `web` names
+await rbac.for(key, { guard: 'api' }).can('orders.read')         // `api` names
+await rbac.for(key, { guard: 'api' }).can('api-keys.manage')     // type error: a `web` permission
+await rbac.for(user).withScope({ guard: 'api' }).hasRole('read-only')
+await rbac.role('read-only', { guard: 'api' }).givePermissionTo('orders.read')
+await rbac.createRole('full-access', { guard: 'api' })
+await rbac.createPermission('orders.write', { guard: 'api' })
+await rbac.createRole('admin', { guard: 'api' })                 // type error: a `web` role
+rbac.for(key, { guard: 'apii' })                                 // type error: not a typed guard
+```
+
+`sync()` checks each block against the names of its own `guard`. A block without `guard` takes the `guard` option
+of `sync()`, else the default guard:
+
+```ts
+import { rbac } from './rbac'
+
+await rbac.sync([
+  { permissions: ['articles.edit', 'api-keys.manage'], roles: { admin: '*', editor: ['articles.edit'] } },
+  { guard: 'api', permissions: ['orders.read', 'orders.write'], roles: { 'read-only': ['orders.read'] } },
+])
+await rbac.sync({ guard: 'api', roles: { admin: '*' } }) // type error: `admin` is a `web` role
+```
+
+The error says which names the guard has:
+
+```text
+Argument of type '"api-keys.manage"' is not assignable to parameter of type
+'PermissionInput<"orders.read" | "orders.write">'.
+```
+
+How it works, and its limits:
+
+- **`guard` must be a literal** for the names to narrow. A `string` variable is accepted too, and then the names of
+  every guard are: `rbac.for(key, { guard: input })` takes `articles.edit` and `orders.read` alike. An unknown
+  literal is a type error that lists the typed guards. `sync()` blocks need a literal `guard`.
+- **The default guard** is `defaultGuard` of the type (`'web'` without it). Set the same value in
+  `createRbac({ defaultGuard })`: the option only accepts that guard.
+- **A guard can leave a key out.** `api: { permissions: ... }` without `roles` accepts any role name in `api`, as
+  a flat config does.
+- **The top-level `roles` / `permissions` are not used** with `guards`. Flat configs (`{ roles; permissions }`)
+  work exactly as before, and every guard has the same names there.
+- **Names that span guards** take the names of every guard: `superAdminRoles`, and the subject of the `before`
+  hook (`BeforeContext<AppRbac>`), which runs for every guard.
+- **Role objects keep their own guard** at runtime. `rbac.role(roleObject)` is typed with the default guard's
+  names; pass `{ guard }` to type it for another guard.
+- **A per-guard engine is not an untyped `Rbac`.** Like a flat config that only has `roles`, `Rbac<AppRbac>` can't
+  be assigned to `Rbac` (which means `Rbac<DefaultRbacTypes>`). Write generic code as `Rbac<T>` or
+  `Rbac<RbacTypeConfig>`, and when you pass an integration its env or request type explicitly, pass the engine
+  type too: `rbacMiddleware<AppEnv, AppRbac>(...)`.
+
+### In the integrations
+
+The guards of every integration check names in the guard they run in: the request's guard, or the route's
+`{ guard }` option.
+
+| Integration | Names of the request's guard | Another guard per route |
+| --- | --- | --- |
+| Express, Fastify, Hono | `createGuards<AppRbac, 'api'>()` (the default guard without the second argument) | `requirePermission('orders.read', { guard: 'api' })` |
+| NestJS | `createRbacDecorators<AppRbac, 'api'>()`, `getRbac<AppRbac, 'api'>(context)` | `@RequirePermissions('orders.read', { guard: 'api' })` |
+| Next.js | `createNextRbac({ rbac, guard: 'api', getSubject })` | `can('orders.read', { guard: 'api' })` |
+| Nuxt | `createRbacServer({ rbac, guard: 'api', getSubject })` | `requirePermission(event, 'orders.read', { guard: 'api' })` |
+| CLI | `seed` in `defineConfig()` is checked block by block, like `sync()` | |
+
+```ts
+import { createGuards } from '@anievo-id/rbac-evolution-express'
+import type { AppRbac } from './rbac'
+
+const web = createGuards<AppRbac>() // routes behind rbacMiddleware({ rbac, getSubject })
+const api = createGuards<AppRbac, 'api'>() // routes behind rbacMiddleware({ rbac, guard: 'api', getSubject })
+
+app.get('/settings/keys', web.requirePermission('api-keys.manage'), handler)
+app.get('/v1/orders', api.requirePermission('orders.read'), handler)
+app.get('/v1/keys', api.requirePermission('api-keys.manage'), handler) // type error: a `web` permission
+app.get('/admin/orders', web.requirePermission('orders.read', { guard: 'api' }), handler) // checked in `api`
+```
+
+The second type argument only tells the types which guard the requests have. At runtime the middleware's `guard`
+decides, as before. The request's subject has the names of a guard too: `RbacRequest<typeof rbac, Request, 'api'>`
+(Express, Fastify), `RbacEnv<typeof rbac, 'api'>` (Hono, which infers it from `rbacMiddleware({ guard: 'api' })`),
+`SubjectRbac<AppRbac, 'api'>` (NestJS's `@CurrentRbac()`). A registered `RbacRegister` types the global `req.rbac`
+with the default guard's names.
+
+### Checking user input per guard
+
+`isRoleName()` and `isPermissionName()` take a `guard` too. Give the engine a list per guard in `names.guards`:
+
+```ts
+import { createRbac, isPermissionName, MemoryAdapter } from '@anievo-id/rbac-evolution'
+
+const scopes = ['orders.read', 'orders.write'] as const
+
+type ApiRbac = {
+  guards: {
+    web: { roles: 'admin'; permissions: 'api-keys.manage' }
+    api: { roles: 'read-only'; permissions: (typeof scopes)[number] }
+  }
+}
+
+const engine = createRbac<ApiRbac>({ adapter: new MemoryAdapter(), names: { guards: { api: { permissions: scopes } } } })
+
+async function setScopes(keyId: string, input: unknown[]) {
+  if (!input.every((name) => isPermissionName(engine, name, { guard: 'api' }))) return { status: 422 }
+  await engine.for({ type: 'api_key', id: keyId }, { guard: 'api' }).syncPermissions(input) // the `api` names
+  return { status: 200 }
+}
+```
+
+`isPermissionName(rbac, value, { guard: 'api' })` checks the `api` list and narrows to the `api` names; without
+`guard`, it checks the default guard's list. A guard without a list of its own uses the top-level `names.roles` /
+`names.permissions`; with neither, it throws a `TypeError`.
 
 ## Helper types
 
@@ -193,4 +335,16 @@ type AppPermission = PermissionName<AppRbac> // 'edit articles' | 'delete articl
 type AppRole = RoleName<AppRbac>             // 'writer' | 'editor' | 'admin'
 ```
 
-Without a type argument, everything accepts `string`. The untyped `Rbac`, `SubjectRbac` and `RoleRbac` types still work, and a typed instance can be passed where an `Rbac` is expected (for example to the framework integrations or the CLI config).
+With [names per guard](#names-per-guard), they take a guard as second argument (the default guard's names without
+it, every guard's with `string`), and `GuardName<T>` lists the typed guards:
+
+```ts
+import type { GuardName, PermissionName, RoleName } from '@anievo-id/rbac-evolution'
+import type { AppRbac } from './rbac' // the per-guard type of "Names per guard"
+
+type ApiScope = PermissionName<AppRbac, 'api'> // 'orders.read' | 'orders.write'
+type AnyRole = RoleName<AppRbac, string>       // the roles of every guard
+type AppGuard = GuardName<AppRbac>             // 'web' | 'api'
+```
+
+Without a type argument, everything accepts `string`. The untyped `Rbac`, `SubjectRbac` and `RoleRbac` types still work, and a typed instance can be passed where an `Rbac` is expected (for example to the framework integrations or the CLI config). An engine with [names per guard](#names-per-guard) is an `Rbac<RbacTypeConfig>` instead.

@@ -3,7 +3,10 @@ import { applyDecorators, createParamDecorator, type ExecutionContext, UseGuards
 import { getRbac, type TypesOf } from './context'
 import { RbacGuard } from './guard'
 import {
+  type DefaultGuardName,
   type DefaultRbacTypes,
+  type GuardName,
+  type GuardRequirementArgs,
   type PermissionName,
   type PermissionRequirementOptions,
   permissionRequirement,
@@ -147,6 +150,44 @@ export interface RbacDecorators<T extends RbacTypeConfig = DefaultRbacTypes> {
 }
 
 /**
+ * The decorators of `createRbacDecorators<T, G>()` when `T` has per-guard names (`RbacTypeConfig['guards']`):
+ * like {@link RbacDecorators}, but the names are those of the guard each decorator checks in, its `{ guard }`
+ * option or else `G` (the guard of the resolved subject, `RbacModule`'s `guard`).
+ * `@RequirePermissions('orders.read', { guard: 'api' })` takes the `api` names.
+ */
+export interface ScopedRbacDecorators<T extends RbacTypeConfig, G extends string = DefaultGuardName<T>> {
+  /** {@link RbacDecorators.RequirePermissions}, with the names of the guard it checks in. */
+  RequirePermissions: <const A extends readonly (RequirementNames | RequirePermissionsOptions)[]>(
+    ...args: A & GuardRequirementArgs<A, T, 'permission', G, RequirePermissionsOptions>
+  ) => RbacDecorator
+  /** {@link RbacDecorators.RequireRoles}, with the names of the guard it checks in. */
+  RequireRoles: <const A extends readonly (RequirementNames | RequireRolesOptions)[]>(
+    ...args: A & GuardRequirementArgs<A, T, 'role', G, RequireRolesOptions>
+  ) => RbacDecorator
+  /** {@link RbacDecorators.RequireRoleOrPermission}, with the names of the guard it checks in. */
+  RequireRoleOrPermission: <const A extends readonly (RequirementNames | RbacDecoratorOptions)[]>(
+    ...args: A & GuardRequirementArgs<A, T, 'role_or_permission', G, RbacDecoratorOptions>
+  ) => RbacDecorator
+  /** {@link RbacDecorators.CanAny}, with the names of the guard it checks in. */
+  CanAny: <const A extends readonly (RequirementNames | RbacDecoratorOptions)[]>(
+    ...args: A & GuardRequirementArgs<A, T, 'permission', G, RbacDecoratorOptions>
+  ) => RbacDecorator
+  /** {@link RbacDecorators.CanAll}, with the names of the guard it checks in. */
+  CanAll: <const A extends readonly (RequirementNames | RbacDecoratorOptions)[]>(
+    ...args: A & GuardRequirementArgs<A, T, 'permission', G, RbacDecoratorOptions>
+  ) => RbacDecorator
+}
+
+/**
+ * What `createRbacDecorators<T, G>()` returns: {@link RbacDecorators} for a config without per-guard names (as in
+ * 1.1), and {@link ScopedRbacDecorators} for one with `guards`.
+ */
+export type RbacDecoratorsFor<
+  T extends RbacTypeConfig = DefaultRbacTypes,
+  G extends string = DefaultGuardName<T>,
+> = T extends { guards: object } ? ScopedRbacDecorators<T, G> : RbacDecorators<T>
+
+/**
  * Returns the requirement decorators with names checked against your typed names
  * (the same `T` as `createRbac<T>(...)`, or `typeof rbac`). Runtime behaviour is the same as the top-level
  * decorators.
@@ -161,10 +202,15 @@ export interface RbacDecorators<T extends RbacTypeConfig = DefaultRbacTypes> {
  *
  * `@CurrentRbac()` can't type its parameter (a Nest parameter decorator never does): annotate it with the same
  * names, `@CurrentRbac() access: SubjectRbac<AppTypes>`.
+ *
+ * With per-guard names (`RbacTypeConfig['guards']`), `G` is the guard of the resolved subject (`RbacModule`'s
+ * `guard`; default: the default guard): `createRbacDecorators<AppRbac, 'api'>()`. Names are checked in that guard,
+ * or in a decorator's `{ guard }`, and `@CurrentRbac()` is a `SubjectRbac<AppRbac, 'api'>`.
  */
 export function createRbacDecorators<
   T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes,
->(): RbacDecorators<TypesOf<T>> {
+  G extends GuardName<TypesOf<T>> = DefaultGuardName<TypesOf<T>> & GuardName<TypesOf<T>>,
+>(): RbacDecoratorsFor<TypesOf<T>, G> {
   const decorators = {
     RequirePermissions: requirePermissions,
     RequireRoles: requireRoles,
@@ -172,7 +218,7 @@ export function createRbacDecorators<
     CanAny: canAny,
     CanAll: canAll,
   } satisfies Record<keyof RbacDecorators, unknown>
-  return decorators as unknown as RbacDecorators<TypesOf<T>>
+  return decorators as unknown as RbacDecoratorsFor<TypesOf<T>, G>
 }
 
 const defaults = createRbacDecorators()

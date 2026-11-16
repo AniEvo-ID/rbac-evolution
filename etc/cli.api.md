@@ -33,7 +33,7 @@ interface Io {
 interface RbacCliConfig<T extends RbacTypeConfig = DefaultRbacTypes> {
     rbac: Rbac<T> | (() => Rbac<T> | Promise<Rbac<T>>);
     subjectType?: string | undefined;
-    seed?: SyncDefinition<T> | readonly SyncDefinition<T>[] | undefined;
+    seed?: SyncDefinitions<T> | undefined;
     teardown?: (() => void | Promise<void>) | undefined;
 }
 

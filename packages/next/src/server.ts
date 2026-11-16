@@ -1,13 +1,18 @@
 import { notFound, redirect } from 'next/navigation'
 import type {
+  CheckGuard,
+  CheckRequirementGuard,
   CheckRequirementName,
+  DefaultGuardName,
   DefaultRbacTypes,
+  GuardOptions,
   Many,
   PermissionName,
   Rbac,
   RbacSnapshot,
   RbacTypeConfig,
   RoleName,
+  ScopedGuardName,
   ScopeOptions,
   Subject,
   TeamId,
@@ -16,13 +21,17 @@ import { RbacUnauthorizedError } from './errors'
 import { forbiddenResponse, unauthenticatedResponse } from './responses'
 import { checkRequirement, type FailureReason, type MaybePromise, type Requirement } from './types'
 
-export interface NextRbacOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
+/** `G` is the type of `guard`: any string by default; `createNextRbac()` infers it to type the helpers. */
+export interface NextRbacOptions<T extends RbacTypeConfig = DefaultRbacTypes, G extends string = string> {
   /** Your `createRbac(...)` instance. Its typed names (`createRbac<{ permissions: ...; roles: ... }>`) flow into every helper. */
   rbac: Rbac<T>
   /** Resolves the current user (e.g. from Auth.js `auth()`). Return `null` for guests. */
   getSubject: () => MaybePromise<Subject | null | undefined>
-  /** Default guard for every check. Default: the rbac instance's `defaultGuard`. */
-  guard?: string | undefined
+  /**
+   * Default guard for every check. Default: the rbac instance's `defaultGuard`. With per-guard names, it must be
+   * one of the typed guards (checked by `createNextRbac()`), and the helpers take its names.
+   */
+  guard?: G | undefined
   /** Default team for every check — a value, or a function (e.g. reading the current tenant). */
   team?: TeamId | (() => MaybePromise<TeamId | undefined>)
   /** Where `require*()` redirects guests. Without it, guests get `notFound()`. */
@@ -33,8 +42,8 @@ export interface NextRbacOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
   onUnauthorized?: (() => never) | undefined
 }
 
-/** Per-call options for `require*()`. */
-export interface RequireOptions extends ScopeOptions {
+/** Per-call options for `require*()`. `G` is the type of `guard` (see `ScopeOptions`). */
+export interface RequireOptions<G extends string = string> extends ScopeOptions<G> {
   /** `requirePermission` / `requireRole`: require EVERY listed name instead of any (spatie v8.5 `canAll()`). */
   all?: boolean | undefined
   loginUrl?: string | undefined
@@ -59,16 +68,26 @@ export type CheckNames<S, N extends string> = S extends string
     ? { [K in keyof S]: S[K] extends string ? CheckRequirementName<S[K], N> : S[K] }
     : S
 
-/** Checks the `permission` / `role` / `roleOrPermission` names of a requirement object `Q` against the names of `T`. */
-export type CheckRequirement<Q, T extends RbacTypeConfig> = {
+/**
+ * Checks the `permission` / `role` / `roleOrPermission` names of a requirement object `Q` against the names of
+ * `T`: with per-guard names, those of guard `G`. A `guard` key in `Q` must be one of the typed guards.
+ */
+export type CheckRequirement<Q, T extends RbacTypeConfig, G extends string = DefaultGuardName<T>> = {
   [K in keyof Q]: K extends 'permission'
-    ? CheckNames<Q[K], PermissionName<T>>
+    ? CheckNames<Q[K], PermissionName<T, G>>
     : K extends 'role'
-      ? CheckNames<Q[K], RoleName<T>>
+      ? CheckNames<Q[K], RoleName<T, G>>
       : K extends 'roleOrPermission'
-        ? CheckNames<Q[K], PermissionName<T> | RoleName<T>>
-        : Q[K]
+        ? CheckNames<Q[K], PermissionName<T, G> | RoleName<T, G>>
+        : K extends 'guard'
+          ? Q[K] extends string
+            ? CheckRequirementGuard<T, Q[K]>
+            : Q[K]
+          : Q[K]
 }
+
+/** The guard a `withRbac()` options object `O` checks in: its `guard`, or `G`. */
+export type OptionsGuard<O, G extends string> = O extends { readonly guard: infer X extends string } ? X : G
 
 /**
  * The helpers returned by `createNextRbac()`. `T` comes from the `rbac` instance: with typed names,
@@ -127,6 +146,77 @@ export interface NextRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   ): (...args: Args) => Promise<Response>
 }
 
+/**
+ * The helpers of `createNextRbac()` when the engine has per-guard names (`RbacTypeConfig['guards']`): like
+ * {@link NextRbac}, but `G` is the guard of the checks (the `guard` option of `createNextRbac()`, else the default
+ * guard), and a call's `{ guard }` takes the names of that guard instead: `can('orders.read', { guard: 'api' })`.
+ */
+export interface ScopedNextRbac<T extends RbacTypeConfig, G extends string = DefaultGuardName<T>> {
+  rbac: Rbac<T>
+  getSubject(): Promise<Subject | null>
+  /** Non-throwing check: who is the user and do they meet the requirement? */
+  authorize<const Q extends Requirement, G2 extends string = G>(
+    requirement: Q & CheckRequirement<Q, T, G2>,
+    scope?: ScopeOptions<CheckGuard<T, G2>>,
+  ): Promise<AuthorizeResult>
+  /** Roles & permissions of the current user — pass to `<RbacProvider snapshot={...}>`. Guests get an empty snapshot. */
+  getSnapshot(scope?: ScopeOptions): Promise<RbacSnapshot>
+  can<G2 extends string = G>(permission: PermissionName<T, G2>, scope?: ScopeOptions<CheckGuard<T, G2>>): Promise<boolean>
+  canAny<G2 extends string = G>(permissions: Many<PermissionName<T, G2>>, scope?: ScopeOptions<CheckGuard<T, G2>>): Promise<boolean>
+  canAll<G2 extends string = G>(permissions: Many<PermissionName<T, G2>>, scope?: ScopeOptions<CheckGuard<T, G2>>): Promise<boolean>
+  /** `true` if the user has the role — or ANY of the roles when given an array. */
+  hasRole<G2 extends string = G>(role: Many<RoleName<T, G2>>, scope?: ScopeOptions<CheckGuard<T, G2>>): Promise<boolean>
+  hasAllRoles<G2 extends string = G>(roles: Many<RoleName<T, G2>>, scope?: ScopeOptions<CheckGuard<T, G2>>): Promise<boolean>
+  /**
+   * Ensures the user has the permission (or ANY of the permissions). Returns the subject.
+   * Guests: `redirect(loginUrl)` or `notFound()`. Missing permission: `notFound()`. Both configurable.
+   */
+  requirePermission<const S extends Many<string>, G2 extends string = G>(
+    permission: S & CheckNames<S, PermissionName<T, G2>>,
+    opts?: RequireOptions<CheckGuard<T, G2>>,
+  ): Promise<Subject>
+  /** Ensures the user has the role (or ANY of the roles). Returns the subject. */
+  requireRole<const S extends Many<string>, G2 extends string = G>(
+    role: S & CheckNames<S, RoleName<T, G2>>,
+    opts?: RequireOptions<CheckGuard<T, G2>>,
+  ): Promise<Subject>
+  /** Ensures the user has ANY of the given roles or permissions. Returns the subject. */
+  requireRoleOrPermission<const S extends Many<string>, G2 extends string = G>(
+    items: S & CheckNames<S, PermissionName<T, G2> | RoleName<T, G2>>,
+    opts?: RequireOptions<CheckGuard<T, G2>>,
+  ): Promise<Subject>
+  /** Wraps a server action; throws `RbacUnauthorizedError` unless the user has the permission (or ANY of them). */
+  withPermission<const S extends Many<string>, Args extends unknown[], R, G2 extends string = G>(
+    permission: S & CheckNames<S, PermissionName<T, G2>>,
+    action: (...args: Args) => MaybePromise<R>,
+    scope?: ScopeOptions<CheckGuard<T, G2>> | undefined,
+  ): (...args: Args) => Promise<R>
+  /** Wraps a server action; throws `RbacUnauthorizedError` unless the user has the role (or ANY of them). */
+  withRole<const S extends Many<string>, Args extends unknown[], R, G2 extends string = G>(
+    role: S & CheckNames<S, RoleName<T, G2>>,
+    action: (...args: Args) => MaybePromise<R>,
+    scope?: ScopeOptions<CheckGuard<T, G2>> | undefined,
+  ): (...args: Args) => Promise<R>
+  /**
+   * Wraps a route handler. Responds `401` (guest) or `403` (missing role/permission) with a JSON body.
+   * Mirrors spatie's `permission`, `role` and `role_or_permission` middleware.
+   */
+  withRbac<Args extends unknown[], const O extends WithRbacOptions>(
+    handler: (...args: Args) => MaybePromise<Response>,
+    options: O & CheckRequirement<O, T, OptionsGuard<O, G>>,
+  ): (...args: Args) => Promise<Response>
+}
+
+/**
+ * What `createNextRbac()` returns: {@link NextRbac} for an engine without per-guard names (as in 1.1), and
+ * {@link ScopedNextRbac} for one with `guards`.
+ */
+export type NextRbacFor<T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>> = T extends {
+  guards: object
+}
+  ? ScopedNextRbac<T, G>
+  : NextRbac<T>
+
 export { forbiddenMessage } from './responses'
 
 const EMPTY_SNAPSHOT: RbacSnapshot = { roles: [], permissions: [] }
@@ -148,11 +238,14 @@ const EMPTY_SNAPSHOT: RbacSnapshot = { roles: [], permissions: [] }
  * ```
  *
  * With a typed engine (`createRbac<AppTypes>(...)`), names are checked: `requirePermission('typo')` is a type error.
+ * With per-guard names, the helpers take the names of the `guard` option (the default guard's without it).
  */
-export function createNextRbac<T extends RbacTypeConfig = DefaultRbacTypes>(options: NextRbacOptions<T>): NextRbac<T> {
+export function createNextRbac<T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>>(
+  options: NextRbacOptions<T, G> & (T extends { guards: object } ? GuardOptions<CheckGuard<T, G>> : unknown),
+): NextRbacFor<T, ScopedGuardName<T, G>> {
   // The implementation is untyped (plain `string` names); `NextRbac<T>` adds the typed signatures.
   const helpers = buildNextRbac(options as unknown as NextRbacOptions) satisfies Record<keyof NextRbac, unknown>
-  return helpers as unknown as NextRbac<T>
+  return helpers as unknown as NextRbacFor<T, ScopedGuardName<T, G>>
 }
 
 function buildNextRbac(options: NextRbacOptions) {

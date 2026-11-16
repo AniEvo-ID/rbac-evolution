@@ -18,9 +18,11 @@ import {
 } from './events'
 import { expandWildcardPermissions, type SubjectsWithPermissionOptions } from './query'
 import { type RbacNames, registerNames } from './names'
-import { type SyncDefinition, type SyncOptions, type SyncResult, syncDefinition } from './sync'
+import { type SyncDefinition, type SyncDefinitions, type SyncOptions, type SyncResult, syncDefinition } from './sync'
 import { deleteTeam, type RevokeAllOptions, revokeAll, subjectTeams, type SubjectTeamsOptions } from './bulk'
 import type {
+  CheckGuard,
+  DefaultGuardName,
   DefaultRbacTypes,
   Id,
   Many,
@@ -32,6 +34,7 @@ import type {
   Role,
   RoleInput,
   RoleName,
+  ScopedGuardName,
   SnapshotOptions,
   Subject,
   TeamId,
@@ -45,20 +48,27 @@ import {
   wildcardImplies,
 } from './wildcard'
 
-export interface GuardOptions {
+/**
+ * `G` is the type of `guard`: any string by default. The methods that take names pass the typed guards here
+ * (see `CheckGuard`), so with per-guard names `guard` is checked and selects the names.
+ */
+export interface GuardOptions<G extends string = string> {
   /** Guard name, e.g. `web` or `api`. Defaults to `defaultGuard`. */
-  guard?: string | undefined
+  guard?: G | undefined
 }
 
-export interface ScopeOptions extends GuardOptions {
+export interface ScopeOptions<G extends string = string> extends GuardOptions<G> {
   /** Team id. Only allowed when `teams` is enabled. */
   team?: TeamId | undefined
 }
 
 /** Context passed to the {@link RbacOptions.before} hook. */
 export interface BeforeContext<T extends RbacTypeConfig = DefaultRbacTypes> {
-  /** The subject being checked (already scoped to its guard & team). */
-  subject: SubjectRbac<T>
+  /**
+   * The subject being checked (already scoped to its guard & team). With per-guard names, it accepts the
+   * names of every guard, since the hook runs for all of them.
+   */
+  subject: SubjectRbac<T, string>
   /** The permission name being checked. */
   permission: string
 }
@@ -71,8 +81,11 @@ export type BeforeHook<T extends RbacTypeConfig = DefaultRbacTypes> = (
 export interface RbacOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
   /** Storage adapter (e.g. `new MemoryAdapter()`, Prisma, Drizzle, ...). */
   adapter: RbacAdapter
-  /** Guard used when none is given. Default: `web`. */
-  defaultGuard?: string | undefined
+  /**
+   * Guard used when none is given. Default: `web`. With per-guard names (`RbacTypeConfig['guards']`), it must
+   * be the typed `defaultGuard`.
+   */
+  defaultGuard?: DefaultGuardName<T> | undefined
   /** Enable wildcard permissions like `articles.*`. Default: `false`. */
   wildcard?: boolean | undefined
   /** Enable team-scoped roles & permissions (multi-tenancy). Default: `false`. */
@@ -91,7 +104,7 @@ export interface RbacOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
    * Subjects having ANY of these roles pass every `can()` check (super-admin).
    * Evaluated after `before` (if `before` returned `undefined`).
    */
-  superAdminRoles?: readonly RoleName<T>[] | undefined
+  superAdminRoles?: readonly RoleName<T, string>[] | undefined
   /**
    * With `wildcard: true`, what `sync()` and `createPermission()` do when one permission name implies another
    * only because it is shorter (`orders.refund` implies `orders.refund.large`): `'warn'` logs a one-time
@@ -171,7 +184,7 @@ export interface RbacInternals<T extends RbacTypeConfig = DefaultRbacTypes> {
   readonly events: RbacEmitter
   remember<V>(key: string, compute: () => Promise<V>): Promise<V>
   permissionExists(name: string, guardName: string): Promise<boolean>
-  gate(subject: SubjectRbac<T>, permission: string): Promise<boolean | undefined>
+  gate(subject: SubjectRbac<T, string>, permission: string): Promise<boolean | undefined>
   resolveGuard(guard: string | undefined): string
   resolveTeam(team: TeamId | undefined): TeamId
   visibleTeams(teamId: TeamId): TeamId[]
@@ -254,17 +267,31 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     registerNames(this, options.names)
   }
 
-  /** Work with the roles & permissions of a subject (usually a user). */
-  for(subject: Subject, options: ScopeOptions & ActorOptions = {}): SubjectRbac<T> {
+  /**
+   * Work with the roles & permissions of a subject (usually a user).
+   * With per-guard names, the subject takes the names of `options.guard` (the default guard's without it).
+   */
+  for<G extends string = DefaultGuardName<T>>(
+    subject: Subject,
+    options: ScopeOptions<CheckGuard<T, G>> & ActorOptions = {},
+  ): SubjectRbac<T, ScopedGuardName<T, G>> {
     const { actor } = options
-    return new SubjectRbac<T>(this, subject, this.#resolveGuard(options.guard), this.#resolveTeam(options.team), actor)
+    const guard = this.#resolveGuard(options.guard)
+    return new SubjectRbac<T, ScopedGuardName<T, G>>(this, subject, guard, this.#resolveTeam(options.team), actor)
   }
 
-  /** Work with the permissions of a role. */
-  role(role: RoleInput<RoleName<T>>, options: ScopeOptions & ActorOptions = {}): RoleRbac<T> {
+  /**
+   * Work with the permissions of a role. With per-guard names, the name and the permissions are those of
+   * `options.guard` (a role object keeps its own guard at runtime; pass `guard` to type it too).
+   */
+  role<G extends string = DefaultGuardName<T>>(
+    role: RoleInput<RoleName<T, G>>,
+    options: ScopeOptions<CheckGuard<T, G>> & ActorOptions = {},
+  ): RoleRbac<T, ScopedGuardName<T, G>> {
     const { actor } = options
-    if (typeof role !== 'string') return new RoleRbac<T>(this, role, role.guardName, role.teamId, actor)
-    return new RoleRbac<T>(this, role, this.#resolveGuard(options.guard), this.#resolveTeam(options.team), actor)
+    if (typeof role !== 'string') return new RoleRbac<T, ScopedGuardName<T, G>>(this, role, role.guardName, role.teamId, actor)
+    const guard = this.#resolveGuard(options.guard)
+    return new RoleRbac<T, ScopedGuardName<T, G>>(this, role, guard, this.#resolveTeam(options.team), actor)
   }
 
   // ----------------------------------------------------------------------- events
@@ -284,7 +311,10 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
 
   // ------------------------------------------------------------------ permissions
 
-  async createPermission(name: PermissionName<T>, options: GuardOptions & ActorOptions = {}): Promise<Permission> {
+  async createPermission<G extends string = DefaultGuardName<T>>(
+    name: PermissionName<T, G>,
+    options: GuardOptions<CheckGuard<T, G>> & ActorOptions = {},
+  ): Promise<Permission> {
     return this.#createPermission(name, options, { prefixCheck: true })
   }
 
@@ -297,7 +327,7 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     const permissionName = normalizeName(name)
     if (this.wildcard) parseWildcardPermission(permissionName)
 
-    if (await this.findPermission(permissionName as PermissionName<T>, { guard: guardName })) {
+    if (await this.findPermission(permissionName as PermissionName<T, string>, { guard: guardName })) {
       throw new PermissionAlreadyExists(permissionName, guardName)
     }
     if (prefixCheck && this.wildcard && prefixCheckActive(this.#wildcardPrefixCheck)) {
@@ -311,7 +341,10 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return permission
   }
 
-  async findPermission(name: PermissionName<T>, options: GuardOptions = {}): Promise<Permission | null> {
+  async findPermission<G extends string = DefaultGuardName<T>>(
+    name: PermissionName<T, G>,
+    options: GuardOptions<CheckGuard<T, G>> = {},
+  ): Promise<Permission | null> {
     const [permission] = await this.adapter.findPermissions({
       names: [normalizeName(name)],
       guardName: this.#resolveGuard(options.guard),
@@ -319,8 +352,11 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return permission ?? null
   }
 
-  async findPermissionOrFail(name: PermissionName<T>, options: GuardOptions = {}): Promise<Permission> {
-    const permission = await this.findPermission(name, options)
+  async findPermissionOrFail<G extends string = DefaultGuardName<T>>(
+    name: PermissionName<T, G>,
+    options: GuardOptions<CheckGuard<T, G>> = {},
+  ): Promise<Permission> {
+    const permission = await this.findPermission(name as PermissionName<T, string>, options as GuardOptions)
     if (!permission) throw new PermissionDoesNotExist(normalizeName(name), this.#resolveGuard(options.guard))
     return permission
   }
@@ -331,17 +367,22 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return permission ?? null
   }
 
-  async findOrCreatePermission(name: PermissionName<T>, options: GuardOptions & ActorOptions = {}): Promise<Permission> {
-    return (await this.findPermission(name, options)) ?? this.createPermission(name, options)
+  async findOrCreatePermission<G extends string = DefaultGuardName<T>>(
+    name: PermissionName<T, G>,
+    options: GuardOptions<CheckGuard<T, G>> & ActorOptions = {},
+  ): Promise<Permission> {
+    const wide = name as PermissionName<T, string>
+    const opts = options as GuardOptions & ActorOptions
+    return (await this.findPermission(wide, opts)) ?? this.createPermission(wide, opts)
   }
 
   async getPermissions(options: GuardOptions = {}): Promise<Permission[]> {
     return this.adapter.findPermissions({ guardName: this.#resolveGuard(options.guard) })
   }
 
-  async deletePermission(
-    permission: PermissionInput<PermissionName<T>>,
-    options: GuardOptions & ActorOptions = {},
+  async deletePermission<G extends string = DefaultGuardName<T>>(
+    permission: PermissionInput<PermissionName<T, G>>,
+    options: GuardOptions<CheckGuard<T, G>> & ActorOptions = {},
   ): Promise<void> {
     const guardName = typeof permission === 'string' ? this.#resolveGuard(options.guard) : permission.guardName
     const [resolved] = await this.#resolvePermissions([permission], guardName)
@@ -352,7 +393,10 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
 
   // ------------------------------------------------------------------------ roles
 
-  async createRole(name: RoleName<T>, options: ScopeOptions & ActorOptions = {}): Promise<Role> {
+  async createRole<G extends string = DefaultGuardName<T>>(
+    name: RoleName<T, G>,
+    options: ScopeOptions<CheckGuard<T, G>> & ActorOptions = {},
+  ): Promise<Role> {
     const guardName = this.#resolveGuard(options.guard)
     const teamId = this.#resolveTeam(options.team)
     const roleName = normalizeName(name)
@@ -367,7 +411,10 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   }
 
   /** Finds a role. With a team, a team-specific role wins over a global role of the same name. */
-  async findRole(name: RoleName<T>, options: ScopeOptions = {}): Promise<Role | null> {
+  async findRole<G extends string = DefaultGuardName<T>>(
+    name: RoleName<T, G>,
+    options: ScopeOptions<CheckGuard<T, G>> = {},
+  ): Promise<Role | null> {
     const guardName = this.#resolveGuard(options.guard)
     const teamId = this.#resolveTeam(options.team)
     const roleName = normalizeName(name)
@@ -375,8 +422,11 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return Rbac.pickRole(roles, roleName, teamId) ?? null
   }
 
-  async findRoleOrFail(name: RoleName<T>, options: ScopeOptions = {}): Promise<Role> {
-    const role = await this.findRole(name, options)
+  async findRoleOrFail<G extends string = DefaultGuardName<T>>(
+    name: RoleName<T, G>,
+    options: ScopeOptions<CheckGuard<T, G>> = {},
+  ): Promise<Role> {
+    const role = await this.findRole(name as RoleName<T, string>, options as ScopeOptions)
     if (!role) throw new RoleDoesNotExist(normalizeName(name), this.#resolveGuard(options.guard))
     return role
   }
@@ -391,9 +441,9 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
    * Roles in the given scope that grant the permission directly (spatie: `$permission->roles`).
    * Throws `PermissionDoesNotExist` for an unknown permission. Wildcard grants are not expanded.
    */
-  async rolesWithPermission(
-    permission: PermissionInput<PermissionName<T>>,
-    options: ScopeOptions = {},
+  async rolesWithPermission<G extends string = DefaultGuardName<T>>(
+    permission: PermissionInput<PermissionName<T, G>>,
+    options: ScopeOptions<CheckGuard<T, G>> = {},
   ): Promise<Role[]> {
     const guardName = this.#resolveGuard(options.guard)
     const teamId = this.#resolveTeam(options.team)
@@ -405,8 +455,13 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return roles.filter((r) => holders.has(idKey(r.id)))
   }
 
-  async findOrCreateRole(name: RoleName<T>, options: ScopeOptions & ActorOptions = {}): Promise<Role> {
-    return (await this.findRole(name, options)) ?? this.createRole(name, options)
+  async findOrCreateRole<G extends string = DefaultGuardName<T>>(
+    name: RoleName<T, G>,
+    options: ScopeOptions<CheckGuard<T, G>> & ActorOptions = {},
+  ): Promise<Role> {
+    const wide = name as RoleName<T, string>
+    const opts = options as ScopeOptions & ActorOptions
+    return (await this.findRole(wide, opts)) ?? this.createRole(wide, opts)
   }
 
   /** Lists roles visible in the given scope (global roles + roles of the given team). */
@@ -415,8 +470,11 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return this.adapter.findRoles({ guardName: this.#resolveGuard(options.guard), teamIds: this.#visibleTeams(teamId) })
   }
 
-  async deleteRole(role: RoleInput<RoleName<T>>, options: ScopeOptions & ActorOptions = {}): Promise<void> {
-    const resolved = await this.role(role, options).get()
+  async deleteRole<G extends string = DefaultGuardName<T>>(
+    role: RoleInput<RoleName<T, G>>,
+    options: ScopeOptions<CheckGuard<T, G>> & ActorOptions = {},
+  ): Promise<void> {
+    const resolved = await this.role(role as RoleInput<RoleName<T, string>>, options as ScopeOptions & ActorOptions).get()
     await this.adapter.deleteRole(resolved.id)
     await this.forgetCachedPermissions()
     await this.#events.emit({ event: 'role.deleted', role: resolved, teamId: resolved.teamId }, options.actor)
@@ -444,11 +502,12 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
    *
    * Not atomic: adapters have no transactions, so a failure midway leaves the earlier changes.
    */
-  async sync(
-    definition: SyncDefinition<T> | readonly SyncDefinition<T>[],
-    options: SyncOptions = {},
+  async sync<G extends string = DefaultGuardName<T>>(
+    definition: SyncDefinitions<T, G>,
+    options: SyncOptions<CheckGuard<T, G>> = {},
   ): Promise<SyncResult> {
-    return syncDefinition(this, this.#internals, definition, options)
+    const definitions = definition as SyncDefinition<T> | readonly SyncDefinition<T>[]
+    return syncDefinition(this, this.#internals, definitions, options as SyncOptions)
   }
 
   // ---------------------------------------------------------------------- queries
@@ -457,10 +516,10 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
    * Ids of subjects of `subjectType` that have ANY of the given roles in the given scope
    * (spatie: `User::role('writer')->get()`). Throws `RoleDoesNotExist` for unknown roles.
    */
-  async subjectsWithRole(
+  async subjectsWithRole<G extends string = DefaultGuardName<T>>(
     subjectType: string,
-    roles: Many<RoleInput<RoleName<T>>>,
-    options: ScopeOptions = {},
+    roles: Many<RoleInput<RoleName<T, G>>>,
+    options: ScopeOptions<CheckGuard<T, G>> = {},
   ): Promise<Id[]> {
     const guardName = this.#resolveGuard(options.guard)
     const teamId = this.#resolveTeam(options.team)
@@ -480,10 +539,10 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
    * `expandWildcards: true` is passed with `wildcard: true`: then holders of a wildcard that implies a name
    * (`articles.*`, `*`) are returned too, and the names don't need to exist.
    */
-  async subjectsWithPermission(
+  async subjectsWithPermission<G extends string = DefaultGuardName<T>>(
     subjectType: string,
-    permissions: Many<PermissionInput<PermissionName<T>>>,
-    options: SubjectsWithPermissionOptions = {},
+    permissions: Many<PermissionInput<PermissionName<T, G>>>,
+    options: SubjectsWithPermissionOptions<CheckGuard<T, G>> = {},
   ): Promise<Id[]> {
     const guardName = this.#resolveGuard(options.guard)
     const teamId = this.#resolveTeam(options.team)
@@ -558,12 +617,12 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   // ---------------------------------------------------------------------- internal
 
   /** Runs the `before` hook and the super-admin check. `undefined` = no decision. */
-  async #gate(subject: SubjectRbac<T>, permission: string): Promise<boolean | undefined> {
+  async #gate(subject: SubjectRbac<T, string>, permission: string): Promise<boolean | undefined> {
     if (this.#before) {
       const decision = await this.#before({ subject, permission })
       if (typeof decision === 'boolean') return decision
     }
-    if (this.#superAdminRoles.length > 0 && (await subject.hasAnyRole(this.#superAdminRoles as RoleName<T>[]))) {
+    if (this.#superAdminRoles.length > 0 && (await subject.hasAnyRole(this.#superAdminRoles as RoleName<T, string>[]))) {
       return true
     }
     return undefined
@@ -653,7 +712,7 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
 }
 
 /** Permissions of a single role. Obtain with `rbac.role('writer')`. */
-export class RoleRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
+export class RoleRbac<T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>> {
   readonly #core: RbacInternals<T>
   readonly #actor: RbacActor | undefined
 
@@ -674,7 +733,7 @@ export class RoleRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return role!
   }
 
-  async givePermissionTo(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<this> {
+  async givePermissionTo(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<this> {
     const role = await this.get()
     const resolved = await this.#core.resolvePermissions(flatten(permissions), role.guardName)
     const track = this.#core.events.has('permission.attached')
@@ -685,7 +744,7 @@ export class RoleRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return this
   }
 
-  async revokePermissionTo(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<this> {
+  async revokePermissionTo(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<this> {
     const role = await this.get()
     const resolved = await this.#core.resolvePermissions(flatten(permissions), role.guardName)
     const track = this.#core.events.has('permission.detached')
@@ -697,7 +756,7 @@ export class RoleRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   }
 
   /** Replaces all permissions of the role with the given ones. */
-  async syncPermissions(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<this> {
+  async syncPermissions(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<this> {
     const role = await this.get()
     const resolved = await this.#core.resolvePermissions(flatten(permissions), role.guardName)
     const track = this.#core.events.has('permission.attached') || this.#core.events.has('permission.detached')
@@ -748,7 +807,7 @@ export class RoleRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return (await this.getPermissions()).map((p) => p.name)
   }
 
-  async hasPermissionTo(permission: PermissionInput<PermissionName<T>>): Promise<boolean> {
+  async hasPermissionTo(permission: PermissionInput<PermissionName<T, G>>): Promise<boolean> {
     const name = typeof permission === 'string' ? normalizeName(permission) : permission.name
     return this.#core.permissionMatches(await this.getPermissionNames(), name)
   }
@@ -781,7 +840,7 @@ interface SubjectState {
 }
 
 /** Roles & permissions of a single subject. Obtain with `rbac.for(user)`. */
-export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
+export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>> {
   readonly #core: RbacInternals<T>
   readonly #actor: RbacActor | undefined
 
@@ -804,17 +863,18 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
    * await rbac.for(user).withScope({ guard: 'api' }).hasRole('admin')
    * ```
    */
-  withScope(options: ScopeOptions): SubjectRbac<T> {
-    return this.rbac.for(this.subject, {
+  withScope<G2 extends string = G>(options: ScopeOptions<CheckGuard<T, G2>>): SubjectRbac<T, ScopedGuardName<T, G2>> {
+    const scope: ScopeOptions & ActorOptions = {
       guard: options.guard ?? this.guardName,
       team: options.team === undefined ? this.teamId : options.team,
       actor: this.#actor,
-    })
+    }
+    return this.rbac.for(this.subject, scope) as unknown as SubjectRbac<T, ScopedGuardName<T, G2>>
   }
 
   // ------------------------------------------------------------------------ roles
 
-  async assignRole(...roles: Many<RoleInput<RoleName<T>>>[]): Promise<this> {
+  async assignRole(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<this> {
     const { adapter } = this.rbac
     const { events } = this.#core
     const resolved = await this.#core.resolveRoles(flatten(roles), this.guardName, this.teamId)
@@ -826,7 +886,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return this
   }
 
-  async removeRole(...roles: Many<RoleInput<RoleName<T>>>[]): Promise<this> {
+  async removeRole(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<this> {
     const { adapter } = this.rbac
     const { events } = this.#core
     const resolved = await this.#core.resolveRoles(flatten(roles), this.guardName, this.teamId)
@@ -839,7 +899,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   }
 
   /** Replaces all roles (in the current guard & team) with the given ones. */
-  async syncRoles(...roles: Many<RoleInput<RoleName<T>>>[]): Promise<this> {
+  async syncRoles(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<this> {
     const resolved = await this.#core.resolveRoles(flatten(roles), this.guardName, this.teamId)
     const current = (await this.state()).roles
     const newIds = resolved.map((r) => r.id)
@@ -862,22 +922,22 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   }
 
   /** `true` if the subject has the role — or ANY of the roles when given an array. */
-  async hasRole(roles: Many<RoleInput<RoleName<T>>>): Promise<boolean> {
+  async hasRole(roles: Many<RoleInput<RoleName<T, G>>>): Promise<boolean> {
     return this.hasAnyRole(roles)
   }
 
-  async hasAnyRole(...roles: Many<RoleInput<RoleName<T>>>[]): Promise<boolean> {
+  async hasAnyRole(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<boolean> {
     const mine = (await this.state()).roles
     return flatten(roles).some((wanted) => mine.some((r) => SubjectRbac.roleMatches(r, wanted)))
   }
 
-  async hasAllRoles(...roles: Many<RoleInput<RoleName<T>>>[]): Promise<boolean> {
+  async hasAllRoles(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<boolean> {
     const mine = (await this.state()).roles
     return flatten(roles).every((wanted) => mine.some((r) => SubjectRbac.roleMatches(r, wanted)))
   }
 
   /** `true` if the subject has ALL the given roles and no other role (in the current guard & team). */
-  async hasExactRoles(...roles: Many<RoleInput<RoleName<T>>>[]): Promise<boolean> {
+  async hasExactRoles(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<boolean> {
     const mine = uniqueById((await this.state()).roles)
     const matched = new Set<string>()
     for (const wanted of flatten(roles)) {
@@ -890,7 +950,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
 
   // ------------------------------------------------------------ direct permissions
 
-  async givePermissionTo(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<this> {
+  async givePermissionTo(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<this> {
     const { adapter } = this.rbac
     const { events } = this.#core
     const resolved = await this.#core.resolvePermissions(flatten(permissions), this.guardName)
@@ -902,7 +962,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return this
   }
 
-  async revokePermissionTo(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<this> {
+  async revokePermissionTo(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<this> {
     const { adapter } = this.rbac
     const { events } = this.#core
     const resolved = await this.#core.resolvePermissions(flatten(permissions), this.guardName)
@@ -915,7 +975,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   }
 
   /** Replaces all direct permissions (in the current guard & team) with the given ones. */
-  async syncPermissions(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<this> {
+  async syncPermissions(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<this> {
     const resolved = await this.#core.resolvePermissions(flatten(permissions), this.guardName)
     const current = (await this.state()).direct
     const newIds = resolved.map((p) => p.id)
@@ -984,20 +1044,20 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
    * Throws `PermissionDoesNotExist` if the permission is unknown (when wildcard is off).
    * Use {@link can} for a check that never throws.
    */
-  async hasPermissionTo(permission: PermissionInput<PermissionName<T>>): Promise<boolean> {
+  async hasPermissionTo(permission: PermissionInput<PermissionName<T, G>>): Promise<boolean> {
     const name = await this.requirePermissionName(permission)
     return this.#core.permissionMatches(await this.getPermissionNames(), name)
   }
 
   /** Checks a direct permission only (ignores roles). */
-  async hasDirectPermission(permission: PermissionInput<PermissionName<T>>): Promise<boolean> {
+  async hasDirectPermission(permission: PermissionInput<PermissionName<T, G>>): Promise<boolean> {
     const name = await this.requirePermissionName(permission)
     const direct = (await this.state()).direct.map((p) => p.name)
     return this.#core.permissionMatches(direct, name)
   }
 
   /** `true` if the subject has ANY of the permissions directly (ignores roles). Never throws. */
-  async hasAnyDirectPermission(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<boolean> {
+  async hasAnyDirectPermission(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<boolean> {
     for (const permission of flatten(permissions)) {
       if (await this.checkDirect(permission)) return true
     }
@@ -1005,7 +1065,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   }
 
   /** `true` if the subject has ALL the permissions directly (ignores roles). Never throws. */
-  async hasAllDirectPermissions(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<boolean> {
+  async hasAllDirectPermissions(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<boolean> {
     for (const permission of flatten(permissions)) {
       if (!(await this.checkDirect(permission))) return false
     }
@@ -1016,7 +1076,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
    * {@link hasPermissionTo} that returns `false` instead of throwing for an unknown permission or another guard
    * (spatie: `checkPermissionTo`). Pure data check: no `before` hook or super-admin.
    */
-  async checkPermissionTo(permission: PermissionInput<PermissionName<T>>): Promise<boolean> {
+  async checkPermissionTo(permission: PermissionInput<PermissionName<T, G>>): Promise<boolean> {
     return this.check(permission)
   }
 
@@ -1024,25 +1084,25 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
    * Authorization check: runs the `before` hook and `superAdminRoles` first, then falls back
    * to {@link hasPermissionTo}, returning `false` instead of throwing.
    */
-  async can(permission: PermissionInput<PermissionName<T>>): Promise<boolean> {
+  async can(permission: PermissionInput<PermissionName<T, G>>): Promise<boolean> {
     const name = typeof permission === 'string' ? permission.trim() : permission.name
     const decision = await this.#core.gate(this, name)
     if (decision !== undefined) return decision
     return this.check(permission)
   }
 
-  async cannot(permission: PermissionInput<PermissionName<T>>): Promise<boolean> {
+  async cannot(permission: PermissionInput<PermissionName<T, G>>): Promise<boolean> {
     return !(await this.can(permission))
   }
 
-  async canAny(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<boolean> {
+  async canAny(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<boolean> {
     for (const permission of flatten(permissions)) {
       if (await this.can(permission)) return true
     }
     return false
   }
 
-  async canAll(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<boolean> {
+  async canAll(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<boolean> {
     for (const permission of flatten(permissions)) {
       if (!(await this.can(permission))) return false
     }
@@ -1050,7 +1110,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   }
 
   /** `true` if the subject has ANY of the permissions. Pure data check (no `before` / super-admin), never throws. */
-  async hasAnyPermission(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<boolean> {
+  async hasAnyPermission(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<boolean> {
     for (const permission of flatten(permissions)) {
       if (await this.check(permission)) return true
     }
@@ -1058,7 +1118,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   }
 
   /** `true` if the subject has ALL the permissions. Pure data check (no `before` / super-admin), never throws. */
-  async hasAllPermissions(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<boolean> {
+  async hasAllPermissions(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<boolean> {
     for (const permission of flatten(permissions)) {
       if (!(await this.check(permission))) return false
     }
@@ -1069,7 +1129,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
    * Serializable `{ roles, permissions }` — e.g. to hydrate a React/Vue client. With `checkBefore`, the `before`
    * hook runs for those names and the ones it denies are listed in `denied`, so the UI hides them too.
    */
-  async snapshot(options: SnapshotOptions<T> = {}): Promise<RbacSnapshot> {
+  async snapshot(options: SnapshotOptions<T, G> = {}): Promise<RbacSnapshot> {
     const snapshot: RbacSnapshot = { roles: await this.getRoleNames(), permissions: await this.getPermissionNames() }
     if (options.checkBefore === undefined) return snapshot
     const denied: string[] = []
@@ -1082,7 +1142,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   // ------------------------------------------------------------------- internal
 
   /** {@link hasPermissionTo} that returns `false` instead of throwing. */
-  private async check(permission: PermissionInput<PermissionName<T>>): Promise<boolean> {
+  private async check(permission: PermissionInput<PermissionName<T, G>>): Promise<boolean> {
     try {
       return await this.hasPermissionTo(permission)
     } catch (error) {
@@ -1092,7 +1152,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   }
 
   /** {@link hasDirectPermission} that returns `false` instead of throwing. */
-  private async checkDirect(permission: PermissionInput<PermissionName<T>>): Promise<boolean> {
+  private async checkDirect(permission: PermissionInput<PermissionName<T, G>>): Promise<boolean> {
     try {
       return await this.hasDirectPermission(permission)
     } catch (error) {

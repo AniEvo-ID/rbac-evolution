@@ -2,7 +2,9 @@ import { RbacError } from './errors'
 import type { ActorOptions } from './events'
 import type { Rbac, RbacInternals } from './rbac'
 import type {
+  DefaultGuardName,
   DefaultRbacTypes,
+  GuardName,
   Id,
   Permission,
   PermissionName,
@@ -14,7 +16,9 @@ import type {
 import { findPrefixImplications, parseWildcardPermission, prefixCheckActive, reportPrefixImplications } from './wildcard'
 
 /** The permissions of a role in a {@link SyncDefinition}: an explicit list, or `'*'` for every permission of the guard. */
-export type SyncRolePermissions<T extends RbacTypeConfig = DefaultRbacTypes> = readonly PermissionName<T>[] | '*'
+export type SyncRolePermissions<T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>> =
+  | readonly PermissionName<T, G>[]
+  | '*'
 
 /**
  * Declarative description of the roles & permissions of ONE guard (and optionally one team).
@@ -26,22 +30,40 @@ export type SyncRolePermissions<T extends RbacTypeConfig = DefaultRbacTypes> = r
  * })
  * ```
  *
- * Pass an array of definitions to sync several guards / teams at once.
+ * Pass an array of definitions to sync several guards / teams at once. With per-guard names
+ * (`RbacTypeConfig['guards']`), `G` is the guard whose names the block takes; see {@link SyncDefinitions}.
  */
-export interface SyncDefinition<T extends RbacTypeConfig = DefaultRbacTypes> {
+export interface SyncDefinition<T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>> {
   /** Guard of this block. Default: the `guard` option, then `defaultGuard`. */
   guard?: string | undefined
   /** Team of the roles in this block (requires `teams: true`). Default: the `team` option, then global (`null`). */
   team?: TeamId | undefined
   /** Permissions of the guard. Permissions referenced by a role are created too, even if not listed here. */
-  permissions?: readonly PermissionName<T>[] | undefined
+  permissions?: readonly PermissionName<T, G>[] | undefined
   /** Roles and their permissions. Each role's permissions are synced (replaced) to exactly this list. */
-  roles?: { readonly [R in RoleName<T>]?: SyncRolePermissions<T> } | undefined
+  roles?: { readonly [R in RoleName<T, G>]?: SyncRolePermissions<T, G> } | undefined
 }
 
-export interface SyncOptions extends ActorOptions {
+/**
+ * With per-guard names: a block of guard `K` (`guard: K`, a literal), with the names of `K`.
+ * A block without `guard` takes the names of `G`: the `guard` option of `sync()`, else the default guard.
+ */
+export type GuardSyncDefinition<T extends RbacTypeConfig, G extends string = DefaultGuardName<T>> =
+  | (SyncDefinition<T, G> & { guard?: undefined })
+  | { [K in GuardName<T>]: SyncDefinition<T, K> & { guard: K } }[GuardName<T>]
+
+/**
+ * What `rbac.sync()` takes: one definition or an array of them. Without per-guard names, `SyncDefinition<T>`,
+ * as in 1.0. With them, each block is checked against the names of its own guard ({@link GuardSyncDefinition}).
+ */
+export type SyncDefinitions<T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>> =
+  T extends { guards: object }
+    ? GuardSyncDefinition<T, G> | readonly GuardSyncDefinition<T, G>[]
+    : SyncDefinition<T> | readonly SyncDefinition<T>[]
+
+export interface SyncOptions<G extends string = string> extends ActorOptions {
   /** Default guard for definitions without a `guard`. Default: `defaultGuard`. */
-  guard?: string | undefined
+  guard?: G | undefined
   /** Default team for definitions without a `team`. */
   team?: TeamId | undefined
   /**
@@ -299,9 +321,10 @@ export async function syncDefinition<T extends RbacTypeConfig>(
       plan.desired.some((p) => !plan.current.includes(p))
     if (!changed) continue
     const role =
-      plan.existing ?? (await rbac.createRole(plan.name as RoleName<T>, { guard: plan.guard, team: plan.team, actor }))
+      plan.existing ??
+      (await rbac.createRole(plan.name as RoleName<T, string>, { guard: plan.guard, team: plan.team, actor }))
     if (plan.existing === null && plan.desired.length === 0) continue
-    await rbac.role(role, { actor }).syncPermissions(plan.desired as PermissionName<T>[])
+    await rbac.role(role, { actor }).syncPermissions(plan.desired as PermissionName<T, string>[])
   }
   for (const role of rolesToDelete) await rbac.deleteRole(role, { actor })
   for (const permission of permissionsToDelete) await rbac.deletePermission(permission, { actor })

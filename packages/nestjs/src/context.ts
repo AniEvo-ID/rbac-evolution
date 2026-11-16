@@ -1,4 +1,11 @@
-import type { DefaultRbacTypes, Rbac, RbacTypeConfig, SubjectRbac } from '@anievo-id/rbac-evolution'
+import type {
+  DefaultGuardName,
+  DefaultRbacTypes,
+  Rbac,
+  RbacTypeConfig,
+  ScopedGuardName,
+  SubjectRbac,
+} from '@anievo-id/rbac-evolution'
 import type { ExecutionContext } from '@nestjs/common'
 
 export class RbacGuardMissingError extends Error {
@@ -57,13 +64,16 @@ export type TypesOf<T> = T extends Rbac<infer X> ? X : T extends RbacTypeConfig 
  * Returns the `SubjectRbac` that `RbacGuard` resolved for this execution context (`null` for guests).
  * Throws {@link RbacGuardMissingError} when the guard has not run.
  *
- * `getRbac<AppRbac>(context)` (or `getRbac<typeof rbac>(context)`) types it with the engine's names.
+ * `getRbac<AppRbac>(context)` (or `getRbac<typeof rbac>(context)`) types it with the engine's names. With per-guard
+ * names, `getRbac<AppRbac, 'api'>(context)` types it with the names of guard `api` (the guard of `RbacModule`);
+ * the default guard's names without it.
  */
-export function getRbac<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes>(
-  context: ExecutionContext,
-): SubjectRbac<TypesOf<T>> | null {
+export function getRbac<
+  T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes,
+  G extends string = DefaultGuardName<TypesOf<T>>,
+>(context: ExecutionContext): SubjectRbac<TypesOf<T>, ScopedGuardName<TypesOf<T>, G>> | null {
   const key = requestKey(context)
   if (key === undefined || !resolved.has(key)) throw new RbacGuardMissingError()
   // The guard stores the subject untyped; `T` only narrows the names it accepts.
-  return (resolved.get(key) ?? null) as SubjectRbac<TypesOf<T>> | null
+  return (resolved.get(key) ?? null) as unknown as SubjectRbac<TypesOf<T>, ScopedGuardName<TypesOf<T>, G>> | null
 }

@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs'
 import { isAbsolute, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import type { DefaultRbacTypes, Rbac, RbacTypeConfig, SyncDefinition } from '@anievo-id/rbac-evolution'
+import type { DefaultRbacTypes, Rbac, RbacTypeConfig, SyncDefinitions } from '@anievo-id/rbac-evolution'
 import { CliError } from './errors'
 
 /**
@@ -18,9 +18,10 @@ export interface RbacCliConfig<T extends RbacTypeConfig = DefaultRbacTypes> {
   subjectType?: string | undefined
   /**
    * Roles & permissions for `rbac-evolution sync` — the same shape as `rbac.sync()`:
-   * one definition, or an array of definitions (one per guard / team).
+   * one definition, or an array of definitions (one per guard / team). With per-guard names, each block is
+   * checked against the names of its `guard`.
    */
-  seed?: SyncDefinition<T> | readonly SyncDefinition<T>[] | undefined
+  seed?: SyncDefinitions<T> | undefined
   /** Called after every command, e.g. to close the database connection. */
   teardown?: (() => void | Promise<void>) | undefined
 }

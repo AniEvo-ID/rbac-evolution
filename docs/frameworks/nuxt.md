@@ -285,6 +285,37 @@ export default defineEventHandler(async (event) => {
 })
 ```
 
+### Names per guard
+
+With [typed names per guard](/basic-usage/typed-names#names-per-guard), the helpers take the names of the server's
+`guard` (the default guard's without it), and a call's `{ guard }` takes the names of that guard. The subject a
+helper returns is typed for the guard it checked in:
+
+```ts
+// server/utils/rbac-api.ts
+import { createRbac } from '@anievo-id/rbac-evolution'
+import { createRbacServer } from '@anievo-id/rbac-evolution-nuxt/server'
+
+type AppRbac = {
+  guards: {
+    web: { roles: 'admin' | 'editor'; permissions: 'articles.edit' | 'api-keys.manage' }
+    api: { roles: 'read-only' | 'full-access'; permissions: 'orders.read' | 'orders.write' }
+  }
+  defaultGuard: 'web'
+}
+
+export const apiServer = createRbacServer({ rbac: createRbac<AppRbac>({ adapter }), guard: 'api', getSubject })
+
+export default defineEventHandler(async (event) => {
+  const key = await apiServer.requirePermission(event, 'orders.read') // SubjectRbac<AppRbac, 'api'>
+  await key.can('orders.write')
+  await apiServer.requirePermission(event, 'api-keys.manage') // type error: a `web` permission
+  await apiServer.requireRole(event, 'admin', { guard: 'web' }) // ok: checked in `web`
+})
+```
+
+A `guard` that is a `string` variable accepts the names of every guard; an unknown one is a type error.
+
 ## Typed names
 
 If the engine has typed names (`createRbac<AppRbac>()`), `createRbacServer` picks them up from `rbac`. Then a typo

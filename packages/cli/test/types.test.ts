@@ -156,3 +156,32 @@ describe('cli: types', () => {
     expectTypeOf(VERSION).toEqualTypeOf<string>()
   })
 })
+
+describe('cli: per-guard names (1.2)', () => {
+  type GuardedRbac = {
+    guards: {
+      web: { roles: 'admin' | 'editor'; permissions: 'articles.edit' | 'api-keys.manage' }
+      api: { roles: 'read-only' | 'full-access'; permissions: 'orders.read' | 'orders.write' }
+    }
+    defaultGuard: 'web'
+  }
+
+  it('checks each seed block against the names of its guard', () => {
+    const guarded = createRbac<GuardedRbac>({ adapter: new MemoryAdapter() })
+    defineConfig({
+      rbac: guarded,
+      seed: [
+        { permissions: ['articles.edit', 'api-keys.manage'], roles: { admin: '*' } },
+        { guard: 'api', permissions: ['orders.read', 'orders.write'], roles: { 'read-only': ['orders.read'] } },
+      ],
+    })
+    const _bad = () => {
+      defineConfig({
+        rbac: guarded,
+        // @ts-expect-error -- `admin` is a `web` role
+        seed: { guard: 'api', roles: { admin: '*' } },
+      })
+    }
+    expect(typeof _bad).toBe('function')
+  })
+})

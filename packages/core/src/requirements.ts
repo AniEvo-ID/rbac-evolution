@@ -1,4 +1,5 @@
-import type { SubjectRbac } from './rbac'
+import type { GuardOptions, SubjectRbac } from './rbac'
+import type { DefaultGuardName, DefaultRbacTypes, GuardName, PermissionName, RbacTypeConfig, RoleName } from './types'
 
 /**
  * Shared requirement logic for the framework integrations (spatie's `permission:`, `role:` and
@@ -75,6 +76,66 @@ export type RequirementArgs<A extends readonly unknown[], N extends string, O> =
           ? [names: NamesRequired, options: O]
           : [...{ [K in keyof Init]: CheckNames<Init[K], N> }, O]
       : A
+
+// ------------------------------------------------------------------------------- per-guard names
+//
+// With per-guard names (`RbacTypeConfig['guards']`), the names a guard accepts depend on the auth guard it checks
+// in: its `{ guard }` option when given, else the guard of the request. The integrations build their typed
+// guards from these.
+
+/** The names a requirement of kind `K` accepts in guard `G` of `T`. */
+export type RequirementName<
+  T extends RbacTypeConfig = DefaultRbacTypes,
+  K extends RequirementKind = RequirementKind,
+  G extends string = DefaultGuardName<T>,
+> = K extends 'permission'
+  ? PermissionName<T, G>
+  : K extends 'role'
+    ? RoleName<T, G>
+    : PermissionName<T, G> | RoleName<T, G>
+
+/**
+ * The guard named by the trailing options of guard arguments `A` (`requirePermission('a', { guard: 'api' })`
+ * gives `'api'`), or `G` when there is none.
+ */
+export type RequirementGuard<A extends readonly unknown[], G extends string> = A extends readonly [
+  ...unknown[],
+  infer Last,
+]
+  ? Last extends { readonly guard: infer X extends string }
+    ? X
+    : G
+  : G
+
+/** Shown in the type error when a guard's `guard` option is not one of the typed guards. */
+export interface UnknownGuardName<G extends string> {
+  'rbac-evolution: unknown guard': G
+}
+
+/** `G` when it is one of the typed guards of `T` (or any `string`), else an error type naming it. */
+export type CheckRequirementGuard<T extends RbacTypeConfig, G extends string> = string extends G
+  ? string
+  : G extends GuardName<T>
+    ? G
+    : G & UnknownGuardName<G>
+
+/**
+ * {@link RequirementArgs} with per-guard names: the names of kind `K` are those of the guard the call checks in
+ * ({@link RequirementGuard}: the options' `guard`, else `G`), and `guard` must be one of the typed guards (or
+ * any string, which accepts the names of every guard). Without `guards` in `T`, the same as
+ * `RequirementArgs<A, RequirementName<T, K>, O>`.
+ */
+export type GuardRequirementArgs<
+  A extends readonly unknown[],
+  T extends RbacTypeConfig,
+  K extends RequirementKind,
+  G extends string,
+  O,
+> = RequirementArgs<
+  A,
+  RequirementName<T, K, RequirementGuard<A, G>>,
+  O & GuardOptions<CheckRequirementGuard<T, RequirementGuard<A, G>>>
+>
 
 /** A normalized requirement. Every group must pass; a group passes when ANY of its names matches. */
 export interface RbacRequirement {

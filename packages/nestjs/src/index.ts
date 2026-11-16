@@ -21,8 +21,10 @@ export type {
   RbacDecorator,
   RbacDecoratorOptions,
   RbacDecorators,
+  RbacDecoratorsFor,
   RequirePermissionsOptions,
   RequireRolesOptions,
+  ScopedRbacDecorators,
   StoredRbacRequirement,
 } from './decorators'
 export { getRbac, RbacGuardMissingError } from './context'

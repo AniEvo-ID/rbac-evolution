@@ -4,7 +4,7 @@
 
 ## `@anievo-id/rbac-evolution-nestjs`
 
-28 exports.
+30 exports.
 
 ```ts
 // CanAll: const
@@ -41,6 +41,11 @@ interface RbacDecorators<T extends RbacTypeConfig = DefaultRbacTypes> {
     CanAny: <const A extends readonly (RequirementNames | RbacDecoratorOptions)[]>(...args: A & RequirementArgs<A, PermissionName<T>, RbacDecoratorOptions>) => RbacDecorator;
     CanAll: <const A extends readonly (RequirementNames | RbacDecoratorOptions)[]>(...args: A & RequirementArgs<A, PermissionName<T>, RbacDecoratorOptions>) => RbacDecorator;
 }
+
+// RbacDecoratorsFor: type
+type RbacDecoratorsFor<T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>> = T extends {
+    guards: object;
+} ? ScopedRbacDecorators<T, G> : RbacDecorators<T>;
 
 // RbacGuard: class
 declare class RbacGuard implements CanActivate {
@@ -96,16 +101,25 @@ declare const RequireRoles: RbacDecorators['RequireRoles'];
 interface RequireRolesOptions extends RoleRequirementOptions, RbacDecoratorOptions {
 }
 
+// ScopedRbacDecorators: interface
+interface ScopedRbacDecorators<T extends RbacTypeConfig, G extends string = DefaultGuardName<T>> {
+    RequirePermissions: <const A extends readonly (RequirementNames | RequirePermissionsOptions)[]>(...args: A & GuardRequirementArgs<A, T, 'permission', G, RequirePermissionsOptions>) => RbacDecorator;
+    RequireRoles: <const A extends readonly (RequirementNames | RequireRolesOptions)[]>(...args: A & GuardRequirementArgs<A, T, 'role', G, RequireRolesOptions>) => RbacDecorator;
+    RequireRoleOrPermission: <const A extends readonly (RequirementNames | RbacDecoratorOptions)[]>(...args: A & GuardRequirementArgs<A, T, 'role_or_permission', G, RbacDecoratorOptions>) => RbacDecorator;
+    CanAny: <const A extends readonly (RequirementNames | RbacDecoratorOptions)[]>(...args: A & GuardRequirementArgs<A, T, 'permission', G, RbacDecoratorOptions>) => RbacDecorator;
+    CanAll: <const A extends readonly (RequirementNames | RbacDecoratorOptions)[]>(...args: A & GuardRequirementArgs<A, T, 'permission', G, RbacDecoratorOptions>) => RbacDecorator;
+}
+
 // StoredRbacRequirement: interface
 interface StoredRbacRequirement extends RbacRequirement {
     guard?: string | undefined;
 }
 
 // createRbacDecorators: function
-declare function createRbacDecorators<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes>(): RbacDecorators<TypesOf<T>>;
+declare function createRbacDecorators<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes, G extends GuardName<TypesOf<T>> = DefaultGuardName<TypesOf<T>> & GuardName<TypesOf<T>>>(): RbacDecoratorsFor<TypesOf<T>, G>;
 
 // getRbac: function
-declare function getRbac<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes>(context: ExecutionContext): SubjectRbac<TypesOf<T>> | null;
+declare function getRbac<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes, G extends string = DefaultGuardName<TypesOf<T>>>(context: ExecutionContext): SubjectRbac<TypesOf<T>, ScopedGuardName<TypesOf<T>, G>> | null;
 ```
 
 Re-exported from other packages:

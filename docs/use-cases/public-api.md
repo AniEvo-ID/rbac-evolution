@@ -48,7 +48,8 @@ Why this split:
 
 ## Seed it
 
-One engine, one set of typed names, two guards:
+One engine, two guards, and [typed names per guard](/basic-usage/typed-names#names-per-guard): a scope only
+exists in `api`, a dashboard permission only in `web`.
 
 ```ts
 // src/rbac.ts
@@ -56,46 +57,36 @@ import { createRbac } from '@anievo-id/rbac-evolution'
 import { createGuards } from '@anievo-id/rbac-evolution-hono'
 import { adapter } from './db' // an adapter whose driver runs on your runtime, see Adapters
 
+/** Every scope a key can have. Also the allow-list for custom keys. */
+export const SCOPES = ['orders.read', 'orders.write', 'customers.read', 'customers.write', 'webhooks.manage'] as const
+
+export type Scope = (typeof SCOPES)[number]
+
 export type ApiRbac = {
-  permissions:
-    // api guard: the scopes of a key
-    | 'orders.read'
-    | 'orders.write'
-    | 'customers.read'
-    | 'customers.write'
-    | 'webhooks.manage'
-    // web guard: the dashboard
-    | 'api-keys.view'
-    | 'api-keys.manage'
-  roles: 'read-only' | 'full-access' | 'viewer' | 'developer'
+  guards: {
+    web: { permissions: 'api-keys.view' | 'api-keys.manage'; roles: 'viewer' | 'developer' } // the dashboard
+    api: { permissions: Scope; roles: 'read-only' | 'full-access' } // the scopes of a key
+  }
+  defaultGuard: 'web'
 }
 
-export const rbac = createRbac<ApiRbac>({ adapter })
+// `names` gives `isPermissionName(rbac, input, { guard: 'api' })` the list to check user input against.
+export const rbac = createRbac<ApiRbac>({ adapter, names: { guards: { api: { permissions: SCOPES } } } })
 
-/** Guards of the public API. A 403 names the missing scope. */
-export const { requirePermission: requireScope } = createGuards<ApiRbac>({ exposeRequirements: true })
+/** Guards of the public API, whose requests are in the `api` guard. A 403 names the missing scope. */
+export const { requirePermission: requireScope } = createGuards<ApiRbac, 'api'>({ exposeRequirements: true })
 
-/** Guards of the dashboard. */
+/** Guards of the dashboard (the default guard, `web`). */
 export const { requirePermission } = createGuards<ApiRbac>()
 ```
 
 ```ts
 // src/seed.ts
-import type { PermissionName, SyncDefinition } from '@anievo-id/rbac-evolution'
-import type { ApiRbac } from './rbac'
+import type { GuardSyncDefinition } from '@anievo-id/rbac-evolution'
+import { type ApiRbac, SCOPES } from './rbac'
 
-/** Every scope a key can have. Also the allow-list for custom keys. */
-export const SCOPES = [
-  'orders.read',
-  'orders.write',
-  'customers.read',
-  'customers.write',
-  'webhooks.manage',
-] as const satisfies readonly PermissionName<ApiRbac>[]
-
-export type Scope = (typeof SCOPES)[number]
-
-export const apiSeed = [
+/** Each block is checked against the names of its own guard. */
+export const apiSeed: GuardSyncDefinition<ApiRbac>[] = [
   {
     guard: 'web',
     roles: { viewer: ['api-keys.view'], developer: ['api-keys.view', 'api-keys.manage'] },
@@ -105,7 +96,7 @@ export const apiSeed = [
     permissions: [...SCOPES],
     roles: { 'read-only': ['orders.read', 'customers.read'], 'full-access': '*' },
   },
-] satisfies SyncDefinition<ApiRbac>[]
+]
 ```
 
 `'*'` means every permission **of that guard**, so `full-access` gets the five scopes and never `api-keys.manage`.
@@ -119,22 +110,24 @@ The dashboard creates a key, then gives it a preset role or custom scopes in the
 ```ts
 // src/dashboard.ts
 import { Hono } from 'hono'
+import { isPermissionName } from '@anievo-id/rbac-evolution'
 import { rbacMiddleware, type RbacVariables } from '@anievo-id/rbac-evolution-hono'
 import { db } from './db'
-import { rbac, requirePermission } from './rbac'
-import { SCOPES, type Scope } from './seed'
+import { type ApiRbac, rbac, requirePermission, type Scope } from './rbac'
 
-type DashboardEnv = { Variables: RbacVariables & { user: { id: number; accountId: number } | undefined } }
+type DashboardEnv = { Variables: RbacVariables<ApiRbac> & { user: { id: number; accountId: number } | undefined } }
 
-const isScope = (name: unknown): name is Scope => SCOPES.includes(name as Scope)
+/** One of `SCOPES`: the `api` list of `names`. */
+const isScope = (name: unknown): name is Scope => isPermissionName(rbac, name, { guard: 'api' })
 const isPreset = (name: unknown): name is 'read-only' | 'full-access' => name === 'read-only' || name === 'full-access'
+/** A key's access, in the `api` guard: it takes the `api` names only. */
 const keyAccess = (keyId: string) => rbac.for({ type: 'api_key', id: keyId }, { guard: 'api' })
 
 export const dashboard = new Hono<DashboardEnv>()
 
 // dashboard.use(yourSessionMiddleware) sets c.var.user
 dashboard.use(
-  rbacMiddleware<DashboardEnv>({
+  rbacMiddleware<DashboardEnv, ApiRbac>({
     rbac,
     getSubject: (c) => (c.var.user ? { type: 'user', id: c.var.user.id } : null), // web guard
   }),
@@ -176,10 +169,11 @@ dashboard.get('/keys/:id', requirePermission('api-keys.view'), async (c) => {
 })
 ```
 
-`SCOPES` is the allow-list. Without it, a developer could send `"scopes": ["api-keys.manage"]`. (The `api` guard
-has no such permission, so `givePermissionTo()` would throw `PermissionDoesNotExist`, a 500 instead of a 422.)
-[`isPermissionName()`](/basic-usage/typed-names#checking-user-input) is not enough here: it checks against every
-name of the engine, `api-keys.manage` included, because typed names are per engine, not per guard.
+`isScope()` is the allow-list. [`isPermissionName()`](/basic-usage/typed-names#checking-user-input) with
+`{ guard: 'api' }` checks the `api` list of `names`, which is `SCOPES`, and narrows the input to the `api`
+permissions. A developer who sends `"scopes": ["api-keys.manage"]` gets a 422: that is a `web` permission, so it is
+not in the list. (Without the check, `givePermissionTo()` would throw `PermissionDoesNotExist`, a 500.) In code, the
+types catch the same mistake: `keyAccess(id).givePermissionTo('api-keys.manage')` doesn't compile.
 
 `getPermissionNames()` returns the scopes from the preset role and the direct ones together, which is what the
 dashboard shows.
@@ -200,7 +194,7 @@ import { requireScope, type ApiRbac } from './rbac'
 export type FindKey = (secret: string) => Promise<{ id: string } | null>
 
 export function createApi(rbac: Rbac<ApiRbac>, findKey: FindKey) {
-  const api = new Hono<RbacEnv<ApiRbac>>() // c.var.rbac has the typed names
+  const api = new Hono<RbacEnv<ApiRbac, 'api'>>() // c.var.rbac has the names of the `api` guard
 
   api.use(
     rbacMiddleware({
@@ -292,11 +286,19 @@ A developer's session can't call `/v1`: the API's `getSubject` only accepts API 
 dashboard: its subject type is `api_key` and its roles are in the `api` guard. Even if a developer had
 `orders.read` in `web`, `rbac.for(developer, { guard: 'api' }).can('orders.read')` would be `false`.
 
-### Typed names are per engine
+### A dashboard permission on an API route
 
-`ApiRbac` lists the names of both guards together, so the compiler accepts `requireScope('api-keys.manage')` on an
-API route. It would fail at runtime (no key has it), not at compile time. Keep the two lists in separate constants,
-as `SCOPES` does, to make such mistakes easy to spot.
+`ApiRbac` types the names of each guard, and `requireScope` comes from `createGuards<ApiRbac, 'api'>()`, so a
+`web` name on an API route is a compile error, not a 403 that no key can ever pass:
+
+```ts
+requireScope('orders.read') // ok
+requireScope('api-keys.manage') // type error: a `web` permission
+requireScope('api-keys.manage', { guard: 'web' }) // ok: checked in `web` (a key never has it, though)
+rbac.for({ type: 'api_key', id: 'k_1' }, { guard: 'api' }).givePermissionTo('api-keys.view') // type error
+```
+
+The error names the part that is wrong: `UnknownRequirementName<"api-keys.manage">`.
 
 ## Test it
 
