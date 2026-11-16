@@ -60,7 +60,11 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           version=$(node -p "require('./packages/core/package.json').version")
-          gh release edit "@anievo-id/rbac-evolution@${version}" --latest
+          # A prerelease (1.0.0-rc.0) can't be GitHub's "Latest"; it stays marked as a prerelease.
+          case "$version" in
+            *-*) echo "Prerelease $version: not marking it as Latest." ;;
+            *) gh release edit "@anievo-id/rbac-evolution@${version}" --latest ;;
+          esac
 
       # Fails the release (and notifies) if npm and GitHub disagree after publishing:
       # version on npm with provenance, npm `latest`, git tag and GitHub Release per package.

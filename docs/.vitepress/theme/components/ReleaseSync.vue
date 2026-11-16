@@ -8,6 +8,8 @@ interface Row {
   version: string
   npm: boolean
   provenance: boolean
+  /** `latest`, or the prerelease's tag (`rc` for `1.0.0-rc.0`). Missing in older reports. */
+  distTag?: string
   latest: string | null
   tag: boolean
   release: boolean | null
@@ -59,7 +61,7 @@ const when = computed(() => (report.value ? new Date(report.value.generatedAt).t
               <th>Version</th>
               <th>On npm</th>
               <th>Provenance</th>
-              <th>npm latest</th>
+              <th>npm dist-tag</th>
               <th>Git tag</th>
               <th>GitHub Release</th>
             </tr>
@@ -70,7 +72,7 @@ const when = computed(() => (report.value ? new Date(report.value.generatedAt).t
               <td>{{ p.version }}</td>
               <td :class="{ no: !p.npm }">{{ mark(p.npm) }}</td>
               <td :class="{ no: !p.provenance }">{{ mark(p.provenance) }}</td>
-              <td :class="{ no: p.latest !== p.version }">{{ p.latest ?? '–' }}</td>
+              <td :class="{ no: p.latest !== p.version }">{{ p.distTag ?? 'latest' }}: {{ p.latest ?? '–' }}</td>
               <td :class="{ no: !p.tag }">{{ mark(p.tag) }}</td>
               <td :class="{ no: p.release === false }">
                 <a v-if="p.release" :href="`${repo}/releases/tag/${encodeURIComponent(`${p.name}@${p.version}`)}`">✓</a>
