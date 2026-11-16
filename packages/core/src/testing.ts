@@ -252,6 +252,89 @@ export function runAdapterTests(
       }
     })
 
+    // Databases compare text with their collation: MySQL's default (utf8mb4_0900_ai_ci) ignores case and
+    // accents, SQL Server's usually ignores case, and older PAD SPACE collations ignore trailing spaces.
+    // An adapter must still match exactly, or a subject `ADMIN` could get the roles of `admin`.
+    describe('exact matching', () => {
+      const lookalikes = (value: string): string[] => [value.toUpperCase(), `${value} `, value.replace('a', 'à')]
+
+      it('keeps names that differ only by case, accents or trailing spaces apart', async () => {
+        const permission = await adapter.createPermission({ name: 'edit', guardName: 'web' })
+        const role = await adapter.createRole({ name: 'admin', guardName: 'web', teamId: null })
+        for (const name of ['EDIT', 'édit']) await adapter.createPermission({ name, guardName: 'web' })
+        for (const name of lookalikes('admin')) await adapter.createRole({ name, guardName: 'web', teamId: null })
+
+        const permissions = await adapter.findPermissions({ names: ['edit'] })
+        expect(permissions.map((p) => [String(p.id), p.name])).toEqual([[String(permission.id), 'edit']])
+        const roles = await adapter.findRoles({ names: ['admin'] })
+        expect(roles.map((r) => [String(r.id), r.name])).toEqual([[String(role.id), 'admin']])
+        expect(await adapter.findPermissions({ names: ['edit'], guardName: 'WEB' })).toEqual([])
+        expect(await adapter.findPermissions()).toHaveLength(3)
+        expect(await adapter.findRoles()).toHaveLength(4)
+      })
+
+      it('never gives a subject the links of a lookalike subject id or type', async () => {
+        const r = await adapter.createRole({ name: 'admin', guardName: 'web', teamId: null })
+        const p = await adapter.createPermission({ name: 'edit', guardName: 'web' })
+        const admin = { type: 'user', id: 'admin' }
+        await adapter.attachSubjectRoles(admin, [r.id], null)
+        await adapter.attachSubjectPermissions(admin, [p.id], null)
+
+        const others = [
+          ...lookalikes('admin').map((id) => ({ type: 'user', id })),
+          { type: 'USER', id: 'admin' },
+          { type: 'user ', id: 'admin' },
+        ]
+        for (const other of others) {
+          expect(await adapter.getSubjectRoleIds(other, null), JSON.stringify(other)).toEqual([])
+          expect(await adapter.getSubjectPermissionIds(other, null), JSON.stringify(other)).toEqual([])
+        }
+        expect(s(await adapter.getSubjectRoleIds(admin, null))).toEqual(s([r.id]))
+        expect(s(await adapter.getSubjectIdsWithRoles('user', [r.id], null))).toEqual(['admin'])
+        expect(await adapter.getSubjectIdsWithRoles('USER', [r.id], null)).toEqual([])
+        expect(await adapter.getSubjectIdsWithPermissions('USER', [p.id], null)).toEqual([])
+
+        // Detaching a lookalike leaves the real subject's links alone.
+        for (const other of others) {
+          await adapter.detachSubjectRoles(other, undefined, null)
+          await adapter.detachSubjectPermissions(other, undefined, null)
+        }
+        expect(s(await adapter.getSubjectRoleIds(admin, null))).toEqual(s([r.id]))
+        expect(s(await adapter.getSubjectPermissionIds(admin, null))).toEqual(s([p.id]))
+      })
+
+      if (teams) {
+        it('never mixes up lookalike team ids', async () => {
+          const r = await adapter.createRole({ name: 'admin', guardName: 'web', teamId: 'acme' })
+          const p = await adapter.createPermission({ name: 'edit', guardName: 'web' })
+          await adapter.attachSubjectRoles(alice, [r.id], 'acme')
+          await adapter.attachSubjectPermissions(alice, [p.id], 'acme')
+
+          for (const team of lookalikes('acme')) {
+            expect(await adapter.findRoles({ teamIds: [team] }), team).toEqual([])
+            expect(await adapter.getSubjectRoleIds(alice, team), team).toEqual([])
+            expect(await adapter.getSubjectPermissionIds(alice, team), team).toEqual([])
+            expect(await adapter.getSubjectIdsWithRoles('user', [r.id], team), team).toEqual([])
+          }
+          expect(await adapter.findRoles({ teamIds: ['acme'] })).toHaveLength(1)
+        })
+      }
+
+      it('end to end: a lookalike user is denied', async () => {
+        const rbac = createRbac({ adapter, cache: false })
+        await rbac.createPermission('delete everything')
+        await rbac.createRole('admin')
+        await rbac.role('admin').givePermissionTo('delete everything')
+        await rbac.for({ type: 'user', id: 'admin' }).assignRole('admin')
+
+        expect(await rbac.for({ type: 'user', id: 'admin' }).can('delete everything')).toBe(true)
+        for (const id of lookalikes('admin')) {
+          expect(await rbac.for({ type: 'user', id }).can('delete everything'), id).toBe(false)
+          expect(await rbac.for({ type: 'user', id }).hasRole('admin'), id).toBe(false)
+        }
+      })
+    })
+
     describe('engine integration', () => {
       it('runs a full flow through createRbac', async () => {
         const rbac = createRbac({ adapter, teams, cache: false })

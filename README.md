@@ -15,6 +15,7 @@
   <a href="https://creation.anievo.id/rbac-evolution/quality"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fcreation.anievo.id%2Frbac-evolution%2Freports%2Funit.json&query=%24.totals.passed&suffix=%20passed&label=tests&color=00c896" alt="tests"></a>
   <a href="https://creation.anievo.id/rbac-evolution/quality"><img src="https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fcreation.anievo.id%2Frbac-evolution%2Freports%2Fe2e.json&query=%24.totals.passed&suffix=%20passed&label=e2e&color=00c896" alt="e2e"></a>
   <a href="https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/release-check.yml"><img src="https://github.com/AniEvo-ID/rbac-evolution/actions/workflows/release-check.yml/badge.svg" alt="release sync"></a>
+  <a href="https://scorecard.dev/viewer/?uri=github.com/AniEvo-ID/rbac-evolution"><img src="https://api.scorecard.dev/projects/github.com/AniEvo-ID/rbac-evolution/badge" alt="OpenSSF Scorecard"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue" alt="license"></a>
 </p>
 

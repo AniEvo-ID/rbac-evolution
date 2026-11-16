@@ -2,6 +2,7 @@
 
 RBAC Evolution answers one question — *does this subject have this role or permission?* — and it answers it
 correctly only if you ask in the right place, with fresh data. This page collects the practices that matter most.
+For what the library guarantees and what it assumes, see the [threat model](/best-practices/threat-model).
 
 ## Enforce on the server, decorate on the client
 

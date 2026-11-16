@@ -123,6 +123,7 @@ export default defineConfig({
         items: [
           { text: 'Roles vs permissions', link: '/best-practices/roles-vs-permissions' },
           { text: 'Security', link: '/best-practices/security' },
+          { text: 'Threat model', link: '/best-practices/threat-model' },
         ],
       },
     ],
