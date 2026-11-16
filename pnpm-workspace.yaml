@@ -5,7 +5,17 @@ packages:
   - "tests/*"
 
 onlyBuiltDependencies:
+  - better-sqlite3
   - esbuild
   - prisma
   - "@prisma/client"
   - "@prisma/engines"
+
+# Prisma 7's CLI (a dev dependency of packages/prisma) pins @electric-sql/pglite 0.4.3 for `prisma dev`, which the
+# tests don't use. drizzle-orm resolves its optional pglite peer from the whole graph, so a second pglite version
+# splits drizzle-orm into two copies (packages/drizzle on 0.3.16, the example apps on 0.4.3) whose types don't
+# match. Keep one pglite: the version packages/drizzle and packages/kysely test with.
+overrides:
+  "@prisma/dev>@electric-sql/pglite": 0.3.16
+  "@electric-sql/pglite-socket>@electric-sql/pglite": 0.3.16
+  "@electric-sql/pglite-tools>@electric-sql/pglite": 0.3.16

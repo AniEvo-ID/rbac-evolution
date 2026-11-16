@@ -2,13 +2,14 @@ import { createRbac } from '@anievo-id/rbac-evolution'
 import { runAdapterTests } from '@anievo-id/rbac-evolution/testing'
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
 import { PrismaAdapter, type PrismaRbacClient } from '../src'
-import { PrismaClient } from './generated'
-import { PrismaClient as LegacyPrismaClient } from './generated-legacy'
+import { connect, databaseUrl } from './generated/connect'
+import { connect as connectLegacy, databaseUrl as legacyUrl } from './generated-legacy/connect'
 
 // `test/generated` + `test/.tmp/test.db` are created by `node test/prepare.mjs` (run by `pnpm test`).
-const prisma = new PrismaClient()
+// `connect` builds the client the way the installed Prisma wants it (a driver adapter on Prisma 7).
+const prisma = connect(databaseUrl)
 // The same models without `expiresAt`, on their own database: a schema that was never upgraded (1.1).
-const legacy = new LegacyPrismaClient()
+const legacy = connectLegacy(legacyUrl)
 
 afterAll(async () => {
   await prisma.$disconnect()
@@ -134,6 +135,26 @@ describe('PrismaAdapter on an interactive-transaction client', () => {
     expect(await prisma.rbacPermission.count()).toBe(0)
     expect(await prisma.rbacModelHasRole.count()).toBe(0)
     expect(await prisma.rbacRoleHasPermission.count()).toBe(0)
+  })
+
+  // Prisma 7 keeps `$transaction` on `tx` (nested transactions). The deletes must still run on `tx`, inside the
+  // outer transaction, not in a batch transaction of their own.
+  it('runs the deletes inside the outer transaction, which can roll them back', async () => {
+    await resetDatabase()
+    const rbac = createRbac({ adapter: new PrismaAdapter(prisma), cache: false })
+    await rbac.createRole('writer')
+    await rbac.for({ type: 'user', id: 1 }).assignRole('writer')
+
+    await expect(
+      prisma.$transaction(async (tx) => {
+        await createRbac({ adapter: new PrismaAdapter(tx), cache: false }).deleteRole('writer')
+        expect(await tx.rbacRole.count()).toBe(0)
+        throw new Error('roll back')
+      }),
+    ).rejects.toThrow('roll back')
+
+    expect(await prisma.rbacRole.count()).toBe(1)
+    expect(await prisma.rbacModelHasRole.count()).toBe(1)
   })
 })
 

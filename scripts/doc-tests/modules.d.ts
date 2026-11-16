@@ -133,3 +133,6 @@ declare module '@prisma/client' {
     $disconnect(): Promise<void>
   }
 }
+
+/** `import 'dotenv/config'` (loads `.env`), as in a Prisma 7 `prisma.config.ts`. */
+declare module 'dotenv/config' {}

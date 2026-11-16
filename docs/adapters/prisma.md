@@ -24,10 +24,10 @@ bun add @anievo-id/rbac-evolution @anievo-id/rbac-evolution-prisma
 
 :::
 
-Prisma itself (`@prisma/client` and the `prisma` CLI) is a peer dependency, and a Prisma project already has it installed.
+Prisma itself (`@prisma/client` and the `prisma` CLI) is a peer dependency, and a Prisma project already has it installed. On Prisma 7, so is the [driver adapter](#prisma-7) for your database, such as `@prisma/adapter-pg`.
 
 ::: warning Prisma version
-Use `@prisma/client` **5.12 or later, or 6**. Prisma 7 is not supported yet. Older versions don't support `createMany` on SQLite, and the adapter needs it.
+Use `@prisma/client` **5.12 or later: 5.x, 6 or 7**. Older versions don't support `createMany` on SQLite, and the adapter needs it. Prisma 7 sets the client up differently (a generator `output`, a driver adapter, `prisma.config.ts`); the adapter works the same on all three. See [Prisma 7](#prisma-7).
 :::
 
 ## 1. Add the models to your schema
@@ -124,11 +124,25 @@ npx prisma db push
 
 :::
 
-Both commands also run `prisma generate`, so the new delegates show up on your client.
+On Prisma 5 and 6, both commands also run `prisma generate`, so the new delegates show up on your client. Prisma 7
+no longer generates from `migrate dev` or `db push`: run `npx prisma generate` afterwards.
 
 ## 3. Use it
 
-```ts
+::: code-group
+
+```ts [Prisma 7]
+// lib/rbac.ts
+import { PrismaPg } from '@prisma/adapter-pg'
+import { createRbac } from '@anievo-id/rbac-evolution'
+import { PrismaAdapter } from '@anievo-id/rbac-evolution-prisma'
+import { PrismaClient } from '../generated/prisma/client' // your generator `output`
+
+export const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }) })
+export const rbac = createRbac({ adapter: new PrismaAdapter(prisma) })
+```
+
+```ts [Prisma 5 / 6]
 // lib/rbac.ts
 import { PrismaClient } from '@prisma/client'
 import { createRbac } from '@anievo-id/rbac-evolution'
@@ -137,6 +151,8 @@ import { PrismaAdapter } from '@anievo-id/rbac-evolution-prisma'
 export const prisma = new PrismaClient()
 export const rbac = createRbac({ adapter: new PrismaAdapter(prisma) })
 ```
+
+:::
 
 ```ts
 import { rbac } from './lib/rbac'
@@ -153,8 +169,71 @@ await user.can('edit articles') // true
 The adapter doesn't import `@prisma/client` itself. It accepts any object that has the five delegates and `$transaction`, which means it also works with:
 
 - a custom generator `output` path (`import { PrismaClient } from './generated/client'`),
+- both generators, `prisma-client-js` and Prisma 7's `prisma-client`, in ESM or CommonJS output,
 - a schema with many other models,
 - clients extended with `$extends(...)`.
+
+## Prisma 7
+
+Prisma 7 removed the Rust query engine and changed how a client is set up. The adapter needs no changes and no new
+option: the [models](#_1-add-the-models-to-your-schema), the [options](#options) and the tables are the same as on
+Prisma 5 and 6. What changes is your Prisma setup:
+
+- **Generator.** Use `provider = "prisma-client"` with an `output` (now required), and import the client from that
+  folder: `<output>/client`, not `@prisma/client`. The generated code is ESM; add `moduleFormat = "cjs"` for
+  CommonJS. The older `prisma-client-js` generator still works on 7 and is deprecated; with a custom `output` it needs
+  `@prisma/client-runtime-utils` installed.
+- **Datasource URL.** The `url` moves out of `schema.prisma` into `prisma.config.ts`. The CLI no longer loads `.env`
+  by itself, so load it there (`dotenv`).
+- **Driver adapter.** `new PrismaClient()` without arguments is gone. Pass the driver adapter for your database:
+
+  | Database | Package | Adapter |
+  | --- | --- | --- |
+  | PostgreSQL | `@prisma/adapter-pg` | `new PrismaPg({ connectionString })` |
+  | MySQL / MariaDB | `@prisma/adapter-mariadb` | `new PrismaMariaDb({ host, user, password, database })` |
+  | SQLite | `@prisma/adapter-better-sqlite3` | `new PrismaBetterSqlite3({ url: 'file:./dev.db' })` |
+  | SQL Server | `@prisma/adapter-mssql` | `new PrismaMssql(config)` |
+
+- **Generate yourself.** `prisma migrate dev` and `prisma db push` no longer run `prisma generate`.
+- **MongoDB** is not supported by Prisma 7 (and was never supported by this adapter).
+
+```prisma
+// prisma/schema.prisma
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ...the five rbac models
+```
+
+```ts
+// prisma.config.ts
+import 'dotenv/config'
+import { defineConfig, env } from 'prisma/config'
+
+export default defineConfig({
+  schema: 'prisma/schema.prisma',
+  migrations: { path: 'prisma/migrations' },
+  datasource: { url: env('DATABASE_URL') },
+})
+```
+
+Then build the client with the adapter, as in the Prisma 7 tab of [3. Use it](#_3-use-it).
+
+Things that behave the same on 7:
+
+- **`skipDuplicates`** is still for PostgreSQL, CockroachDB, MySQL and MariaDB only. SQLite and SQL Server clients
+  still don't accept it.
+- **Unique violations** still come back as `P2002` from the driver adapters, so the default mode's
+  read-and-retry works unchanged.
+- **Interactive transactions.** On Prisma 7 a `tx` client has a `$transaction` method too (for nested transactions).
+  The adapter recognizes a `tx` client by its missing `$connect` and runs its queries on `tx`, inside your
+  transaction, as on 5 and 6.
 
 ### Teams
 
@@ -259,7 +338,7 @@ More things to know:
 
 - **Deletes are transactional.** `deleteRole` and `deletePermission` remove the link rows and the row itself in one `$transaction`. Because of this, the `onDelete: Cascade` relations are only a safety net, and the adapter also works with `relationMode = "prisma"`.
 - **Uniqueness.** The engine checks names before inserting, and the unique constraints enforce them. If two requests race to create the same name, the second one fails with Prisma's `P2002` error.
-- **Interactive transactions.** The adapter calls `$transaction([...])` with an array, and the client you get inside `prisma.$transaction(async (tx) => ...)` has no `$transaction` method. Build the adapter on the root client.
+- **Interactive transactions.** On the root client, the adapter runs its multi-step deletes in one `$transaction([...])`. Given the client of `prisma.$transaction(async (tx) => ...)`, it runs them one after the other on `tx`, inside your transaction, so they commit or roll back with it.
 
 ::: tip Cache across instances
 The default cache lives in process memory. If you run several app instances against one database, read [Cache: multiple processes](/advanced/cache#multiple-processes).
@@ -267,7 +346,9 @@ The default cache lives in process memory. If you run several app instances agai
 
 ## How it's tested
 
-The adapter runs the shared conformance suite (`runAdapterTests` from `@anievo-id/rbac-evolution/testing`) against clients generated from the shipped `schema/rbac-expiry.prisma`, plus a client generated from the 1.1 `schema/rbac.prisma` without the option:
+The adapter runs the shared conformance suite (`runAdapterTests` from `@anievo-id/rbac-evolution/testing`) against clients generated from the shipped `schema/rbac-expiry.prisma`, plus a client generated from the 1.1 `schema/rbac.prisma` without the option.
+
+It runs on Prisma 7 (with the driver adapters: `better-sqlite3`, `pg` and `mariadb`, the `prisma-client` generator, and `prisma-client-js` for the 1.1 client) in every test run, and on Prisma 6 and 5.12 (the Rust engine, `prisma-client-js`) in the CI `peers` job:
 
 | Database | When |
 | --- | --- |

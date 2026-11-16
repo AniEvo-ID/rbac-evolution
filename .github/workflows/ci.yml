@@ -158,6 +158,11 @@ jobs:
           - name: prisma 5.12
             pkg: '@anievo-id/rbac-evolution-prisma'
             deps: '@prisma/client@5.12.0 prisma@5.12.0'
+          # The dev dependency is Prisma 7 (driver adapters); this keeps the newest 6.x (Rust engine) covered.
+          # Pinned to a major: npm's `latest` tag of prisma points at an 8.0 release candidate.
+          - name: prisma 6
+            pkg: '@anievo-id/rbac-evolution-prisma'
+            deps: '@prisma/client@6 prisma@6'
           - name: drizzle-orm 0.38
             pkg: '@anievo-id/rbac-evolution-drizzle'
             deps: drizzle-orm@0.38.0
