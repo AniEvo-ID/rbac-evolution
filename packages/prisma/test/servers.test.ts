@@ -1,14 +1,14 @@
 // Optional suites against real database servers (CI provides both); each is skipped when its env var is absent.
 // - PG_URL    → client generated into test/generated-pg     (provider "postgresql")
 // - MYSQL_URL → client generated into test/generated-mysql  (provider "mysql")
-// `node test/prepare.mjs` (run by `pnpm test`) generates both clients and, when the env var is set,
+// `node test/prepare.mjs` (run by `pnpm test`) generates both clients (and their `connect.ts`) and, when the env var is set,
 // pushes the shipped models into a dedicated database on that server.
 import { createRbac } from '@anievo-id/rbac-evolution'
 import { runAdapterTests } from '@anievo-id/rbac-evolution/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { PrismaAdapter, type PrismaRbacClient } from '../src'
-import { PrismaClient as MysqlPrismaClient } from './generated-mysql'
-import { PrismaClient as PgPrismaClient } from './generated-pg'
+import { connect as connectMysql } from './generated-mysql/connect'
+import { connect as connectPg } from './generated-pg/connect'
 
 /** Keep in sync with test/prepare.mjs. */
 const TEST_DATABASE = 'rbac_evolution_prisma_test'
@@ -113,5 +113,6 @@ function serverSuite(label: string, envVar: string, connect: (url: string) => Se
   })
 }
 
-serverSuite('PostgreSQL', 'PG_URL', (url) => new PgPrismaClient({ datasourceUrl: url }))
-serverSuite('MySQL', 'MYSQL_URL', (url) => new MysqlPrismaClient({ datasourceUrl: url }))
+// `connect` builds the client the way the installed Prisma wants it (a driver adapter on Prisma 7).
+serverSuite('PostgreSQL', 'PG_URL', connectPg)
+serverSuite('MySQL', 'MYSQL_URL', connectMysql)

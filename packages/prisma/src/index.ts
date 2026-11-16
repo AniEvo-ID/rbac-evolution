@@ -146,7 +146,10 @@ export interface PrismaRbacClient {
   rbacRoleHasPermission: PrismaRbacRoleHasPermissionDelegate
   rbacModelHasRole: PrismaRbacModelHasRoleDelegate
   rbacModelHasPermission: PrismaRbacModelHasPermissionDelegate
-  /** Missing on an interactive-transaction client (`prisma.$transaction(async (tx) => ...)`). */
+  /**
+   * Missing on an interactive-transaction client (`prisma.$transaction(async (tx) => ...)`) on Prisma 5 and 6.
+   * Prisma 7 has it there too; the adapter only calls it on a client that also has `$connect` (a root client).
+   */
   $transaction?(queries: PromiseLike<unknown>[]): PromiseLike<unknown>
 }
 
@@ -289,9 +292,15 @@ export class PrismaAdapter implements RbacAdapter {
     this.supportsExpiry = options.expiry === true
   }
 
-  /** A `tx` client is already inside a transaction: run the (lazy) queries in order instead. */
+  /**
+   * A `tx` client is already inside a transaction: run the (lazy) queries in order instead. Prisma 5/6 leave
+   * `$transaction` off a `tx` client. Prisma 7 keeps it there, for nested transactions, but a batch
+   * `tx.$transaction([...])` starts a transaction of its own instead of joining the outer one (on SQLite it waits for
+   * the outer one to end, and times out). Both versions
+   * leave `$connect` off a `tx` client, so a client with `$transaction` but no `$connect` is a `tx` client too.
+   */
   async #atomically(queries: PromiseLike<unknown>[]): Promise<void> {
-    if (this.#db.$transaction) {
+    if (this.#db.$transaction && '$connect' in this.#db) {
       await this.#db.$transaction(queries)
       return
     }

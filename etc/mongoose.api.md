@@ -129,51 +129,11 @@ declare function mongooseAdapter(options?: RbacModelOptions): MongooseRbacAdapte
 
 // rbacSchemas: function
 declare function rbacSchemas(): {
-    permission: mongoose.Schema<PermissionDoc, mongoose.Model<PermissionDoc, any, any, any, mongoose.Document<unknown, any, PermissionDoc, any, {}> & PermissionDoc & Required<{
-        _id: Types.ObjectId;
-    }> & {
-        __v: number;
-    }, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, PermissionDoc, mongoose.Document<unknown, {}, mongoose.FlatRecord<PermissionDoc>, {}, mongoose.DefaultSchemaOptions> & mongoose.FlatRecord<PermissionDoc> & Required<{
-        _id: Types.ObjectId;
-    }> & {
-        __v: number;
-    }>;
-    role: mongoose.Schema<RoleDoc, mongoose.Model<RoleDoc, any, any, any, mongoose.Document<unknown, any, RoleDoc, any, {}> & RoleDoc & Required<{
-        _id: Types.ObjectId;
-    }> & {
-        __v: number;
-    }, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, RoleDoc, mongoose.Document<unknown, {}, mongoose.FlatRecord<RoleDoc>, {}, mongoose.DefaultSchemaOptions> & mongoose.FlatRecord<RoleDoc> & Required<{
-        _id: Types.ObjectId;
-    }> & {
-        __v: number;
-    }>;
-    roleHasPermission: mongoose.Schema<RoleHasPermissionDoc, mongoose.Model<RoleHasPermissionDoc, any, any, any, mongoose.Document<unknown, any, RoleHasPermissionDoc, any, {}> & RoleHasPermissionDoc & Required<{
-        _id: Types.ObjectId;
-    }> & {
-        __v: number;
-    }, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, RoleHasPermissionDoc, mongoose.Document<unknown, {}, mongoose.FlatRecord<RoleHasPermissionDoc>, {}, mongoose.DefaultSchemaOptions> & mongoose.FlatRecord<RoleHasPermissionDoc> & Required<{
-        _id: Types.ObjectId;
-    }> & {
-        __v: number;
-    }>;
-    modelHasRole: mongoose.Schema<ModelHasRoleDoc, mongoose.Model<ModelHasRoleDoc, any, any, any, mongoose.Document<unknown, any, ModelHasRoleDoc, any, {}> & ModelHasRoleDoc & Required<{
-        _id: Types.ObjectId;
-    }> & {
-        __v: number;
-    }, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, ModelHasRoleDoc, mongoose.Document<unknown, {}, mongoose.FlatRecord<ModelHasRoleDoc>, {}, mongoose.DefaultSchemaOptions> & mongoose.FlatRecord<ModelHasRoleDoc> & Required<{
-        _id: Types.ObjectId;
-    }> & {
-        __v: number;
-    }>;
-    modelHasPermission: mongoose.Schema<ModelHasPermissionDoc, mongoose.Model<ModelHasPermissionDoc, any, any, any, mongoose.Document<unknown, any, ModelHasPermissionDoc, any, {}> & ModelHasPermissionDoc & Required<{
-        _id: Types.ObjectId;
-    }> & {
-        __v: number;
-    }, any>, {}, {}, {}, {}, mongoose.DefaultSchemaOptions, ModelHasPermissionDoc, mongoose.Document<unknown, {}, mongoose.FlatRecord<ModelHasPermissionDoc>, {}, mongoose.DefaultSchemaOptions> & mongoose.FlatRecord<ModelHasPermissionDoc> & Required<{
-        _id: Types.ObjectId;
-    }> & {
-        __v: number;
-    }>;
+    permission: Schema<PermissionDoc>;
+    role: Schema<RoleDoc>;
+    roleHasPermission: Schema<RoleHasPermissionDoc>;
+    modelHasRole: Schema<ModelHasRoleDoc>;
+    modelHasPermission: Schema<ModelHasPermissionDoc>;
 };
 
 // syncRbacIndexes: function

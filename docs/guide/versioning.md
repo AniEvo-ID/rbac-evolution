@@ -76,10 +76,10 @@ These only change in a major release:
 | NestJS | 10, 11, 12 |
 | React | 18, 19 |
 | Vue | 3.3+ |
-| Prisma | 5.12+, 6 |
+| Prisma | 5.12+, 6, 7 |
 | Drizzle ORM | 0.38+ |
-| Kysely | 0.28 |
-| Mongoose | 8 |
+| Kysely | 0.28, 0.29 (Node.js 22+ and TypeScript 5.4+, Kysely's own minimums) |
+| Mongoose | 8, 9 (9 needs Node.js 20.19+) |
 
 These match each package's `peerDependencies`. CI tests the oldest and the newest supported version of each one (the
 `peers` job). See the [test report](/quality).

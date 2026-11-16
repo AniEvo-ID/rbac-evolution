@@ -16,10 +16,10 @@ import {
   type PrismaRbacRoleDelegate,
   type PrismaRbacRoleHasPermissionDelegate,
 } from '../src'
-import type { Prisma as SqlitePrisma, PrismaClient as SqliteClient } from './generated'
-import type { PrismaClient as LegacyClient } from './generated-legacy'
-import type { Prisma as MysqlPrisma, PrismaClient as MysqlClient } from './generated-mysql'
-import type { Prisma as PgPrisma, PrismaClient as PgClient } from './generated-pg'
+import type { Prisma as SqlitePrisma, PrismaClient as SqliteClient } from './generated/connect'
+import type { PrismaClient as LegacyClient } from './generated-legacy/connect'
+import type { Prisma as MysqlPrisma, PrismaClient as MysqlClient } from './generated-mysql/connect'
+import type { Prisma as PgPrisma, PrismaClient as PgClient } from './generated-pg/connect'
 
 /** A structural client that never touches a database. */
 const fakeClient = (): PrismaRbacClient => {

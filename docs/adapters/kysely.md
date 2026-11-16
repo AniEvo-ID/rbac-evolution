@@ -4,7 +4,7 @@
 
 | Dialect family | Kysely dialects | Status |
 | --- | --- | --- |
-| PostgreSQL | `PostgresDialect` (pg), PGlite, Neon, postgres.js, ... | Tested |
+| PostgreSQL | `PostgresDialect` (pg), PGlite (Kysely 0.29's `PGliteDialect` or `kysely-pglite-dialect`), Neon, postgres.js, ... | Tested |
 | MySQL | `MysqlDialect` (mysql2), PlanetScale, ... | Tested (MySQL 8) |
 | SQLite | `SqliteDialect` (better-sqlite3), libsql / Turso, D1, Bun SQLite, ... | Tested |
 | SQL Server | `MssqlDialect` (tedious) | Tested (SQL Server 2022) |
@@ -33,7 +33,16 @@ bun add @anievo-id/rbac-evolution @anievo-id/rbac-evolution-kysely kysely
 
 :::
 
-`kysely` 0.28 is a peer dependency (0.29 moved `Migration` to `kysely/migration`, which `rbacMigration()` uses, and is not supported yet). Install your database driver as usual.
+`kysely` 0.28 or 0.29 is a peer dependency. Install your database driver as usual.
+
+| Kysely | Node.js | TypeScript | `Migrator` import |
+| --- | --- | --- | --- |
+| 0.29 | 22+ | 5.4+ | `kysely/migration` |
+| 0.28 | 20+ | 5.0+ | `kysely` |
+
+The Node.js and TypeScript minimums of 0.29 are Kysely's own. 0.29 also ships ES modules only: from CommonJS, it needs
+a Node.js version that can `require()` ES modules (22.12 or later). Everything on this page works the same on both
+versions; only the [migrator](#with-the-kysely-migrator) import differs.
 
 ## Schema
 
@@ -52,10 +61,20 @@ It creates the tables with their primary keys, unique constraints, foreign keys 
 
 ### With the Kysely migrator
 
-`rbacMigration(options?)` returns a Kysely `Migration` object (`up` creates the tables, `down` drops them):
+`rbacMigration(options?)` returns an `RbacMigration`: a Kysely migration object (`up` creates the tables, `down`
+drops them). It has the same shape as Kysely's `Migration` type, so it works with the `Migrator` of 0.28 and 0.29.
+
+Kysely 0.29 exports `Migrator` (and `Migration`, `FileMigrationProvider`, ...) from `kysely/migration`:
+
+<!-- doc-test: skip -->
+```ts
+import { Migrator } from 'kysely/migration' // Kysely 0.29
+```
+
+On 0.28, which has no `kysely/migration`, import them from `kysely`:
 
 ```ts
-import { Migrator } from 'kysely'
+import { Migrator } from 'kysely' // Kysely 0.28
 import { rbacMigration } from '@anievo-id/rbac-evolution-kysely'
 
 const migrator = new Migrator({
@@ -122,7 +141,7 @@ To turn it on in an existing app:
    means permanent:
 
    ```ts
-   import { Migrator } from 'kysely'
+   import { Migrator } from 'kysely' // on Kysely 0.29: from 'kysely/migration'
    import { rbacExpiryMigration, rbacMigration } from '@anievo-id/rbac-evolution-kysely'
 
    const migrator = new Migrator({
@@ -254,7 +273,7 @@ await user.can('edit articles') // true
 | `addRbacExpiryColumns(db, options?)`, `dropRbacExpiryColumns(db, options?)`, `rbacExpiryMigration(options?)` | functions |
 | `detectDialect(db)`, `tableNames(options?)` | functions |
 | `RbacDatabase<Prefix>`, `PermissionsTable`, `RolesTable`, `RoleHasPermissionsTable`, `ModelHasRolesTable`, `ModelHasPermissionsTable` | types |
-| `RbacDialect`, `KyselyAdapterOptions`, `RbacMigrationOptions`, `RbacTableOptions`, `RbacTableNames`, `RbacTimestamp` | types |
+| `RbacDialect`, `KyselyAdapterOptions`, `RbacMigration`, `RbacMigrationOptions`, `RbacTableOptions`, `RbacTableNames`, `RbacTimestamp` | types |
 
 ## Behaviour notes
 

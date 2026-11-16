@@ -92,8 +92,19 @@ const linkOptions = { versionKey: false } as const
  */
 const EXPIRY_FIELD = { expiresAt: { type: Date } }
 
-/** Schemas (unregistered). Useful to add plugins or hooks before calling `createRbacModels`. */
-export function rbacSchemas() {
+/**
+ * Schemas (unregistered). Useful to add plugins or hooks before calling `createRbacModels`.
+ *
+ * The return type is spelled out rather than inferred: the inferred one names internal Mongoose types that
+ * differ between Mongoose 8 and 9, and the published `.d.ts` must work with both.
+ */
+export function rbacSchemas(): {
+  permission: Schema<PermissionDoc>
+  role: Schema<RoleDoc>
+  roleHasPermission: Schema<RoleHasPermissionDoc>
+  modelHasRole: Schema<ModelHasRoleDoc>
+  modelHasPermission: Schema<ModelHasPermissionDoc>
+} {
   const permission = new Schema<PermissionDoc>(
     {
       name: { type: String, required: true },

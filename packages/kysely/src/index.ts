@@ -7,6 +7,7 @@ export {
   dropRbacTables,
   rbacExpiryMigration,
   rbacMigration,
+  type RbacMigration,
   type RbacMigrationOptions,
 } from './schema'
 export {

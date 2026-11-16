@@ -37,9 +37,9 @@ Decide and write down:
 | NestJS | 10, 11, 12 | 12 (`ci`), 10 and 11 (`peers`) |
 | React | 18, 19 | 19 (`ci`), 18 (`peers`) |
 | Vue | 3.3+ | 3.5 (`ci`), 3.3 (`peers`) |
-| Prisma | 5.12+, 6 | 6 (`ci`), 5.12.0 (`peers`) |
+| Prisma | 5.12+, 6, 7 | 7 (`ci`), 5.12.0 and 6 (`peers`) |
 | Drizzle | 0.38+ | 0.44 (`ci`), 0.38.0 and 0.45 (`peers`) |
-| Kysely | 0.28 | 0.28 latest (`ci`), 0.28.0 without typecheck (`peers`) |
+| Kysely | 0.28, 0.29 | 0.28 latest (`ci`), 0.28.0 without typecheck and 0.29 (`peers`) |
 | Mongoose | 8 | 8 latest (`ci`, `databases`) |
 
 `ci` runs each package against the dev dependency in the lockfile. The `peers` job in `.github/workflows/ci.yml`
@@ -55,10 +55,14 @@ Narrowed while filling this table (tried locally with the `peers` technique):
   `extraConfig`) don't type-check, so the build's `.d.ts` step fails. 0.38.0 passes. Peer range `>=0.36` -> `>=0.38`.
 - Kysely 0.27: a `Transaction<DB>` isn't assignable to `Kysely<any>`, so `kyselyAdapter(trx)` is a type error.
   Kysely 0.29: `Migration` moved to `kysely/migration`, `src/schema.ts` doesn't compile and the migration test fails.
-  Peer range `>=0.27` -> `^0.28.0`.
+  Peer range `>=0.27` -> `^0.28.0`. Later (1.3): the migration helpers return a structural `RbacMigration` instead
+  of Kysely's `Migration`, and 0.29 passes; peer range `^0.28.0 || ^0.29.0`. The dev dependency stays on 0.28,
+  because the `ci` job runs Node 20 and Kysely 0.29 needs Node 22.
 - Prisma 5.0.0: the generated client isn't assignable to `PrismaRbacClient` and the tests fail; the docs already
   said "5.12 or later" (no `createMany` on SQLite before that), and 5.12.0 passes. Prisma 7: `prisma generate` rejects
   the test schema's `datasource url`, so nothing runs against it yet. Peer range `>=5` -> `^5.12.0 || ^6.0.0`.
+  Later, `test/prepare.mjs` learned Prisma 7 (the `prisma-client` generator, a config file for the URL, driver
+  adapters), the dev dependency moved to 7, and 7.0.0 and 7.10 pass. Peer range -> `^5.12.0 || ^6.0.0 || ^7.0.0`.
 - Mongoose 9: type-checks, but its tests couldn't run here (the MongoDB binary download was blocked), so it has no
   `peers` entry yet. Peer range `>=8` -> `^8.0.0` until it does.
 - Vue 3.3 and 3.4 failed one type test (`InjectionKey` is a `Symbol` interface before 3.5). The test now compares
