@@ -12,7 +12,9 @@ match the published docs.
 ## Unit & integration tests
 
 Every package's test suite, including the adapter suites against real PostgreSQL, MySQL and MongoDB servers, with
-code coverage.
+code coverage. CI fails a pull request when a package's coverage drops below its floor in
+[`coverage-floor.json`](https://github.com/AniEvo-ID/rbac-evolution/blob/main/coverage-floor.json); floors are only
+ever raised.
 
 <QualityReport />
 
