@@ -27,6 +27,11 @@ updates:
     groups:
       minor-and-patch:
         update-types: [minor, patch]
+    ignore:
+      # Changesets v3 goes together with changesets/action v2 (see the github-actions entry below).
+      # Both are migrated in one pull request, by hand, because the release workflow only runs on main.
+      - dependency-name: '@changesets/cli'
+        update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
     directory: /
@@ -40,3 +45,9 @@ updates:
     groups:
       actions:
         patterns: ['*']
+    ignore:
+      # changesets/action v2 needs Changesets v3 and renames its inputs (`version` -> `version-script`,
+      # the token moves from `GITHUB_TOKEN` to `github-token`). Merged as-is it would break the next
+      # release, which CI on a pull request can't catch. Migrate it together with `@changesets/cli` 3.
+      - dependency-name: changesets/action
+        update-types: [version-update:semver-major]
