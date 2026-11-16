@@ -160,7 +160,7 @@ same in the background, if you prefer; it is not created for you.
 - **Invalid ids are ignored.** If the engine passes an id that isn't an ObjectId hex string, the adapter drops it instead of throwing, because no document could match it anyway.
 - **Idempotent attach.** Each link is written as an upsert with `$setOnInsert`, matched on its unique key. If two requests insert the same link at the same time, the resulting duplicate-key error is ignored.
 - **Link cleanup.** `deleteRole` and `deletePermission` delete the link documents first, then the role or permission.
-- **Reverse lookups** ([`subjectsWithRole` / `subjectsWithPermission`](/advanced/querying-subjects)) use `distinct('subjectId')` and return subject ids as strings.
+- **Reverse lookups** ([`subjectsWithRole` / `subjectsWithPermission`](/advanced/querying-subjects)) use an aggregate (`$group` on `subjectId`, streamed through a cursor, so there is no 16 MB result limit) and return subject ids as strings.
 
 ## Mongoose 9
 
