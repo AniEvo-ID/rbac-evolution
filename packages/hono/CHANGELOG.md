@@ -1,5 +1,18 @@
 # @anievo-id/rbac-evolution-hono
 
+## 0.9.0
+
+### Minor Changes
+
+- 802cab2: Guards take a `guard` option for one route, like spatie's `role:admin,api`: `requireRole('admin', { guard: 'api' })`, `@RequireRoles('admin', { guard: 'api' })`, and in Nuxt `requireRole(event, 'admin', { guard: 'api' })`. That check runs in the given guard; the request's own subject stays in its default guard. `requireRoleOrPermission`, `canAny` and `canAll` (and the matching NestJS decorators and Nuxt helpers) now take an options object too. Next.js already had it through `RequireOptions`.
+
+### Patch Changes
+
+- 990af7c: The npm README now follows the same short structure: install, example, link to the docs.
+- Updated dependencies [990af7c]
+- Updated dependencies [990af7c]
+  - @anievo-id/rbac-evolution@0.9.0
+
 ## 0.8.0
 
 ### Minor Changes

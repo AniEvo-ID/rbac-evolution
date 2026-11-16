@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-react",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "description": "React bindings for rbac-evolution: <Can>, useCan(), useHasRole().",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
