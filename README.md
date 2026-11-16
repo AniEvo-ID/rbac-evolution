@@ -26,8 +26,10 @@
   ✨ <a href="https://creation.anievo.id/rbac-evolution/guide/whats-new">What's new</a>
 </p>
 
-> **Status: 🧪 beta.** The API may still change before 1.0. Every release is tested against real PostgreSQL, MySQL
-> and MongoDB servers, end-to-end in a browser, and on Node.js and Bun.
+> **Status: 🚀 1.0 release candidate.** The API is frozen: until 1.0.0, only bug fixes land. Try it with
+> `npm i @anievo-id/rbac-evolution@rc` (0.9 stays on `latest`) and report anything odd in an issue. Every release is
+> tested against real PostgreSQL, MySQL, SQL Server and MongoDB servers, the oldest and newest supported framework
+> versions, end-to-end in a browser, and on Node.js 20, 22, 24 and Bun. See [versioning](https://creation.anievo.id/rbac-evolution/guide/versioning).
 
 ## Meet the Sect
 
