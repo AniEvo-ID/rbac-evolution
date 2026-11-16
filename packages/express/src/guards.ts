@@ -26,24 +26,24 @@ export type GuardHandler = (req: Request, res: Response, next: NextFunction, con
 
 export interface GuardHandlers {
   /** Called when there is no subject (`req.rbac` is `null`). Default: 401 JSON. */
-  onUnauthenticated?: GuardHandler
+  onUnauthenticated?: GuardHandler | undefined
   /** Called when the subject lacks access. Default: 403 JSON. */
-  onForbidden?: GuardHandler
+  onForbidden?: GuardHandler | undefined
   /**
    * Include the required roles/permissions in the default 403 body.
    * Default: `false` (like spatie's `display_permission_in_exception`).
    */
-  exposeRequirements?: boolean
+  exposeRequirements?: boolean | undefined
 }
 
 export interface PermissionGuardOptions extends GuardHandlers {
   /** Pass when the subject has ANY of the permissions (instead of all). Default: `false`. */
-  any?: boolean
+  any?: boolean | undefined
 }
 
 export interface RoleGuardOptions extends GuardHandlers {
   /** Require ALL of the roles (instead of any). Default: `false`. */
-  all?: boolean
+  all?: boolean | undefined
 }
 
 export type RoleOrPermissionGuardOptions = GuardHandlers
@@ -95,6 +95,13 @@ function createGuard(requirement: RbacRequirement, handlers: GuardHandlers): Req
   })
 }
 
+/** `options` over `defaults`, where an option set to `undefined` keeps the default (as if left out). */
+function withDefaults(defaults: GuardHandlers, options: GuardHandlers): GuardHandlers {
+  const merged: Record<string, unknown> = { ...defaults }
+  for (const [key, value] of Object.entries(options)) if (value !== undefined) merged[key] = value
+  return merged as GuardHandlers
+}
+
 /** Builds the guards with shared defaults (e.g. a custom `onForbidden` that renders an HTML page). */
 export function createGuards(defaults: GuardHandlers = {}) {
   /**
@@ -107,7 +114,7 @@ export function createGuards(defaults: GuardHandlers = {}) {
    */
   function requirePermission(...args: (GuardNames | PermissionGuardOptions)[]): RequestHandler {
     const { names, options = {} } = splitRequirementArgs<PermissionGuardOptions>(args)
-    return createGuard(permissionRequirement(names, options), { ...defaults, ...options })
+    return createGuard(permissionRequirement(names, options), withDefaults(defaults, options))
   }
 
   /**
@@ -118,7 +125,7 @@ export function createGuards(defaults: GuardHandlers = {}) {
    */
   function requireRole(...args: (GuardNames | RoleGuardOptions)[]): RequestHandler {
     const { names, options = {} } = splitRequirementArgs<RoleGuardOptions>(args)
-    return createGuard(roleRequirement(names, options), { ...defaults, ...options })
+    return createGuard(roleRequirement(names, options), withDefaults(defaults, options))
   }
 
   /**
@@ -129,7 +136,7 @@ export function createGuards(defaults: GuardHandlers = {}) {
    */
   function requireRoleOrPermission(...args: (GuardNames | RoleOrPermissionGuardOptions)[]): RequestHandler {
     const { names, options = {} } = splitRequirementArgs<RoleOrPermissionGuardOptions>(args)
-    return createGuard(roleOrPermissionRequirement(names), { ...defaults, ...options })
+    return createGuard(roleOrPermissionRequirement(names), withDefaults(defaults, options))
   }
 
   /**

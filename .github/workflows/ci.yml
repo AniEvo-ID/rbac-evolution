@@ -96,8 +96,9 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
-      # PG_URL / MYSQL_URL / MONGO_URL / MSSQL_URL are declared in turbo.json, so turbo passes them to the test tasks.
-      - run: pnpm test
+      # Every package's tests against the real servers, with coverage. Fails when a suite fails or a
+      # package's coverage drops below its floor in coverage-floor.json (raise floors, never lower them).
+      - run: node scripts/test-report.mjs --out=coverage-report.json --floor=coverage-floor.json
 
   bun:
     # Runs the built packages under the Bun runtime: core + the shared adapter conformance

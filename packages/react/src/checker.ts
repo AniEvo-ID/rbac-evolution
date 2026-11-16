@@ -3,11 +3,11 @@ import type { Many, RbacSnapshot } from '@anievo-id/rbac-evolution'
 
 export interface RbacCheckerOptions {
   /** Treat granted permissions as wildcard patterns (`articles.*`). Must match the server's `wildcard` setting. */
-  wildcard?: boolean
+  wildcard?: boolean | undefined
   /** Roles that pass every permission check (like spatie's `Gate::before` super-admin pattern). */
-  superAdminRoles?: readonly string[]
+  superAdminRoles?: readonly string[] | undefined
   /** The snapshot is still being fetched: `<Can>`, `<Cannot>` and `<HasRole>` render nothing. Default: `false`. */
-  loading?: boolean
+  loading?: boolean | undefined
 }
 
 /** Synchronous checks against a {@link RbacSnapshot}. */

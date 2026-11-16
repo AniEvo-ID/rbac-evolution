@@ -134,7 +134,7 @@ export interface PrismaAdapterOptions {
    * Supported by PostgreSQL, MySQL/MariaDB and CockroachDB — NOT by SQLite, SQL Server or MongoDB.
    * Default: `false` (portable: reads existing links first, inserts only the missing ones).
    */
-  skipDuplicates?: boolean
+  skipDuplicates?: boolean | undefined
 }
 
 // ------------------------------------------------------------------------------- helpers

@@ -1,17 +1,17 @@
 import type { Id, Permission, Role, Subject, TeamId } from './types'
 
 export interface FindPermissionsQuery {
-  ids?: readonly Id[]
-  names?: readonly string[]
-  guardName?: string
+  ids?: readonly Id[] | undefined
+  names?: readonly string[] | undefined
+  guardName?: string | undefined
 }
 
 export interface FindRolesQuery {
-  ids?: readonly Id[]
-  names?: readonly string[]
-  guardName?: string
+  ids?: readonly Id[] | undefined
+  names?: readonly string[] | undefined
+  guardName?: string | undefined
   /** Match roles whose `teamId` is one of these values (`null` = global roles). */
-  teamIds?: readonly TeamId[]
+  teamIds?: readonly TeamId[] | undefined
 }
 
 export interface RolePermissionLink {

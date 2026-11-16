@@ -3,3 +3,6 @@ contact_links:
   - name: Security vulnerability
     url: https://github.com/AniEvo-ID/rbac-evolution/security/advisories/new
     about: Please report security issues privately.
+  - name: Documentation
+    url: https://creation.anievo.id/rbac-evolution/
+    about: Guides for every package, framework and adapter.

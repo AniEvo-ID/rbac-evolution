@@ -25,11 +25,11 @@ export interface Io {
 
 export interface RunOptions {
   /** Working directory used to find `rbac.config.*`. Default: `process.cwd()`. */
-  cwd?: string
+  cwd?: string | undefined
   /** Output streams. Default: stdout / stderr. */
-  io?: Io
+  io?: Io | undefined
   /** Use this config instead of loading `rbac.config.*` (handy for tests and scripts). */
-  config?: RbacCliConfig
+  config?: RbacCliConfig | undefined
 }
 
 const defaultIo: Io = {

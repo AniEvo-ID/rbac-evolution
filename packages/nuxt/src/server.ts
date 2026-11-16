@@ -35,11 +35,11 @@ export interface RbacServerOptions<E extends RbacEvent = RbacEvent> {
   /** Resolves the authenticated subject for this request (e.g. from a session). `null` / `undefined` for guests. */
   getSubject: (event: E) => MaybePromise<Subject | null | undefined>
   /** Guard name (e.g. `web` or `api`). Defaults to the engine's `defaultGuard`. */
-  guard?: string
+  guard?: string | undefined
   /** Resolves the current team (only when the engine was created with `teams: true`). */
   team?: (event: E) => MaybePromise<TeamId | undefined>
   /** Include the required roles/permissions in the 403 body (`required`). Default: `false`. */
-  exposeRequirements?: boolean
+  exposeRequirements?: boolean | undefined
 }
 
 /** The JSON body of a failed check — identical to `@anievo-id/rbac-evolution-express`. */

@@ -11,15 +11,15 @@ export interface RbacProviderProps {
   /** Roles & permissions of the current user, e.g. from `rbac.for(user).snapshot()` on the server. `null` = guest. */
   snapshot: RbacSnapshot | null | undefined
   /** Enable wildcard matching (`articles.*`). Must match the server's `wildcard` setting. Default: `false`. */
-  wildcard?: boolean
+  wildcard?: boolean | undefined
   /** Roles that pass every `can` check (super admin). */
-  superAdminRoles?: readonly string[]
+  superAdminRoles?: readonly string[] | undefined
   /**
    * The snapshot is still being fetched. `<Can>`, `<Cannot>` and `<HasRole>` then render nothing
    * (not even `fallback`), so nothing flashes before the real permissions arrive. Default: `false`.
    */
-  loading?: boolean
-  children?: ReactNode
+  loading?: boolean | undefined
+  children?: ReactNode | undefined
 }
 
 /**

@@ -5,11 +5,11 @@ import { createRbacState, type NameList, RBAC_KEY, type RbacStateOptions, type V
 
 export interface RbacPluginOptions extends RbacStateOptions {
   /** Register `v-can` and `v-role` globally. Default: `true`. */
-  directives?: boolean
+  directives?: boolean | undefined
   /** Register `<Can>` and `<HasRole>` globally. Default: `true`. */
-  components?: boolean
+  components?: boolean | undefined
   /** Add `$can`, `$canAny`, `$canAll`, `$hasRole`, `$hasAnyRole`, `$hasAllRoles`, `$rbac` to templates. Default: `true`. */
-  globalProperties?: boolean
+  globalProperties?: boolean | undefined
 }
 
 export type RbacPlugin = VueRbac & Plugin

@@ -16,7 +16,7 @@ export interface MemoryCacheOptions {
    * Most entries kept at once (one per subject, guard and team, plus one per guard's permission names).
    * When full, the oldest entry is dropped. Default: 10 000.
    */
-  maxEntries?: number
+  maxEntries?: number | undefined
 }
 
 /** Default in-process cache with TTL support and a size limit. */

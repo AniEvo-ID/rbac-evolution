@@ -1,0 +1,86 @@
+{
+  "@anievo-id/rbac-evolution": {
+    "lines": 99,
+    "branches": 97,
+    "functions": 98,
+    "statements": 99
+  },
+  "@anievo-id/rbac-evolution-cli": {
+    "lines": 92,
+    "branches": 88,
+    "functions": 92,
+    "statements": 92
+  },
+  "@anievo-id/rbac-evolution-drizzle": {
+    "lines": 93,
+    "branches": 92,
+    "functions": 79,
+    "statements": 93
+  },
+  "@anievo-id/rbac-evolution-express": {
+    "lines": 100,
+    "branches": 97,
+    "functions": 100,
+    "statements": 100
+  },
+  "@anievo-id/rbac-evolution-fastify": {
+    "lines": 100,
+    "branches": 100,
+    "functions": 100,
+    "statements": 100
+  },
+  "@anievo-id/rbac-evolution-hono": {
+    "lines": 100,
+    "branches": 100,
+    "functions": 100,
+    "statements": 100
+  },
+  "@anievo-id/rbac-evolution-kysely": {
+    "lines": 96,
+    "branches": 90,
+    "functions": 98,
+    "statements": 96
+  },
+  "@anievo-id/rbac-evolution-mongoose": {
+    "lines": 96,
+    "branches": 87,
+    "functions": 93,
+    "statements": 96
+  },
+  "@anievo-id/rbac-evolution-nestjs": {
+    "lines": 98,
+    "branches": 90,
+    "functions": 100,
+    "statements": 98
+  },
+  "@anievo-id/rbac-evolution-next": {
+    "lines": 98,
+    "branches": 90,
+    "functions": 100,
+    "statements": 98
+  },
+  "@anievo-id/rbac-evolution-nuxt": {
+    "lines": 97,
+    "branches": 90,
+    "functions": 90,
+    "statements": 97
+  },
+  "@anievo-id/rbac-evolution-prisma": {
+    "lines": 100,
+    "branches": 94,
+    "functions": 100,
+    "statements": 100
+  },
+  "@anievo-id/rbac-evolution-react": {
+    "lines": 98,
+    "branches": 98,
+    "functions": 96,
+    "statements": 98
+  },
+  "@anievo-id/rbac-evolution-vue": {
+    "lines": 97,
+    "branches": 97,
+    "functions": 96,
+    "statements": 97
+  }
+}

@@ -18,7 +18,7 @@ import type { Id } from './types'
 
 export interface AdapterTestOptions {
   /** Whether the adapter's team columns are exercised (default: true). */
-  teams?: boolean
+  teams?: boolean | undefined
 }
 
 const s = (ids: readonly Id[]): string[] => ids.map(String).sort()

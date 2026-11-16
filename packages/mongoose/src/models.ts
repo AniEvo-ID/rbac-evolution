@@ -53,9 +53,9 @@ export interface RbacModels {
 
 export interface RbacModelOptions {
   /** Connection to register the models on. Default: the default `mongoose.connection`. */
-  connection?: Connection
+  connection?: Connection | undefined
   /** Prepended to every collection name, e.g. `'rbac_'` → `rbac_permissions`. Default: `''`. */
-  prefix?: string
+  prefix?: string | undefined
 }
 
 export interface RbacCollectionNames {

@@ -12,7 +12,7 @@ export interface RbacMiddlewareOptions {
    */
   getSubject: (req: Request) => MaybePromise<Subject | null | undefined>
   /** Guard name (e.g. `web` or `api`). Defaults to the engine's `defaultGuard`. */
-  guard?: string
+  guard?: string | undefined
   /** Resolves the current team (only when the engine was created with `teams: true`). */
   team?: (req: Request) => MaybePromise<TeamId | undefined>
 }
@@ -25,7 +25,7 @@ declare global {
        * Roles & permissions of the current subject, set by `rbacMiddleware()`.
        * `null` for guests, `undefined` when the middleware did not run.
        */
-      rbac?: SubjectRbac | null
+      rbac?: SubjectRbac | null | undefined
     }
   }
 }

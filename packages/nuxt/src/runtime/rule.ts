@@ -18,13 +18,13 @@ export interface RbacRouteRule {
   /** Any of the names, as a role OR as a permission. */
   roleOrPermission?: RequirementNames | undefined
   /** Permissions: pass with ANY of them instead of all. */
-  any?: boolean
+  any?: boolean | undefined
   /** Roles: require ALL of them instead of any. */
-  all?: boolean
+  all?: boolean | undefined
   /** Where to send a user who lacks access. Default: the module's `forbiddenRedirect`, else a 403 error page. */
-  redirect?: string
+  redirect?: string | undefined
   /** Where to send a guest. Default: the module's `unauthenticatedRedirect`, else a 401 error page. */
-  guestRedirect?: string
+  guestRedirect?: string | undefined
 }
 
 export type RouteRuleResult =

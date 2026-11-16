@@ -1,6 +1,6 @@
 export interface RbacSchemaOptions {
   /** Prepended to every table name, e.g. `'rbac_'` → `rbac_permissions`. Default: `''`. */
-  prefix?: string
+  prefix?: string | undefined
 }
 
 export interface RbacTableNames {

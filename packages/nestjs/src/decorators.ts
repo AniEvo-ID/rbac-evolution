@@ -17,8 +17,8 @@ import { RBAC_REQUIREMENTS } from './tokens'
 
 type ClassOrMethodDecorator = <T>(
   target: object,
-  propertyKey?: string | symbol,
-  descriptor?: TypedPropertyDescriptor<T>,
+  propertyKey?: string | symbol | undefined,
+  descriptor?: TypedPropertyDescriptor<T> | undefined,
 ) => void
 
 /** Appends a requirement (stacked decorators all apply), unlike `SetMetadata` which overwrites. */

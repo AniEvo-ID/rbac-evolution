@@ -92,6 +92,7 @@ describe('rbac-evolution-fastify', () => {
 
     const custom = createGuards({ onForbidden: (_request, reply) => reply.code(404).send() })
     app.get('/hidden', { preHandler: custom.requireRole('admin') }, ok)
+    app.get('/hidden-undefined', { preHandler: custom.requireRole('admin', { onForbidden: undefined }) }, ok)
 
     app.setErrorHandler(errorHandler)
     await app.ready()
@@ -204,6 +205,8 @@ describe('rbac-evolution-fastify', () => {
     expect(await status('/hidden', 1)).toBe(404)
     expect(await status('/hidden', 3)).toBe(200)
     expect(await status('/hidden')).toBe(401)
+    // An option set to `undefined` keeps the createGuards() default instead of resetting it.
+    expect(await status('/hidden-undefined', 1)).toBe(404)
   })
 })
 

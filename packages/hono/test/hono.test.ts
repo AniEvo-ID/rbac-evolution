@@ -87,6 +87,7 @@ describe('rbac-evolution-hono', () => {
 
     const custom = createGuards({ onForbidden: (c) => c.body(null, 404) })
     app.get('/hidden', custom.requireRole('admin'), ok)
+    app.get('/hidden-undefined', custom.requireRole('admin', { onForbidden: undefined }), ok)
 
     app.onError(onError)
   })
@@ -192,6 +193,8 @@ describe('rbac-evolution-hono', () => {
     expect(await status('/hidden', 1)).toBe(404)
     expect(await status('/hidden', 3)).toBe(200)
     expect(await status('/hidden')).toBe(401)
+    // An option set to `undefined` keeps the createGuards() default instead of resetting it.
+    expect(await status('/hidden-undefined', 1)).toBe(404)
   })
 })
 

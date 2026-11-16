@@ -26,7 +26,7 @@ export interface RbacMiddlewareOptions<E extends Env = Env> {
    */
   getSubject: (c: Context<E>) => MaybePromise<Subject | null | undefined>
   /** Guard name (e.g. `web` or `api`). Defaults to the engine's `defaultGuard`. */
-  guard?: string
+  guard?: string | undefined
   /** Resolves the current team (only when the engine was created with `teams: true`). */
   team?: (c: Context<E>) => MaybePromise<TeamId | undefined>
 }
