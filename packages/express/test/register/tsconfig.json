@@ -1,0 +1,12 @@
+{
+  "//": "A program of its own: the RbacRegister augmentation below is global, so it must not reach test/types.test.ts.",
+  "extends": "../../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ES2022", "DOM"],
+    "paths": {
+      "@anievo-id/rbac-evolution-express": ["../../src/index.ts"]
+    }
+  },
+  "include": ["."]
+}

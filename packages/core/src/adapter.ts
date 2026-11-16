@@ -19,6 +19,26 @@ export interface RolePermissionLink {
   permissionId: Id
 }
 
+/** One row of `model_has_roles`: a subject holds a role in a team (`null` = global). */
+export interface SubjectRoleLink {
+  subject: Subject
+  roleId: Id
+  teamId: TeamId
+}
+
+/** One row of `model_has_permissions`: a subject holds a direct permission in a team (`null` = global). */
+export interface SubjectPermissionLink {
+  subject: Subject
+  permissionId: Id
+  teamId: TeamId
+}
+
+/** Rows of `model_has_roles` and `model_has_permissions`, as returned by the optional bulk reads of {@link RbacAdapter}. */
+export interface SubjectLinks {
+  roles: SubjectRoleLink[]
+  permissions: SubjectPermissionLink[]
+}
+
 /**
  * Storage layer. Implement this to plug rbac-evolution into any database / ORM
  * (Prisma, Drizzle, TypeORM, Mongoose, ...).
@@ -67,4 +87,33 @@ export interface RbacAdapter {
   getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]>
   /** Ids of subjects of `subjectType` that have ANY of the given DIRECT permissions in the given team. Unique. */
   getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]>
+
+  // optional bulk operations: the engine checks for each one before use (see each method for its fallback)
+
+  /**
+   * Every role and direct-permission link of the subject, in EVERY team (global included), whatever the guard.
+   * Match the subject exactly, like `getSubjectRoleIds`.
+   *
+   * Used by `rbac.for(subject).teams()` and `revokeAll({ allTeams: true })`. No fallback: the required
+   * methods can only read one team at a time, so without it those two throw `ADAPTER_METHOD_MISSING`.
+   */
+  getSubjectLinks?(subject: Subject): Promise<SubjectLinks>
+
+  /**
+   * Every role and direct-permission link held in the team, by any subject, whatever the guard.
+   * Match the team id exactly. Never called with `null` (the global scope).
+   *
+   * Used by `rbac.deleteTeam()`. No fallback: the required methods need each subject's type and id, so
+   * without it `deleteTeam()` throws `ADAPTER_METHOD_MISSING` before writing anything.
+   */
+  getTeamLinks?(teamId: Id): Promise<SubjectLinks>
+
+  /**
+   * Removes every role and direct-permission link held in the team (`model_has_*` rows only; roles stay).
+   * Match the team id exactly. Never called with `null` (the global scope).
+   *
+   * Used by `rbac.deleteTeam()`. Fallback: one `detachSubjectRoles` and one `detachSubjectPermissions`
+   * call (with `undefined` ids) per subject returned by `getTeamLinks`.
+   */
+  detachTeamLinks?(teamId: Id): Promise<void>
 }

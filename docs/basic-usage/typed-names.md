@@ -99,6 +99,34 @@ The guards exported directly by each package (`import { requirePermission } from
 Client-side helpers (`<Can>`, `useCan()`, `v-can`) take plain strings, because the snapshot they read comes from the
 server.
 
+### The request's subject
+
+The subject each integration puts on the request (`req.rbac`, `c.var.rbac`, ...) can have the names too, so a
+check inside a handler is typed like a call on the engine:
+
+| Integration | How the names get there |
+| --- | --- |
+| Express, Fastify | Register the engine once (`interface RbacRegister { rbac: typeof rbac }`), or type a handler's request as `RbacRequest<typeof rbac>`. |
+| Hono | `RbacVariables<typeof rbac>` / `RbacEnv<typeof rbac>` in the app's env; `rbacMiddleware({ rbac })` infers them. |
+| NestJS | `@CurrentRbac() access: SubjectRbac<AppRbac>`, or `getRbac<AppRbac>(context)`. |
+| Next.js, Nuxt | Inferred from `rbac`: the helpers return a `SubjectRbac<AppRbac>`. |
+
+The options of every integration (`RbacMiddlewareOptions`, `RbacPluginOptions`, `RbacModuleOptions`, ...) are
+generic over the engine and infer `T` from `rbac`. Express and Fastify type the request globally, through module
+augmentation, so the engine you pass can't reach `req` by itself: that is what `RbacRegister` is for. See each
+framework page for the details.
+
+```ts
+// Express: once per app
+declare module '@anievo-id/rbac-evolution-express' {
+  interface RbacRegister {
+    rbac: typeof rbac
+  }
+}
+```
+
+Without any of this, the request's subject accepts any name, as before.
+
 ::: warning Wildcards
 With `wildcard: true`, the names you *check* must be in the union too, not just the ones you store:
 
@@ -108,6 +136,51 @@ type AppRbac = {
 }
 ```
 :::
+
+## Checking user input
+
+The types only exist at compile time. A role name in a request body is a plain `string` (or anything else), and an
+unknown name makes `assignRole()` / `syncRoles()` throw `RoleDoesNotExist`, which is usually a 500. To check input
+against your names, give the engine the names as values too, and use the type guards `isRoleName()` and
+`isPermissionName()`:
+
+```ts
+import { createRbac, isRoleName } from '@anievo-id/rbac-evolution'
+
+const roles = ['writer', 'editor', 'admin'] as const
+const permissions = ['edit articles', 'delete articles', 'publish articles'] as const
+
+// One source of truth: the type comes from the lists, so they can't drift apart.
+type Names = { roles: (typeof roles)[number]; permissions: (typeof permissions)[number] }
+
+const rbac = createRbac<Names>({ adapter, names: { roles, permissions } })
+
+async function setRole(userId: number, input: unknown) {
+  if (!isRoleName(rbac, input)) return { status: 422, error: 'Unknown role' }
+  await rbac.for({ type: 'user', id: userId }).assignRole(input) // input: 'writer' | 'editor' | 'admin'
+  return { status: 200 }
+}
+```
+
+`isRoleName(rbac, value)` is `true` when `value` is one of `names.roles`, and narrows it to `RoleName<T>`.
+`isPermissionName(rbac, value)` does the same with `names.permissions`. For a list, `input.every((name) =>
+isRoleName(rbac, name))` narrows the whole array (TypeScript 5.5 and later infer that from the arrow; before 5.5,
+annotate it: `(name): name is RoleName<Names> => isRoleName(rbac, name)`).
+
+What they check, and what they don't:
+
+- **The list you passed, not the database.** They are synchronous, so they can narrow a type, and they cost no
+  query. A role that is in the list but was never created still passes (and `assignRole()` then throws, as it should
+  for a seed that did not run). To ask the database, use `findRole()` / `findPermission()`.
+- **Exact names.** No wildcards, no pipes, no trimming or case folding: `'Admin'`, `' admin'` and `'admin|editor'`
+  are rejected. With `wildcard: true`, `'articles.*'` passes only if it is in the list.
+- **One list per engine**, like the typed names: they do not look at guards or teams.
+- **The engine needs the list.** Without `names.roles`, `isRoleName()` throws a `TypeError`: a guard that passes
+  everything (or nothing) would hide the mistake.
+
+With string enums, pass `Object.values(...)`: `names: { roles: Object.values(Role) }`. Each entry is checked
+against the typed names, but the compiler can't check that the list is complete. Deriving the type from the list,
+as above, makes it complete by construction.
 
 ## Helper types
 

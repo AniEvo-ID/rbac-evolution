@@ -9,6 +9,8 @@ import {
   requireRoleOrPermission,
   canAny,
   canAll,
+  type RbacPluginOptions,
+  type RbacRequest,
 } from '../src'
 
 const ok = async () => ({ ok: true })
@@ -393,5 +395,50 @@ describe('per-route guard option', () => {
   it('leaves `request.rbac` in the request guard', async () => {
     const res = await app.inject({ url: '/api/role', headers: { 'x-user': '10' } })
     expect(res.json()).toEqual({ guard: 'web' })
+  })
+})
+
+describe('typed engine (RbacPluginOptions<T>, RbacRequest<T>, createGuards<T>() handlers)', () => {
+  type AppRbac = {
+    permissions: 'edit articles' | 'delete articles' | 'publish articles'
+    roles: 'writer' | 'editor' | 'admin' | 'super-admin'
+  }
+  let app: FastifyInstance
+  const forbidden: unknown[] = []
+
+  beforeAll(async () => {
+    const rbac = createRbac<AppRbac>({ adapter: new MemoryAdapter() })
+    await seed(rbac)
+    app = Fastify()
+    const options: RbacPluginOptions<AppRbac> = { rbac, getSubject: async (request) => userFrom(request) }
+    await app.register(rbacPlugin, options)
+    const guards = createGuards<typeof rbac>({
+      onForbidden: async (request, reply) => {
+        forbidden.push(request.rbac)
+        return reply.code(403).send({ roles: ((await request.rbac?.getRoleNames()) ?? []).sort() })
+      },
+    })
+    app.get(
+      '/edit',
+      { preHandler: guards.requirePermission('edit articles') },
+      async (request: RbacRequest<typeof rbac>) => ({ publish: await request.rbac?.can('publish articles') }),
+    )
+    app.get('/admin', { preHandler: guards.requireRole('admin') }, ok)
+    await app.ready()
+  })
+  afterAll(() => app.close())
+
+  it('sets request.rbac from a typed engine, the same as an untyped one', async () => {
+    expect((await app.inject({ url: '/edit', headers: { 'x-user': '1' } })).json()).toEqual({ publish: false })
+    expect((await app.inject({ url: '/edit', headers: { 'x-user': '2' } })).json()).toEqual({ publish: true })
+  })
+
+  it('hands the typed handlers of createGuards<T>() the request subject', async () => {
+    const res = await app.inject({ url: '/admin', headers: { 'x-user': '2' } })
+    expect(res.statusCode).toBe(403)
+    expect(res.json()).toEqual({ roles: ['editor', 'writer'] })
+    expect(forbidden).toHaveLength(1)
+    expect(forbidden[0]).toMatchObject({ subject: { type: 'user', id: 2 } })
+    expect((await app.inject({ url: '/admin', headers: { 'x-user': '3' } })).statusCode).toBe(200)
   })
 })

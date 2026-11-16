@@ -41,6 +41,9 @@ declare class KyselyRbacAdapter implements RbacAdapter {
     detachSubjectPermissions(subject: Subject, permissionIds: readonly Id[] | undefined, teamId: TeamId): Promise<void>;
     getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]>;
     getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]>;
+    getSubjectLinks(subject: Subject): Promise<SubjectLinks>;
+    getTeamLinks(teamId: Id): Promise<SubjectLinks>;
+    detachTeamLinks(teamId: Id): Promise<void>;
 }
 
 // ModelHasPermissionsTable: interface

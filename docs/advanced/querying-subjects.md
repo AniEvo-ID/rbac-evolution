@@ -31,7 +31,7 @@ Returns the ids of subjects of the given type that have **any** of the given per
 rbac.subjectsWithPermission(
   subjectType: string,
   permissions: PermissionName | Permission | (PermissionName | Permission)[],
-  options?: { guard?: string; team?: TeamId },
+  options?: { guard?: string; team?: TeamId; expandWildcards?: boolean },
 ): Promise<Id[]>
 ```
 
@@ -42,6 +42,25 @@ await rbac.subjectsWithPermission('user', 'edit articles', { team: 42, guard: 'a
 ```
 
 Each id appears only once, even if a subject matches several roles or has the permission both directly and through a role.
+
+### Wildcards
+
+With [`wildcard: true`](/basic-usage/wildcard-permissions), pass `expandWildcards: true` to also return the subjects
+whose granted permission is a wildcard that covers the name, directly or through a role:
+
+```ts
+// Alice holds articles.edit, Bob has a role with articles.*, Carol holds *
+await rbac.subjectsWithPermission('user', 'articles.edit')                            // [alice]
+await rbac.subjectsWithPermission('user', 'articles.edit', { expandWildcards: true }) // [alice, bob, carol]
+```
+
+- The engine loads the permission names of the guard, keeps the ones that imply a name you asked for (with the
+  same rules as `can()`), and then looks up the subjects that hold any of them. It uses the regular adapter methods,
+  so every adapter supports it.
+- The names you pass don't have to exist as permissions, as with `hasPermissionTo()` when wildcards are on. A name
+  no stored permission covers returns `[]`.
+- Without `wildcard: true` the option has no effect: only exact rows match and unknown names throw.
+- The default stays `false`, so existing calls return what they returned before.
 
 ## Loading the records
 
@@ -101,16 +120,8 @@ See [Errors](/advanced/errors) for the full list.
 
 ## Caveats
 
-::: warning Wildcards are not expanded
-`subjectsWithPermission` matches stored permission **rows**, not wildcard patterns. A user who holds `articles.*` is **not** returned by `subjectsWithPermission('user', 'articles.edit')`. The name you pass must also exist as a permission, or the call throws `PermissionDoesNotExist`.
-
-To include wildcard holders, query the patterns too:
-
-```ts
-await rbac.subjectsWithPermission('user', ['articles.edit', 'articles.*', '*'])
-```
-
-Every name in that list must exist as a permission. See [Wildcard permissions](/basic-usage/wildcard-permissions).
+::: warning Wildcards are expanded only on request
+By default `subjectsWithPermission` matches stored permission **rows**, not wildcard patterns. A user who holds `articles.*` is **not** returned by `subjectsWithPermission('user', 'articles.edit')`, and the name you pass must exist as a permission, or the call throws `PermissionDoesNotExist`. Pass `{ expandWildcards: true }` to include wildcard holders, see [Wildcards](#wildcards).
 :::
 
 ::: warning Super-admins and `before` are not included

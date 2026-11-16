@@ -56,6 +56,8 @@ function normalizeSnapshot(snapshot: RbacSnapshot | null | undefined): Readonly<
   return Object.freeze({
     roles: snapshot.roles.map((r) => r.trim()),
     permissions: snapshot.permissions.map((p) => p.trim()),
+    // Names the server's `before` hook denies (`snapshot({ checkBefore })`). Kept absent for older snapshots.
+    ...(snapshot.denied ? { denied: snapshot.denied.map((d) => d.trim()) } : {}),
   })
 }
 
@@ -87,20 +89,22 @@ export function createRbacState(options: RbacStateOptions = {}): VueRbac {
   // While loading, every check (`cannot` too) is false: neither a stale grant nor "no access" UI shows.
   const isSuperAdmin = (): boolean => !loading.value && superAdminRoles.some((r) => state.value.roles.includes(r))
 
+  /** One permission. Like the server, a `before` denial wins over super-admin and stored grants. */
+  const allows = (permission: string): boolean => {
+    const { permissions: granted, denied } = state.value
+    if (denied?.includes(permission)) return false
+    return isSuperAdmin() || matches(granted, permission)
+  }
+
   const canAny = (permissions: NameList): boolean => {
     if (loading.value) return false
-    const { permissions: granted } = state.value
-    if (isSuperAdmin()) return toList(permissions).length > 0
-    return toList(permissions).some((p) => matches(granted, p))
+    return toList(permissions).some(allows)
   }
 
   const canAll = (permissions: NameList): boolean => {
     if (loading.value) return false
-    const { permissions: granted } = state.value
     const wanted = toList(permissions)
-    if (wanted.length === 0) return false
-    if (isSuperAdmin()) return true
-    return wanted.every((p) => matches(granted, p))
+    return wanted.length > 0 && wanted.every(allows)
   }
 
   const hasAnyRole = (roles: NameList): boolean => {

@@ -23,6 +23,8 @@ There is one entry per **subject + guard + team**. It holds that subject's roles
 
 There is also one entry per **guard** with the names of all its permissions. `can()` and `hasPermissionTo()` use it to check that a permission exists (when `wildcard` is off), so repeated checks don't query the database.
 
+[`teams()`](/basic-usage/teams#listing-a-subject-s-teams) has one entry per **subject + guard** (or subject alone with `allGuards`), with the list of team ids.
+
 Other calls are **not** cached and always reach the adapter:
 
 - `findPermission`, `findRole`, `getRoles`, `getPermissions`, `rbac.role(...).getPermissions()`.
@@ -31,9 +33,9 @@ Other calls are **not** cached and always reach the adapter:
 
 ### When the cache is cleared
 
-The cache is cleared as a whole after **every** change made through the engine: creating or deleting roles and permissions, assigning, removing or syncing roles, and giving, revoking or syncing permissions. It happens right after the adapter write and before any [event listeners](/advanced/events) run.
+The cache is cleared as a whole after **every** change made through the engine: creating or deleting roles and permissions, assigning, removing or syncing roles, giving, revoking or syncing permissions, `revokeAll()` and `deleteTeam()`. It happens right after the adapter write and before any [event listeners](/advanced/events) run.
 
-Changes are rare compared to checks, so clearing everything is simple and safe: no entry can stay stale after a change.
+Changes are rare compared to checks, so clearing everything is simple and safe: no entry can stay stale after a change. It matters for `deleteTeam()`: it changes the access of every member of the team, and clearing the whole cache drops all of their entries at once, not only the caller's.
 
 ## Changing the TTL
 

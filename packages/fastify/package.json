@@ -49,7 +49,7 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test/register",
     "test": "vitest run --passWithNoTests",
     "clean": "rm -rf dist .turbo"
   },

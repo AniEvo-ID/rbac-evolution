@@ -1,15 +1,57 @@
-import type { Rbac, Subject, SubjectRbac, TeamId } from '@anievo-id/rbac-evolution'
+import type { DefaultRbacTypes, Rbac, RbacTypeConfig, Subject, SubjectRbac, TeamId } from '@anievo-id/rbac-evolution'
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify'
 import fp from 'fastify-plugin'
 
 type MaybePromise<T> = T | Promise<T>
 
+/** The type configuration of `T`: `T` itself, or the `X` of an `Rbac<X>` engine. */
+export type TypesOf<T> = T extends Rbac<infer X> ? X : T extends RbacTypeConfig ? T : never
+
+/**
+ * Register your engine here to type `request.rbac` in every handler of the app:
+ *
+ * ```ts
+ * declare module '@anievo-id/rbac-evolution-fastify' {
+ *   interface RbacRegister {
+ *     rbac: typeof rbac // or the names type: AppRbac
+ *   }
+ * }
+ * ```
+ *
+ * `FastifyRequest` is typed by module augmentation, which is global, so the engine passed to `rbacPlugin`
+ * can't flow there on its own. Without a registration, `request.rbac` is an untyped `SubjectRbac`.
+ */
+// eslint-disable-next-line @typescript-eslint/no-empty-interface, @typescript-eslint/no-empty-object-type
+export interface RbacRegister {}
+
+/** The type configuration registered in {@link RbacRegister}, or `DefaultRbacTypes` (any name) without one. */
+export type RegisteredRbacTypes = RbacRegister extends { rbac: infer R } ? TypesOf<R> : DefaultRbacTypes
+
+/**
+ * A Fastify request whose `rbac` has the names of `T` (a names type like `AppRbac`, or `typeof rbac`).
+ * For typing a handler without a global {@link RbacRegister}, e.g. when two plugins use different engines:
+ *
+ * ```ts
+ * app.get('/articles', async (request: RbacRequest<typeof rbac>) => { ... })
+ * ```
+ */
+export type RbacRequest<
+  T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes,
+  Req = FastifyRequest,
+> = Omit<Req, 'rbac'> & {
+  /**
+   * Roles & permissions of the current subject, set by the rbac-evolution plugin.
+   * `null` for guests, `undefined` when the plugin did not run for this request.
+   */
+  rbac?: SubjectRbac<TypesOf<T>> | null | undefined
+}
+
 /** Request hook in which `request.rbac` is resolved. */
 export type RbacHook = 'onRequest' | 'preValidation' | 'preHandler'
 
-export interface RbacPluginOptions {
+export interface RbacPluginOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
   /** The RBAC engine created with `createRbac(...)`. */
-  rbac: Rbac
+  rbac: Rbac<T>
   /**
    * Resolves the authenticated subject for this request (e.g. from `request.user` or a session).
    * Return `null` / `undefined` for guests.
@@ -31,13 +73,16 @@ declare module 'fastify' {
     /**
      * Roles & permissions of the current subject, set by the rbac-evolution plugin.
      * `null` for guests, `undefined` when the plugin did not run for this request.
+     * Typed with the names of the engine registered in `RbacRegister` (any name without one).
      */
-    rbac?: SubjectRbac | null | undefined
+    rbac?: SubjectRbac<RegisteredRbacTypes> | null | undefined
   }
 }
 
 const plugin: FastifyPluginAsync<RbacPluginOptions> = async (fastify, options) => {
-  const { rbac, getSubject, guard, team, hook = 'preHandler' } = options
+  const { getSubject, guard, team, hook = 'preHandler' } = options
+  // The request's subject is typed by `RbacRegister`, not by the options: store it untyped.
+  const rbac = options.rbac as unknown as Rbac
 
   if (!fastify.hasRequestDecorator('rbac')) {
     fastify.decorateRequest('rbac', undefined)
@@ -67,8 +112,11 @@ const plugin: FastifyPluginAsync<RbacPluginOptions> = async (fastify, options) =
  * ```ts
  * await app.register(rbacPlugin, { rbac, getSubject: (req) => (req.user ? { type: 'user', id: req.user.id } : null) })
  * ```
+ *
+ * To type `request.rbac` with the names of a typed engine, register it in {@link RbacRegister}
+ * (or type a handler's `request` as {@link RbacRequest}).
  */
-export const rbacPlugin = fp(plugin, {
+export const rbacPlugin: FastifyPluginAsync<RbacPluginOptions> = fp(plugin, {
   name: '@anievo-id/rbac-evolution-fastify',
   fastify: '>=5',
 })

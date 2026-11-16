@@ -25,23 +25,30 @@ Listeners may be sync or async. Each one receives a payload typed for its event.
 | Event | Fired by | Payload (besides `event`) |
 | --- | --- | --- |
 | `role.attached` | `assignRole`, `syncRoles` | `subject`, `roles`, `guardName`, `teamId` |
-| `role.detached` | `removeRole`, `syncRoles` | `subject`, `roles`, `guardName`, `teamId` |
+| `role.detached` | `removeRole`, `syncRoles`, `revokeAll`, `deleteTeam` | `subject`, `roles`, `guardName`, `teamId` |
 | `permission.attached` | `givePermissionTo`, `syncPermissions` on a **subject** or a **role** | `target` + `subject` or `role`, `permissions`, `guardName`, `teamId` |
-| `permission.detached` | `revokePermissionTo`, `syncPermissions` on a **subject** or a **role** | `target` + `subject` or `role`, `permissions`, `guardName`, `teamId` |
+| `permission.detached` | `revokePermissionTo`, `syncPermissions` on a **subject** or a **role**; `revokeAll`, `deleteTeam` (subjects) | `target` + `subject` or `role`, `permissions`, `guardName`, `teamId` |
 | `role.created` | `createRole`, `findOrCreateRole` (when it creates) | `role`, `teamId` |
-| `role.deleted` | `deleteRole` | `role`, `teamId` |
+| `role.deleted` | `deleteRole`; `deleteTeam` for the team's roles | `role`, `teamId` |
 | `permission.created` | `createPermission`, `findOrCreatePermission` (when it creates) | `permission` |
 | `permission.deleted` | `deletePermission` | `permission` |
+
+Every payload can also carry `actor`, who made the change, when it is known. See [Who made the change](#who-made-the-change-actor).
 
 ## Payload shapes
 
 Every payload has an `event` field that holds its own name, which makes the union easy to narrow.
 
 ```ts
-import type { Permission, Role, Subject, TeamId } from '@anievo-id/rbac-evolution'
+import type { Permission, Role, RbacActor, Subject, TeamId } from '@anievo-id/rbac-evolution'
+
+// every event
+interface RbacEventBase {
+  actor?: RbacActor // Subject | string: who made the change, when known
+}
 
 // role.attached / role.detached
-interface RoleAttachedEvent {
+interface RoleAttachedEvent extends RbacEventBase {
   event: 'role.attached' // or 'role.detached'
   subject: Subject
   roles: Role[]          // only the roles that actually changed
@@ -59,23 +66,23 @@ type PermissionAttachedEvent = {
   permissions: Permission[]    // only the permissions that actually changed
   guardName: string
   teamId: TeamId               // subject's team scope, or the role's teamId
-} & PermissionTarget
+} & PermissionTarget & RbacEventBase
 
 // role.created / role.deleted
-interface RoleCreatedEvent {
+interface RoleCreatedEvent extends RbacEventBase {
   event: 'role.created' // or 'role.deleted'
   role: Role
   teamId: TeamId
 }
 
 // permission.created / permission.deleted
-interface PermissionCreatedEvent {
+interface PermissionCreatedEvent extends RbacEventBase {
   event: 'permission.created' // or 'permission.deleted'
   permission: Permission
 }
 ```
 
-The exported types are `RoleAttachedEvent`, `RoleDetachedEvent`, `PermissionAttachedEvent`, `PermissionDetachedEvent`, `PermissionTarget`, `RoleCreatedEvent`, `RoleDeletedEvent`, `PermissionCreatedEvent` and `PermissionDeletedEvent`. There are also these helpers:
+The exported types are `RbacEventBase`, `RbacActor`, `RoleAttachedEvent`, `RoleDetachedEvent`, `PermissionAttachedEvent`, `PermissionDetachedEvent`, `PermissionTarget`, `RoleCreatedEvent`, `RoleDeletedEvent`, `PermissionCreatedEvent` and `PermissionDeletedEvent`. There are also these helpers:
 
 | Type | Meaning |
 | --- | --- |
@@ -96,6 +103,53 @@ rbac.on('permission.attached', (e) => {
 })
 ```
 
+## Who made the change: `actor`
+
+Audit logs need to know **who** made a change, not only what changed. Tell the engine, and every event carries it
+as `actor`: a [subject](/basic-usage/basic-usage) such as `{ type: 'user', id: 7 }`, or a label such as `'system'`
+or `'cli'` (`type RbacActor = Subject | string`).
+
+**Per call.** Every write accepts `actor`:
+
+```ts
+const admin = { type: 'user', id: 7 }
+
+await rbac.for(user, { actor: admin }).assignRole('writer') // also syncRoles, givePermissionTo, ...
+await rbac.role('writer', { actor: admin }).givePermissionTo('edit articles')
+await rbac.createRole('editor', { actor: admin })           // also createPermission, deleteRole, deletePermission
+await rbac.sync({ roles: { writer: ['edit articles'] } }, { actor: 'deploy' }) // every write of the sync
+
+rbac.on('role.attached', (e) => {
+  e.actor // { type: 'user', id: 7 }
+})
+```
+
+`rbac.for(user, { actor })` keeps the actor for every call on that helper, also after `withScope()`.
+
+**From the request context.** Instead of passing it around, give the engine a `getActor` function. It runs when an
+event has listeners and the call passed no `actor`; return `null` or `undefined` when there is none:
+
+```ts
+import { AsyncLocalStorage } from 'node:async_hooks'
+import { createRbac, type RbacActor } from '@anievo-id/rbac-evolution'
+
+export const actorContext = new AsyncLocalStorage<RbacActor>()
+
+export const rbac = createRbac({
+  adapter,
+  getActor: () => actorContext.getStore(),
+})
+
+// per request, after authentication (Express):
+// app.use((req, res, next) => (req.user ? actorContext.run({ type: 'user', id: req.user.id }, next) : next()))
+```
+
+- An explicit `actor` wins over `getActor()`.
+- Without either, the payload has **no** `actor` field, exactly as before.
+- The core imports nothing runtime-specific: `getActor` can read any context. `AsyncLocalStorage` exists on Node.js
+  and Bun, and on Cloudflare Workers with the `nodejs_compat` flag. Where there is none, pass `actor` per call. See
+  [Runtimes](/guide/runtimes).
+
 ## Ordering and await semantics
 
 - **After the write.** An event fires only after the adapter write has succeeded and the [cache](/advanced/cache) has been cleared. Listeners therefore see the new state when they query the engine.
@@ -113,6 +167,8 @@ Don't use a throwing listener to block a change. By the time it runs, the change
 - An event with an empty list is never emitted.
 - `syncRoles` / `syncPermissions` emit `*.detached` for what was removed **first**, then `*.attached` for what was added. Items present before and after are not reported.
 - Deleting a role or permission emits only `role.deleted` / `permission.deleted`. There is no `detached` event for every subject or role that had it.
+- `revokeAll()` emits one `role.detached` and one `permission.detached` per team and guard it removed something from (`roles` / `permissions` hold one guard each), like `syncRoles([])` and `syncPermissions([])` would.
+- `deleteTeam()` emits the same per subject that held something in the team (one event per guard), then `role.deleted` for each role scoped to the team. Every event is emitted after all the writes. A big team means many events: they carry each member, so an audit log or a cache broadcast sees the removal like any other.
 - `findOrCreateRole` / `findOrCreatePermission` emit `*.created` only when they actually create a row.
 
 ::: info Cost
@@ -124,10 +180,12 @@ To work out what changed, attach and detach calls read the existing links once m
 Write every change to an `audit_log` table. One handler subscribes to all eight events:
 
 ```ts
-import type { RbacEvent, RbacEventName } from '@anievo-id/rbac-evolution'
-import { rbac } from './rbac'
+import type { RbacActor, RbacEvent, RbacEventName } from '@anievo-id/rbac-evolution'
+import { rbac } from './rbac' // created with `getActor`, or calls that pass `actor`
 import { db } from './db'
-import { getRequestContext } from './request-context' // e.g. AsyncLocalStorage holding the current user
+
+const actorId = (actor: RbacActor | undefined): string | null =>
+  actor === undefined ? null : typeof actor === 'string' ? actor : `${actor.type}:${actor.id}`
 
 function summarize(e: RbacEvent): string {
   switch (e.event) {
@@ -154,7 +212,7 @@ async function audit(e: RbacEvent): Promise<void> {
       action: e.event,
       summary: summarize(e),
       teamId: 'teamId' in e && e.teamId !== null ? String(e.teamId) : null,
-      actorId: getRequestContext()?.userId ?? null,
+      actorId: actorId(e.actor),
       payload: JSON.stringify(e),
       createdAt: new Date(),
     })

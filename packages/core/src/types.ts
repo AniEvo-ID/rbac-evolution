@@ -81,4 +81,19 @@ export type Many<T> = T | readonly T[]
 export interface RbacSnapshot {
   roles: string[]
   permissions: string[]
+  /**
+   * Permission names the server's `before` hook denies to this subject, so the UI hides them even for a
+   * super-admin. Only present when the snapshot was made with `snapshot({ checkBefore: [...] })`; a snapshot
+   * without it behaves as before.
+   */
+  denied?: string[] | undefined
+}
+
+/** Options of `rbac.for(user).snapshot()`. */
+export interface SnapshotOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
+  /**
+   * Permission names to run the `before` hook for. Those it denies (returns `false` for) are listed in the
+   * snapshot's `denied`, which the React and Vue packages honour. Default: none, and the snapshot has no `denied`.
+   */
+  checkBefore?: readonly PermissionName<T>[] | undefined
 }

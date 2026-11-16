@@ -1,7 +1,9 @@
 // Stub: a copy of the `src/rbac.ts` block of docs/use-cases/ecommerce-admin.md.
-import { createRbac } from '@anievo-id/rbac-evolution'
+import { createRbac, type SubjectRbac } from '@anievo-id/rbac-evolution'
 import { createRbacDecorators } from '@anievo-id/rbac-evolution-nestjs'
 import { adapter } from './db' // e.g. new PrismaAdapter(prisma), see Adapters
+
+const roles = ['warehouse', 'cashier', 'support', 'manager'] as const
 
 type Resource = 'orders' | 'products' | 'inventory' | 'customers' | 'reports' | 'staff'
 
@@ -25,9 +27,12 @@ export type ShopRbac = {
     | 'reports.view'
     | 'reports.export'
     | 'staff.manage'
-  roles: 'warehouse' | 'cashier' | 'support' | 'manager'
+  roles: (typeof roles)[number]
 }
 
-export const rbac = createRbac<ShopRbac>({ adapter, wildcard: true })
+export const rbac = createRbac<ShopRbac>({ adapter, wildcard: true, names: { roles } })
 
-export const { RequirePermissions, CanAny } = createRbacDecorators<ShopRbac>()
+export const { RequirePermissions, CanAny } = createRbacDecorators<typeof rbac>()
+
+/** What `@CurrentRbac()` injects, with the shop's names: a typo in a check is a compile error. */
+export type Access = SubjectRbac<ShopRbac>

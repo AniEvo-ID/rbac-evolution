@@ -33,7 +33,8 @@ Requires Vue 3.3 or newer.
 ## Setup
 
 The server provides a snapshot of the current user's access — `await rbac.for(user).snapshot()`, which is
-`{ roles: string[], permissions: string[] }`. Expose it from an endpoint:
+`{ roles: string[], permissions: string[] }` (plus `denied` with `checkBefore`, see below). Expose it from an
+endpoint:
 
 ```ts
 // server (Express)
@@ -101,6 +102,36 @@ When the snapshot is fetched on the client, create the plugin with `loading: tru
 
 The current snapshot is available read-only as `rbac.snapshot.value`, and `rbac.isSuperAdmin()` tells you whether
 the user has one of the `superAdminRoles`.
+
+### `before` hooks: `denied`
+
+The server's `before` hook doesn't run in the browser. When it **denies** something to everyone, say
+`audit-log.delete`, a super-admin would see a button the server answers with 403. Build the snapshot with
+`checkBefore`, listing the names your UI checks. The names the hook denies come back as `denied`, and every check
+(`can`, `canAny`, `canAll`, `v-can`, `<Can>`, `$can`) treats them as not allowed, super-admins included:
+
+```ts
+// server (Express)
+app.get('/api/me/permissions', async (req, res) => {
+  res.json(req.rbac ? await req.rbac.snapshot({ checkBefore: ['audit-log.delete'] }) : null)
+})
+// → { roles: ['super-admin'], permissions: [], denied: ['audit-log.delete'] }
+```
+
+```ts
+import { createRbacPlugin } from '@anievo-id/rbac-evolution-vue'
+
+const rbac = createRbacPlugin({
+  snapshot: { roles: ['super-admin'], permissions: [], denied: ['audit-log.delete'] },
+  superAdminRoles: ['super-admin'],
+})
+rbac.can('flags.manage') // true: super-admin
+rbac.can('audit-log.delete') // false: denied by the server's before hook
+```
+
+`denied` holds exact names (no wildcard matching), and only denials travel: a hook that allows through custom
+logic is not visible here. A snapshot without `denied` behaves as before. See
+[Super-admin](/basic-usage/super-admin).
 
 ## Composables
 
@@ -274,6 +305,7 @@ access on the server.
 - Pipe splitting (`'a|b'`) applies to **roles only**.
 - An empty list never passes.
 - `superAdminRoles` affects permission checks, not role checks.
+- A name in the snapshot's `denied` fails every permission check, even for a super-admin.
 - With `wildcard: true`, a granted `articles.*` satisfies `can('articles.edit')`. See
   [Wildcard permissions](/basic-usage/wildcard-permissions).
 - A snapshot belongs to one guard and team; build it with the same scope you check on the server.

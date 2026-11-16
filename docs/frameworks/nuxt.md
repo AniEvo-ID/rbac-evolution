@@ -296,7 +296,14 @@ export const rbacServer = createRbacServer({ rbac, getSubject })
 
 await rbacServer.requirePermission(event, 'articles.edit|articles.publish') // ok
 await rbacServer.requireRole(event, 'admn') // type error
+
+// The subject they return has the names too
+const subject = await rbacServer.requirePermission(event, 'articles.edit')
+await subject.can('articles.pubish') // type error
 ```
+
+`resolve(event)` and every `require*` / `can*` return a `SubjectRbac<AppRbac>`. Use them for checks inside a
+handler rather than `event.context.rbac`, which h3 types loosely.
 
 If you set the event type yourself, pass the names type too: `createRbacServer<MyEvent, AppRbac>(...)`.
 With an untyped engine, any string is accepted. Route rules and the client stay untyped.

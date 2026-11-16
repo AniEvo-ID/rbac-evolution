@@ -55,6 +55,16 @@ await user.syncRoles()             // no roles at all
 
 Syncing only affects roles in the current [guard](/basic-usage/multiple-guards) and [team](/basic-usage/teams).
 
+To remove the subject's roles **and** direct permissions at once, use `revokeAll()`. It takes `allGuards` and
+`allTeams` to go beyond the current scope, for example when the user account is deleted:
+
+```ts
+await user.revokeAll()                                     // roles + direct permissions, this guard and team
+await user.revokeAll({ allGuards: true, allTeams: true }) // everything the subject has
+```
+
+See [Teams](/basic-usage/teams#removing-a-member) for the scopes it covers.
+
 From the role's side, `syncSubjects()` makes the given subjects of one type the role's only holders
 (spatie `Role::syncModels()`). Other subject types keep the role. `role.attached` / `role.detached` events fire per subject.
 

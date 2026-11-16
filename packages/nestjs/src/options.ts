@@ -1,11 +1,15 @@
-import type { Rbac, Subject, TeamId } from '@anievo-id/rbac-evolution'
+import type { DefaultRbacTypes, Rbac, RbacTypeConfig, Subject, TeamId } from '@anievo-id/rbac-evolution'
 import type { ExecutionContext, FactoryProvider, ModuleMetadata } from '@nestjs/common'
 
 type MaybePromise<T> = T | Promise<T>
 
-export interface RbacModuleOptions {
+/**
+ * `T` is the engine's names type (`createRbac<AppRbac>()`), inferred from `rbac`. Nest's parameter decorators
+ * can't carry it to `@CurrentRbac()`: type the parameter as `SubjectRbac<AppRbac>` (see `createRbacDecorators`).
+ */
+export interface RbacModuleOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
   /** The RBAC engine created with `createRbac(...)`. */
-  rbac: Rbac
+  rbac: Rbac<T>
   /**
    * Resolves the authenticated subject for this execution context (e.g. from `request.user`).
    * Return `null` / `undefined` for guests.
@@ -30,11 +34,15 @@ interface GlobalGuardOption {
   globalGuard?: boolean | undefined
 }
 
-export interface RbacModuleConfig extends RbacModuleOptions, GlobalGuardOption {}
+export interface RbacModuleConfig<T extends RbacTypeConfig = DefaultRbacTypes>
+  extends RbacModuleOptions<T>,
+    GlobalGuardOption {}
 
-export interface RbacModuleAsyncConfig extends GlobalGuardOption, Pick<ModuleMetadata, 'imports'> {
+export interface RbacModuleAsyncConfig<T extends RbacTypeConfig = DefaultRbacTypes>
+  extends GlobalGuardOption,
+    Pick<ModuleMetadata, 'imports'> {
   /** Providers to inject into `useFactory`. */
   inject?: FactoryProvider['inject'] | undefined
   /** Builds the options, e.g. from a `ConfigService`. */
-  useFactory: (...args: never[]) => MaybePromise<RbacModuleOptions>
+  useFactory: (...args: never[]) => MaybePromise<RbacModuleOptions<T>>
 }

@@ -79,8 +79,9 @@ After the hook runs, `request.rbac` is:
 - a `SubjectRbac` for the current subject (the same object `rbac.for(subject, { guard, team })` returns), or
 - `null` for guests.
 
-It is typed through `FastifyRequest` module augmentation, so no casts are needed. Use it for checks inside handlers
-and to send a snapshot to the browser:
+It is typed through `FastifyRequest` module augmentation, so no casts are needed. With a typed engine, register it
+once to give `request.rbac` your names (see [Typed `request.rbac`](#typed-request-rbac)). Use it for checks inside
+handlers and to send a snapshot to the browser:
 
 ```ts
 // Feed the React / Vue packages
@@ -235,10 +236,56 @@ app.put('/articles/:id', { preHandler: requirePermission('edit articles|publish 
 app.delete('/articles/:id', { preHandler: requirePermission('delete artcles') }, deleteArticle) // type error
 ```
 
-`createGuards<typeof rbac>()` works too. `createGuards()` also takes the shared options shown above.
+`createGuards<typeof rbac>()` works too. `createGuards()` also takes the shared options shown above, and their
+`request.rbac` has the same names.
 
 A guard without names, or with options before a name, is a type error too. The guards exported by the package
 still accept any string. See [Typed names](/basic-usage/typed-names).
+
+### Typed `request.rbac`
+
+`request.rbac` comes from a `FastifyRequest` augmentation, which is global, so the engine you pass to `rbacPlugin`
+can't reach it by itself: without more, `request.rbac` accepts any name. Register your engine once, next to
+`createRbac()`:
+
+```ts
+// src/rbac-register.ts (any file the compiler includes)
+import type { rbac } from './rbac'
+
+declare module '@anievo-id/rbac-evolution-fastify' {
+  interface RbacRegister {
+    rbac: typeof rbac // or the names type: AppRbac
+  }
+}
+```
+
+Now `request.rbac` has your names in every handler, the `onForbidden` / `onUnauthenticated` handlers included, so
+`request.rbac?.can('edit artcles')` is a compile error everywhere.
+
+A registration is global: one names type for the whole app. When two plugins use different engines, or you'd rather
+not declare a module, type the request of a handler with `RbacRequest` instead:
+
+```ts
+import type { RbacRequest } from '@anievo-id/rbac-evolution-fastify'
+import type { AppRbac } from './rbac'
+
+app.post('/articles/:id/publish', async (request: RbacRequest<AppRbac>, reply) => {
+  if (!(await request.rbac?.can('publish articles'))) {
+    return reply.code(403).send({ error: 'FORBIDDEN' })
+  }
+  await request.rbac?.can('publish artcles') // type error
+  return { ok: true }
+})
+```
+
+`RbacRequest<T>` takes the names type or `typeof rbac`. Its second argument is the request type to start from, for
+a typed route: `RbacRequest<AppRbac, FastifyRequest<{ Params: { id: string } }>>`.
+
+| | `RbacRegister` | `RbacRequest<T>` |
+| --- | --- | --- |
+| Where | once per app | on each handler |
+| Engines | one names type for every `request` | one per handler |
+| Route generics | inferred by Fastify as usual | pass the request type yourself |
 
 ## Teams
 

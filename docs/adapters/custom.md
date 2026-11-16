@@ -1,6 +1,6 @@
 # Custom adapter
 
-To store roles and permissions somewhere the built-in adapters don't cover (TypeORM, Kysely, MikroORM, Mongoose, DynamoDB, a remote API), implement the `RbacAdapter` interface. It has 17 small async methods. The engine handles name validation, guards, teams, wildcards, caching and events before it calls them, so an adapter only stores and loads rows.
+To store roles and permissions somewhere the built-in adapters don't cover (TypeORM, Kysely, MikroORM, Mongoose, DynamoDB, a remote API), implement the `RbacAdapter` interface. It has 17 small async methods, plus 3 [optional ones](#optional-methods) for bulk operations. The engine handles name validation, guards, teams, wildcards, caching and events before it calls them, so an adapter only stores and loads rows.
 
 <!-- doc-test: skip -->
 ```ts
@@ -37,6 +37,11 @@ interface FindRolesQuery {
 }
 
 interface RolePermissionLink { roleId: Id; permissionId: Id }
+
+// rows of model_has_roles / model_has_permissions, for the optional methods
+interface SubjectRoleLink { subject: Subject; roleId: Id; teamId: TeamId }
+interface SubjectPermissionLink { subject: Subject; permissionId: Id; teamId: TeamId }
+interface SubjectLinks { roles: SubjectRoleLink[]; permissions: SubjectPermissionLink[] }
 ```
 
 ## The interface
@@ -71,6 +76,11 @@ interface RbacAdapter {
   // reverse lookups
   getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]>
   getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]>
+
+  // optional bulk operations
+  getSubjectLinks?(subject: Subject): Promise<SubjectLinks>
+  getTeamLinks?(teamId: Id): Promise<SubjectLinks>
+  detachTeamLinks?(teamId: Id): Promise<void>
 }
 ```
 
@@ -120,6 +130,39 @@ interface RbacAdapter {
 - Each subject id appears **once**, even if it matches several roles.
 - For an empty `roleIds` / `permissionIds`, return `[]`.
 - You may return the ids in their stored form. The SQL adapters return strings.
+
+### Optional methods
+
+These were added after 1.0. They are optional, so an adapter written for 1.0 keeps compiling and working. The
+engine checks for each one before it calls it:
+
+| Method | Used by | Without it |
+| --- | --- | --- |
+| `getSubjectLinks(subject)` | `rbac.for(s).teams()`, `revokeAll({ allTeams: true })` | No fallback: the required methods read one team at a time and can't list a subject's teams. Both calls throw an `RbacError` with code `ADAPTER_METHOD_MISSING`. |
+| `getTeamLinks(teamId)` | `rbac.deleteTeam()` | No fallback: the required methods need each subject's type and id. `deleteTeam()` throws `ADAPTER_METHOD_MISSING` before it writes anything. |
+| `detachTeamLinks(teamId)` | `rbac.deleteTeam()` | Fallback: one `detachSubjectRoles(subject, undefined, teamId)` and one `detachSubjectPermissions(...)` per subject that `getTeamLinks` returned. |
+
+`revokeAll()` in the current team (with or without `allGuards`) only uses the required methods, so it works with
+every adapter.
+
+The rules:
+
+- `getSubjectLinks(subject)` returns **every** `model_has_roles` and `model_has_permissions` row of the subject: every
+  team, the global scope (`teamId: null`) included, and every guard. Match the subject exactly, like
+  `getSubjectRoleIds`.
+- `getTeamLinks(teamId)` returns every row held **in that team**, by any subject, in any guard. Not the global rows,
+  not the rows of other teams.
+- `detachTeamLinks(teamId)` deletes those rows. It doesn't delete roles: the engine deletes the team's roles with
+  `deleteRole()` afterwards.
+- `getTeamLinks` and `detachTeamLinks` are never called with `null`. Still return nothing / delete nothing for the
+  value you store as the global team (for example `''`), so a bug can never wipe the global scope.
+- Return `teamId` the way `createRole` does: `null` for global, otherwise the stored value (a string is fine).
+- Match the team id **exactly**. `detachTeamLinks('acme')` must not touch the rows of a team `ACME` or `acme `. With a
+  database collation that ignores case, accents or trailing spaces, `WHERE team_id = ?` alone is not enough: read
+  the rows, compare them in JavaScript, and delete what you read (the built-in SQL adapters delete per subject,
+  restricted to the ids that subject holds in the team).
+
+The conformance suite tests each optional method the adapter has, and skips the tests of the ones it doesn't.
 
 ### Ids
 
@@ -206,6 +249,9 @@ export class MyAdapter implements RbacAdapter {
   }
 }
 ```
+
+The skeleton leaves out the [optional methods](#optional-methods). Add them when you want `teams()`,
+`revokeAll({ allTeams: true })` and `deleteTeam()`.
 
 ::: tip Storing `null` teams
 In a relational database, store the global team as a sentinel such as `''` instead of `NULL`. That keeps composite primary keys and unique indexes working. Convert it back to `null` when you read. The [storage conventions](/adapters/overview#storage-conventions) explain why.

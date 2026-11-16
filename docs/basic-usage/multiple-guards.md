@@ -54,6 +54,9 @@ await rbac.for(user).can('edit articles')                    // true
 await rbac.for(user, { guard: 'api' }).can('edit articles') // false
 ```
 
+Writes are per guard too: `syncRoles()` and `revokeAll()` only touch the current guard. Pass
+`revokeAll({ allGuards: true })` to clear a subject in every guard at once.
+
 ## Mixing guards
 
 Names are always looked up in the guard you are working in. If you pass a role or permission **object** from another guard, the engine throws `GuardDoesNotMatch`:

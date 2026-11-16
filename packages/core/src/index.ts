@@ -8,6 +8,9 @@ import { version } from '../package.json'
 
 export { createRbac, Rbac, RoleRbac, SubjectRbac } from './rbac'
 export type { BeforeContext, BeforeHook, GuardOptions, RbacOptions, ScopeOptions } from './rbac'
+export type { RevokeAllOptions, SubjectTeamsOptions } from './bulk'
+export { isPermissionName, isRoleName } from './names'
+export type { RbacNames } from './names'
 export type {
   SyncDefinition,
   SyncOptions,
@@ -17,14 +20,19 @@ export type {
   SyncRolePermissions,
   SyncRoleUpdate,
 } from './sync'
+export type { SubjectsWithPermissionOptions } from './query'
 
 export type {
+  ActorOptions,
+  ActorResolver,
   PermissionAttachedEvent,
   PermissionCreatedEvent,
   PermissionDeletedEvent,
   PermissionDetachedEvent,
   PermissionTarget,
+  RbacActor,
   RbacEvent,
+  RbacEventBase,
   RbacEventListener,
   RbacEventMap,
   RbacEventName,
@@ -39,6 +47,9 @@ export type {
   FindRolesQuery,
   RbacAdapter,
   RolePermissionLink,
+  SubjectLinks,
+  SubjectPermissionLink,
+  SubjectRoleLink,
 } from './adapter'
 export { MemoryAdapter } from './adapters/memory'
 
@@ -57,6 +68,7 @@ export {
 export type { RbacErrorCode } from './errors'
 
 export { parseWildcardPermission, wildcardImplies } from './wildcard'
+export type { WildcardPrefixCheck } from './wildcard'
 
 export {
   permissionRequirement,
@@ -92,6 +104,7 @@ export type {
   Role,
   RoleInput,
   RoleName,
+  SnapshotOptions,
   Subject,
   TeamId,
 } from './types'

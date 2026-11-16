@@ -9,6 +9,7 @@ import {
   requireRoleOrPermission,
   canAny,
   canAll,
+  type RbacRequest,
 } from '../src'
 
 type Server = ReturnType<express.Express['listen']>
@@ -334,5 +335,50 @@ describe('per-route guard option', () => {
   it('leaves `req.rbac` in the request guard', async () => {
     const res = await fetch(`${url}/api/role`, { headers: { 'x-user': '10' } })
     expect(await res.json()).toEqual({ guard: 'web' })
+  })
+})
+
+describe('typed engine (RbacMiddlewareOptions<T>, RbacRequest<T>, createGuards<T>() handlers)', () => {
+  type AppRbac = {
+    permissions: 'edit articles' | 'delete articles' | 'publish articles'
+    roles: 'writer' | 'editor' | 'admin'
+  }
+  let server: Server
+  let url: string
+  const forbidden: unknown[] = []
+
+  beforeAll(async () => {
+    const rbac = createRbac<AppRbac>({ adapter: new MemoryAdapter() })
+    await seed(rbac)
+    const app = express()
+    app.use(rbacMiddleware({ rbac, getSubject: async (req) => userFrom(req) }))
+    const guards = createGuards<typeof rbac>({
+      onForbidden: async (req, res) => {
+        forbidden.push(req.rbac)
+        res.status(403).json({ roles: await req.rbac?.getRoleNames() })
+      },
+    })
+    app.get('/edit', guards.requirePermission('edit articles'), async (req: RbacRequest<typeof rbac>, res) => {
+      res.json({ publish: await req.rbac?.can('publish articles'), guard: req.rbac?.guardName })
+    })
+    app.get('/admin', guards.requireRole('admin'), ok)
+    ;({ server, url } = await listen(app))
+  })
+  afterAll(() => new Promise<void>((r) => server.close(() => r())))
+
+  it('sets req.rbac from a typed engine, the same as an untyped one', async () => {
+    const writer = await fetch(`${url}/edit`, { headers: { 'x-user': '1' } })
+    expect(await writer.json()).toEqual({ publish: false, guard: 'web' })
+    const editor = await fetch(`${url}/edit`, { headers: { 'x-user': '2' } })
+    expect(await editor.json()).toEqual({ publish: true, guard: 'web' })
+  })
+
+  it('hands the typed handlers of createGuards<T>() the request subject', async () => {
+    const res = await fetch(`${url}/admin`, { headers: { 'x-user': '2' } })
+    expect(res.status).toBe(403)
+    expect(((await res.json()) as { roles: string[] }).roles.sort()).toEqual(['editor', 'writer'])
+    expect(forbidden).toHaveLength(1)
+    expect(forbidden[0]).toMatchObject({ subject: { type: 'user', id: 2 } })
+    expect((await fetch(`${url}/admin`, { headers: { 'x-user': '3' } })).status).toBe(200)
   })
 })

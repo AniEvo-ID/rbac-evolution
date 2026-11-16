@@ -9,6 +9,7 @@ export type RbacErrorCode =
   | 'INVALID_NAME'
   | 'INVALID_WILDCARD_PERMISSION'
   | 'INVALID_SYNC_DEFINITION'
+  | 'ADAPTER_METHOD_MISSING'
 
 export class RbacError extends Error {
   readonly code: RbacErrorCode

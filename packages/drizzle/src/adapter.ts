@@ -7,6 +7,7 @@ import type {
   Role,
   RolePermissionLink,
   Subject,
+  SubjectLinks,
   TeamId,
 } from '@anievo-id/rbac-evolution'
 import { type AnyColumn, type SQL, type Table, and, eq, inArray, sql } from 'drizzle-orm'
@@ -335,6 +336,91 @@ export class DrizzleRbacAdapter implements RbacAdapter {
       permissionIds,
       teamId,
     )
+  }
+
+  // ------------------------------------------------------------- bulk (optional)
+
+  async getSubjectLinks(subject: Subject): Promise<SubjectLinks> {
+    const where = { subjectType: subject.type, subjectId: String(subject.id) }
+    return DrizzleRbacAdapter.toSubjectLinks(
+      await this.exactRows(this.db, this.t.modelHasRoles, this.t.modelHasRoles.roleId, where),
+      await this.exactRows(this.db, this.t.modelHasPermissions, this.t.modelHasPermissions.permissionId, where),
+    )
+  }
+
+  async getTeamLinks(teamId: Id): Promise<SubjectLinks> {
+    const team = teamKey(teamId)
+    if (team === GLOBAL_TEAM) return { roles: [], permissions: [] }
+    return DrizzleRbacAdapter.toSubjectLinks(
+      await this.exactRows(this.db, this.t.modelHasRoles, this.t.modelHasRoles.roleId, { teamId: team }),
+      await this.exactRows(this.db, this.t.modelHasPermissions, this.t.modelHasPermissions.permissionId, {
+        teamId: team,
+      }),
+    )
+  }
+
+  async detachTeamLinks(teamId: Id): Promise<void> {
+    const team = teamKey(teamId)
+    if (team === GLOBAL_TEAM) return
+    const tables: [SubjectTable, AnyColumn][] = [
+      [this.t.modelHasRoles, this.t.modelHasRoles.roleId],
+      [this.t.modelHasPermissions, this.t.modelHasPermissions.permissionId],
+    ]
+    // `team_id = 'acme'` alone would also delete the rows of a lookalike team (`ACME`, `acme `) under a
+    // collation that ignores case or trailing spaces. So the rows are read back exactly, and deleted per
+    // subject, restricted to the target ids that subject holds in the team: exact, because the primary key
+    // stops a lookalike team from holding the same subject and target (same reasoning as `detach`).
+    await this.atomically(async (db) => {
+      for (const [table, target] of tables) {
+        const bySubject = new Map<string, { subject: Subject; ids: number[] }>()
+        for (const row of await this.exactRows(db, table, target, { teamId: team })) {
+          const k = JSON.stringify([row.subjectType, row.subjectId])
+          const entry = bySubject.get(k) ?? { subject: { type: row.subjectType, id: row.subjectId }, ids: [] }
+          entry.ids.push(Number(row.id))
+          bySubject.set(k, entry)
+        }
+        for (const { subject, ids } of bySubject.values()) {
+          await db
+            .delete(table)
+            .where(and(...DrizzleRbacAdapter.subjectWhere(table, subject, teamId), inArray(target, ids)))
+        }
+      }
+    })
+  }
+
+  /** Link rows matching `where` (subject and/or team), compared exactly (see `sameLink`). */
+  private async exactRows(
+    db: UntypedDb,
+    table: SubjectTable,
+    target: AnyColumn,
+    where: { subjectType?: string; subjectId?: string; teamId?: string },
+  ): Promise<LinkRow[]> {
+    const filters: SQL[] = []
+    if (where.subjectType !== undefined) filters.push(eq(table.subjectType, where.subjectType))
+    if (where.subjectId !== undefined) filters.push(eq(table.subjectId, where.subjectId))
+    if (where.teamId !== undefined) filters.push(eq(table.teamId, where.teamId))
+    const rows: LinkRow[] = await db
+      .select({ id: target, subjectType: table.subjectType, subjectId: table.subjectId, teamId: table.teamId })
+      .from(table)
+      .where(and(...filters))
+    return rows.filter(
+      (row) =>
+        (where.subjectType === undefined || row.subjectType === where.subjectType) &&
+        (where.subjectId === undefined || row.subjectId === where.subjectId) &&
+        (where.teamId === undefined || row.teamId === where.teamId),
+    )
+  }
+
+  private static toSubjectLinks(roles: readonly LinkRow[], permissions: readonly LinkRow[]): SubjectLinks {
+    const subject = (row: LinkRow): Subject => ({ type: row.subjectType, id: row.subjectId })
+    return {
+      roles: roles.map((row) => ({ subject: subject(row), roleId: Number(row.id), teamId: teamFromKey(row.teamId) })),
+      permissions: permissions.map((row) => ({
+        subject: subject(row),
+        permissionId: Number(row.id),
+        teamId: teamFromKey(row.teamId),
+      })),
+    }
   }
 
   // -------------------------------------------------------------------- helpers

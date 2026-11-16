@@ -47,7 +47,8 @@ Why this split:
 
 ## Seed it
 
-Turn teams on and type the names. The team id is the organization id.
+Turn teams on and type the names. The team id is the organization id. The roles are also a value (`names`), so the
+server actions can check the roles a client sends.
 
 ```ts
 // lib/rbac.ts
@@ -57,6 +58,8 @@ import { PrismaAdapter } from '@anievo-id/rbac-evolution-prisma'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { currentOrgId } from '@/lib/org'
+
+const roles = ['owner', 'admin', 'member', 'billing'] as const
 
 export type SaasRbac = {
   permissions:
@@ -71,10 +74,10 @@ export type SaasRbac = {
     | 'billing.manage'
     | 'org.settings'
     | 'org.delete'
-  roles: 'owner' | 'admin' | 'member' | 'billing'
+  roles: (typeof roles)[number]
 }
 
-export const rbac = createRbac<SaasRbac>({ adapter: new PrismaAdapter(prisma), teams: true })
+export const rbac = createRbac<SaasRbac>({ adapter: new PrismaAdapter(prisma), teams: true, names: { roles } })
 
 export const { getSnapshot, can, hasRole, requirePermission, withPermission } = createNextRbac({
   rbac,
@@ -82,7 +85,7 @@ export const { getSnapshot, can, hasRole, requirePermission, withPermission } = 
     const session = await auth()
     return session?.user?.id ? { type: 'user', id: session.user.id } : null
   },
-  team: currentOrgId, // every check runs in the current organization
+  team: () => currentOrgId(), // every check runs in the current organization (a function: lib/org imports this file)
   loginUrl: '/login',
 })
 ```
@@ -123,26 +126,33 @@ The current organization is a cookie. A cookie is user input, so `currentOrgId()
 a member. Otherwise it returns `undefined`: the checks then run outside any organization, where the user has no
 roles, and everything is denied.
 
+A member is someone with a role in the organization, so [`teams()`](/basic-usage/teams#listing-a-subject-s-teams)
+answers the question. No membership table is needed:
+
 ```ts
 // lib/org.ts
 import { cache } from 'react'
 import { cookies } from 'next/headers'
 import { auth } from '@/auth'
-import { prisma } from '@/lib/prisma'
+import { rbac } from '@/lib/rbac'
+
+/** The organizations of the signed-in user: the teams where they have a role. */
+export const myOrgIds = cache(async (): Promise<string[]> => {
+  const session = await auth()
+  if (!session?.user?.id) return []
+  return (await rbac.for({ type: 'user', id: session.user.id }).teams()).map(String)
+})
 
 /** The organization the user works in: the `org` cookie, if the user is a member of it. */
 export const currentOrgId = cache(async (): Promise<string | undefined> => {
-  const session = await auth()
   const orgId = (await cookies()).get('org')?.value
-  if (!session?.user?.id || !orgId) return undefined
-
-  const member = await prisma.membership.findFirst({ where: { orgId, userId: session.user.id } })
-  return member ? orgId : undefined
+  return orgId && (await myOrgIds()).includes(orgId) ? orgId : undefined
 })
 ```
 
-`cache()` runs the lookup once per request, even though every check calls it. The membership table is yours, as
-in the [recipe](/recipes/multi-tenant#_3-check-membership-then-scope-to-the-team).
+`cache()` runs each lookup once per request, even though every check calls it, and the engine caches `teams()`
+across requests until the next change. Keep a membership table of your own only for data about the membership
+itself, such as when someone joined.
 
 ### Creating an organization and switching
 
@@ -153,6 +163,7 @@ in the [recipe](/recipes/multi-tenant#_3-check-membership-then-scope-to-the-team
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { auth } from '@/auth'
+import { myOrgIds } from '@/lib/org'
 import { prisma } from '@/lib/prisma'
 import { rbac } from '@/lib/rbac'
 
@@ -162,7 +173,6 @@ export async function createOrg(name: string) {
   const userId = session.user.id
 
   const org = await prisma.organization.create({ data: { name } })
-  await prisma.membership.create({ data: { orgId: org.id, userId } })
   await rbac.for({ type: 'user', id: userId }, { team: org.id }).assignRole('owner')
 
   await switchOrg(org.id)
@@ -172,15 +182,15 @@ export async function switchOrg(orgId: string) {
   const session = await auth()
   if (!session?.user?.id) redirect('/login')
 
-  const member = await prisma.membership.findFirst({ where: { orgId, userId: session.user.id } })
-  if (!member) redirect('/orgs') // not yours: stay where you are
+  if (!(await myOrgIds()).includes(orgId)) redirect('/orgs') // not yours: stay where you are
 
   ;(await cookies()).set('org', orgId, { httpOnly: true, sameSite: 'lax' })
   redirect('/dashboard')
 }
 ```
 
-The org switcher in the header lists the user's rows in the membership table and calls `switchOrg()`. The redirect
+The org switcher in the header lists `myOrgIds()` (with the names from your `organization` table) and calls
+`switchOrg()`. The redirect
 renders the layout again, so the UI gets the snapshot of the new organization.
 
 ### Invites
@@ -194,10 +204,12 @@ An admin invites a colleague by email and picks a role. The invite stores the or
 import { randomUUID } from 'node:crypto'
 import { currentOrgId } from '@/lib/org'
 import { prisma } from '@/lib/prisma'
-import { hasRole, withPermission, type SaasRbac } from '@/lib/rbac'
-import type { RoleName } from '@anievo-id/rbac-evolution'
+import { hasRole, rbac, withPermission } from '@/lib/rbac'
+import { isRoleName } from '@anievo-id/rbac-evolution'
 
-export const inviteMember = withPermission('members.invite', async (email: string, role: RoleName<SaasRbac>) => {
+// A server action's arguments come from the client: check the role before you store it.
+export const inviteMember = withPermission('members.invite', async (email: string, role: unknown) => {
+  if (!isRoleName(rbac, role)) return { error: 'Unknown role.' }
   // Only an owner may create another owner.
   if (role === 'owner' && !(await hasRole('owner'))) return { error: 'Only owners can invite owners.' }
 
@@ -228,8 +240,7 @@ export async function acceptInvite(token: string) {
   const invite = await prisma.invite.findUnique({ where: { token } })
   if (!invite || invite.email !== session.user.email) redirect('/invites/invalid')
 
-  await prisma.membership.create({ data: { orgId: invite.orgId, userId } })
-  await rbac.for({ type: 'user', id: userId }, { team: invite.orgId }).assignRole(invite.role)
+  await rbac.for({ type: 'user', id: userId }, { team: invite.orgId }).assignRole(invite.role) // now a member
   await prisma.invite.delete({ where: { token } })
 
   ;(await cookies()).set('org', invite.orgId, { httpOnly: true, sameSite: 'lax' })
@@ -247,12 +258,13 @@ export async function acceptInvite(token: string) {
 
 import { currentOrgId } from '@/lib/org'
 import { isLastOwner } from '@/lib/members'
-import { hasRole, rbac, withPermission, type SaasRbac } from '@/lib/rbac'
-import type { RoleName } from '@anievo-id/rbac-evolution'
+import { hasRole, rbac, withPermission } from '@/lib/rbac'
+import { isRoleName } from '@anievo-id/rbac-evolution'
 
 export const setMemberRoles = withPermission(
   'members.roles',
-  async (userId: string, roles: RoleName<SaasRbac>[]) => {
+  async (userId: string, roles: unknown[]) => {
+    if (!roles.every((name) => isRoleName(rbac, name))) return { error: 'Unknown role.' }
     const orgId = await currentOrgId()
     if (!orgId) return { error: 'No organization selected.' }
     if (roles.includes('owner') && !(await hasRole('owner'))) return { error: 'Only owners can make owners.' }
@@ -369,24 +381,25 @@ The function takes the engine as a parameter, so the test below can pass an in-m
 
 ### Leaving or being removed
 
-Delete the membership row **and** the roles in that organization. `currentOrgId()` already ignores organizations
-the user isn't a member of, but stale roles would come back if they were invited again.
+Remove the user's roles and direct permissions in that organization. With no role left, they are no longer a
+member: `myOrgIds()` stops listing it and `currentOrgId()` ignores the cookie. Check `isLastOwner()` first.
 
 ```ts
-await prisma.membership.deleteMany({ where: { orgId, userId } })
-await rbac.for({ type: 'user', id: userId }, { team: orgId }).syncRoles([])
-await rbac.for({ type: 'user', id: userId }, { team: orgId }).syncPermissions([])
+await rbac.for({ type: 'user', id: userId }, { team: orgId }).revokeAll()
 ```
+
+When a user deletes their account, remove them from every organization at once with
+`revokeAll({ allGuards: true, allTeams: true })`.
 
 ### Deleting an organization
 
-The engine has no "delete team" call. Remove the role assignments of every member, then delete your own rows:
+`deleteTeam()` removes every member's roles and permissions in the organization, and the roles created only for
+it (like the auditor below). Then delete your own rows:
 
 ```ts
-const memberIds = await rbac.subjectsWithRole('user', ['owner', 'admin', 'member', 'billing'], { team: orgId })
-for (const id of memberIds) {
-  await rbac.for({ type: 'user', id }, { team: orgId }).syncRoles([])
-}
+await rbac.deleteTeam(orgId)
+await prisma.project.deleteMany({ where: { orgId } })
+await prisma.organization.deleteMany({ where: { id: orgId } })
 ```
 
 ### One organization wants its own role
@@ -439,6 +452,17 @@ describe('organizations', () => {
     expect(await isLastOwner(rbac, 'acme', 'alice')).toBe(true)
     await rbac.for(bob, { team: 'acme' }).assignRole('owner')
     expect(await isLastOwner(rbac, 'acme', 'alice')).toBe(false)
+  })
+
+  it('lists, leaves and deletes organizations', async () => {
+    expect((await rbac.for(alice).teams()).sort()).toEqual(['acme', 'globex'])
+
+    await rbac.for(alice, { team: 'globex' }).revokeAll() // alice leaves Globex
+    expect(await rbac.for(alice).teams()).toEqual(['acme'])
+
+    await rbac.deleteTeam('acme')
+    expect(await rbac.for(alice).teams()).toEqual([])
+    expect(await rbac.for(bob).teams()).toEqual([])
   })
 })
 ```

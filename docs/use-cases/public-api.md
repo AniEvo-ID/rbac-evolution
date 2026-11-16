@@ -178,6 +178,8 @@ dashboard.get('/keys/:id', requirePermission('api-keys.view'), async (c) => {
 
 `SCOPES` is the allow-list. Without it, a developer could send `"scopes": ["api-keys.manage"]`. (The `api` guard
 has no such permission, so `givePermissionTo()` would throw `PermissionDoesNotExist`, a 500 instead of a 422.)
+[`isPermissionName()`](/basic-usage/typed-names#checking-user-input) is not enough here: it checks against every
+name of the engine, `api-keys.manage` included, because typed names are per engine, not per guard.
 
 `getPermissionNames()` returns the scopes from the preset role and the direct ones together, which is what the
 dashboard shows.
@@ -198,7 +200,7 @@ import { requireScope, type ApiRbac } from './rbac'
 export type FindKey = (secret: string) => Promise<{ id: string } | null>
 
 export function createApi(rbac: Rbac<ApiRbac>, findKey: FindKey) {
-  const api = new Hono<RbacEnv>()
+  const api = new Hono<RbacEnv<ApiRbac>>() // c.var.rbac has the typed names
 
   api.use(
     rbacMiddleware({
@@ -262,8 +264,8 @@ That's why only `requireScope` sets `exposeRequirements: true`. See [Security](/
 
 ### Revoking a key
 
-Mark the key as revoked, so `findActiveBySecret()` stops finding it. Then remove its roles and scopes, so no stale
-rows are left behind:
+Mark the key as revoked, so `findActiveBySecret()` stops finding it. Then remove its roles and scopes in one call,
+so no stale rows are left behind:
 
 ```ts
 // in src/dashboard.ts
@@ -272,9 +274,7 @@ dashboard.delete('/keys/:id', requirePermission('api-keys.manage'), async (c) =>
   if (!key || key.accountId !== c.var.user!.accountId) return c.json({ error: 'Not found' }, 404)
 
   await db.apiKeys.update(key.id, { revokedAt: new Date() })
-  const access = rbac.for({ type: 'api_key', id: key.id }, { guard: 'api' })
-  await access.syncRoles([])
-  await access.syncPermissions([])
+  await rbac.for({ type: 'api_key', id: key.id }, { guard: 'api' }).revokeAll()
   return c.body(null, 204)
 })
 ```

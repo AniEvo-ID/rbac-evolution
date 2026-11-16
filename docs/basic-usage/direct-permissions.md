@@ -38,6 +38,9 @@ await user.syncPermissions('edit articles', 'publish articles')
 await user.syncPermissions() // remove all direct permissions
 ```
 
+`revokeAll()` removes the direct permissions **and** the roles. See [Roles](/basic-usage/roles#syncing-roles) and
+[Teams](/basic-usage/teams#removing-a-member).
+
 ## Checking
 
 There are three kinds of checks:

@@ -40,6 +40,7 @@ type TeamId = import('@anievo-id/rbac-evolution').TeamId
 type Permission = import('@anievo-id/rbac-evolution').Permission
 type Role = import('@anievo-id/rbac-evolution').Role
 type RolePermissionLink = import('@anievo-id/rbac-evolution').RolePermissionLink
+type SubjectLinks = import('@anievo-id/rbac-evolution').SubjectLinks
 type FindPermissionsQuery = import('@anievo-id/rbac-evolution').FindPermissionsQuery
 type FindRolesQuery = import('@anievo-id/rbac-evolution').FindRolesQuery
 type RbacSnapshot = import('@anievo-id/rbac-evolution').RbacSnapshot

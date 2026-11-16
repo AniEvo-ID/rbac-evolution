@@ -251,7 +251,9 @@ await app.register(
     })
 
     // The snapshot for the React app
-    admin.get('/me/permissions', async (request) => (request.rbac ? request.rbac.snapshot() : null))
+    admin.get('/me/permissions', async (request) =>
+      request.rbac ? request.rbac.snapshot({ checkBefore: ['audit-log.delete'] }) : null,
+    )
   },
   { prefix: '/admin' },
 )
@@ -307,9 +309,10 @@ export function CustomerForm({ customer }: { customer: { id: string; email: stri
 }
 ```
 
-::: warning The `before` hook stays on the server
-The React package doesn't run `before`. With `superAdminRoles`, a super-admin's UI shows "Delete audit log", and
-the server answers 403. Hide such buttons with an explicit check, or leave them out of the UI.
+::: tip What the `before` hook denies reaches the UI
+The `/me/permissions` route passes `checkBefore: ['audit-log.delete']`, so the snapshot lists that name in `denied`.
+The React package treats a denied name as not allowed, even with `superAdminRoles`, so nobody's UI shows "Delete
+audit log". See [Super-admin](/basic-usage/super-admin).
 :::
 
 ## Edge cases
@@ -325,10 +328,11 @@ When someone leaves, the SSO sync gives them no roles at their next login. They 
 remove everything when HR's webhook arrives:
 
 ```ts
-const staff = rbac.for({ type: 'staff', id: staffId })
-await staff.syncRoles([])
-await staff.syncPermissions([]) // running temporary grants too
+await rbac.for({ type: 'staff', id: staffId }).revokeAll({ allGuards: true }) // running temporary grants too
 ```
+
+`revokeAll()` removes the roles and the direct permissions in one call. `allGuards` also covers any other guard the
+person had access to (an API token, a second panel).
 
 ### Who has temporary access right now?
 
@@ -346,12 +350,17 @@ Listen to the events to write grants and revocations to your audit log:
 ```ts
 rbac.on('permission.attached', async (e) => {
   if (e.target === 'subject') {
-    await auditLog.write({ action: 'grant', subject: e.subject, permissions: e.permissions.map((p) => p.name) })
+    await auditLog.write({
+      action: 'grant',
+      subject: e.subject,
+      permissions: e.permissions.map((p) => p.name),
+      by: e.actor ?? 'unknown', // set with `{ actor }` on the write, or `getActor` on the engine
+    })
   }
 })
 ```
 
-See the [Audit log recipe](/recipes/audit-log) for who made the change.
+See [Who made the change](/advanced/events#who-made-the-change-actor) and the [Audit log recipe](/recipes/audit-log).
 
 ## Test it
 

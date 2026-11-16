@@ -181,8 +181,35 @@ class ArticlesController {
 }
 ```
 
-The top-level decorators still accept any string. Without names, or with options that are not last, every
-decorator is a type error. See [Typed names](/basic-usage/typed-names).
+`createRbacDecorators<typeof rbac>()` works too. The top-level decorators still accept any string. Without names,
+or with options that are not last, every decorator is a type error. See [Typed names](/basic-usage/typed-names).
+
+### Typed `@CurrentRbac()`
+
+A Nest parameter decorator can't type its parameter, so `@CurrentRbac()` injects whatever type you write. Write the
+engine's names, and the checks inside the handler are typed too:
+
+```ts
+import type { SubjectRbac } from '@anievo-id/rbac-evolution'
+import { createRbacDecorators, CurrentRbac } from '@anievo-id/rbac-evolution-nestjs'
+import { type AppRbac, rbac } from './rbac'
+
+const { RequirePermissions } = createRbacDecorators<typeof rbac>()
+
+@Controller('articles')
+class ArticlesController {
+  @Put(':id')
+  @RequirePermissions('articles.edit')
+  async update(@CurrentRbac() access: SubjectRbac<AppRbac>) {
+    await access.can('articles.publish') // ok
+    await access.can('articles.pubish') // type error
+  }
+}
+```
+
+Outside a parameter, `getRbac<AppRbac>(context)` (or `getRbac<typeof rbac>(context)`) returns the same typed
+subject. The module options are generic too: `RbacModule.forRoot({ rbac, ... })` takes `RbacModuleOptions<T>`, with
+`T` inferred from `rbac`.
 
 ## `@CurrentRbac()`
 

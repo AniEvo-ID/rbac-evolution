@@ -40,6 +40,7 @@ Requires React 18 or newer.
    interface RbacSnapshot {
      roles: string[]
      permissions: string[] // direct + via roles
+     denied?: string[]     // only with snapshot({ checkBefore }), see "before hooks" below
    }
    ```
 
@@ -226,11 +227,42 @@ export const SUPER_ADMIN_ROLES = ['super-admin']
 <RbacProvider snapshot={snapshot} superAdminRoles={SUPER_ADMIN_ROLES}>
 ```
 
-::: warning
-A `before` hook configured on the server is **not** replayed on the client. If your server grants access through
-custom logic in `before`, the UI cannot know about it; expose the outcome through the snapshot or a separate flag.
+### `before` hooks: `denied`
+
+A `before` hook runs on the server only. When it **denies** something, for example "nobody may delete the audit
+log", a super-admin's UI would still show the button and the server would answer 403. Ask the snapshot to run the
+hook for the names your UI checks, with `checkBefore`. The names the hook denies are sent as `denied`, and the
+provider treats them as not allowed, for super-admins and stored grants alike:
+
+```ts
+app.get('/api/me/permissions', async (req, res) => {
+  res.json(req.rbac ? await req.rbac.snapshot({ checkBefore: ['audit-log.delete', 'users.impersonate'] }) : null)
+})
+// → { roles: ['super-admin'], permissions: [], denied: ['audit-log.delete'] }
+```
+
+```tsx
+import { Can, RbacProvider } from '@anievo-id/rbac-evolution-react'
+import type { RbacSnapshot } from '@anievo-id/rbac-evolution'
+
+export function Toolbar({ snapshot }: { snapshot: RbacSnapshot }) {
+  return (
+    <RbacProvider snapshot={snapshot} superAdminRoles={['super-admin']}>
+      <Can permission="audit-log.delete">
+        <button>Delete audit log</button> {/* hidden: denied by the server's before hook */}
+      </Can>
+    </RbacProvider>
+  )
+}
+```
+
+- `denied` holds exact names: it is matched without wildcards, like the names the hook was asked about.
+- Only denials travel. A hook that **allows** (returns `true`) through custom logic is not visible in the browser;
+  expose that through a role or a separate flag.
+- A snapshot without `denied` (older servers, or no `checkBefore`) behaves exactly as before.
+- The hook runs once per name when the snapshot is built, with the same subject, guard and team as `can()`.
+
 See [Super-admin](/basic-usage/super-admin).
-:::
 
 ## Next.js App Router
 
@@ -288,7 +320,8 @@ With [`@anievo-id/rbac-evolution-next`](/frameworks/nextjs) the snapshot line be
 
 ## Using the checker outside React
 
-`createRbacChecker(snapshot, { wildcard?, superAdminRoles? })` is the pure function behind the provider. Use it in
+`createRbacChecker(snapshot, { wildcard?, superAdminRoles? })` is the pure function behind the provider. It honours
+the snapshot's `denied` too. Use it in
 tests, utilities or non-React code:
 
 ```ts

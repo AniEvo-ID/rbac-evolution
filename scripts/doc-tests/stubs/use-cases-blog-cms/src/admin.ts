@@ -1,11 +1,8 @@
 // Stub: a copy of the `src/admin.ts` block of docs/use-cases/blog-cms.md.
 import express from 'express'
-import type { RoleName } from '@anievo-id/rbac-evolution'
+import { isRoleName } from '@anievo-id/rbac-evolution'
 import { asyncHandler } from '@anievo-id/rbac-evolution-express'
-import { rbac, requirePermission, type BlogRbac } from './rbac'
-
-const ROLES: readonly RoleName<BlogRbac>[] = ['writer', 'editor', 'moderator', 'admin']
-const isRole = (name: unknown): name is RoleName<BlogRbac> => ROLES.includes(name as RoleName<BlogRbac>)
+import { rbac, requirePermission } from './rbac'
 
 export const admin = express.Router()
 admin.use(requirePermission('users.manage'))
@@ -15,7 +12,7 @@ admin.put(
   '/users/:id/roles',
   asyncHandler(async (req, res) => {
     const roles: unknown[] = Array.isArray(req.body.roles) ? req.body.roles : []
-    if (!roles.every(isRole)) {
+    if (!roles.every((name) => isRoleName(rbac, name))) {
       res.status(422).json({ error: 'Unknown role' })
       return
     }

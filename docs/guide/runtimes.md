@@ -58,6 +58,14 @@ bunx rbac-evolution sync --dry-run
 
 `rbac.config.ts` is loaded the same way as on Node. See [CLI](/basic-usage/cli).
 
+## Request context (who made a change)
+
+[Events](/advanced/events#who-made-the-change-actor) can carry the `actor` that made a change. The core doesn't
+import `AsyncLocalStorage` or any other runtime module: you pass `actor` on the write calls, or give
+`createRbac({ getActor })` a function that reads your own request context. `AsyncLocalStorage` from
+`node:async_hooks` works on Node.js and Bun, and on Cloudflare Workers with the `nodejs_compat` flag. Where your
+runtime has none, pass `actor` per call (`rbac.for(user, { actor })`).
+
 ## What is tested where
 
 - The regular `ci (20)` / `ci (22)` jobs run every package's test suite on Node.js.

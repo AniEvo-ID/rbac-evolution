@@ -57,3 +57,21 @@ describe('matchPath', async () => {
     expect([1, 2, 3].map(() => matchPath(re, '/admin'))).toEqual([true, true, true])
   })
 })
+
+describe('snapshotSatisfies with snapshot.denied', () => {
+  const root = { roles: ['root'], permissions: ['audit.*'], denied: [' audit.delete'] }
+  const options = { superAdminRoles: ['root'], wildcard: true }
+
+  it('denies the names the before hook denied, even to a super-admin', () => {
+    expect(snapshotSatisfies(root, { permission: 'audit.delete' }, options)).toBe(false)
+    expect(snapshotSatisfies(root, { permission: 'audit.view' }, options)).toBe(true)
+    expect(snapshotSatisfies(root, { permission: ['audit.delete', 'audit.view'] }, options)).toBe(true)
+    expect(snapshotSatisfies(root, { permission: ['audit.delete', 'audit.view'], all: true }, options)).toBe(false)
+    expect(snapshotSatisfies(root, { roleOrPermission: 'audit.delete' }, options)).toBe(false)
+  })
+
+  it('behaves as before without denied', () => {
+    const { denied: _, ...old } = root
+    expect(snapshotSatisfies(old, { permission: 'audit.delete' }, options)).toBe(true)
+  })
+})

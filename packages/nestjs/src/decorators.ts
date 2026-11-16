@@ -1,12 +1,13 @@
 import 'reflect-metadata'
 import { applyDecorators, createParamDecorator, type ExecutionContext, UseGuards } from '@nestjs/common'
-import { getRbac } from './context'
+import { getRbac, type TypesOf } from './context'
 import { RbacGuard } from './guard'
 import {
   type DefaultRbacTypes,
   type PermissionName,
   type PermissionRequirementOptions,
   permissionRequirement,
+  type Rbac,
   type RbacRequirement,
   type RbacTypeConfig,
   type RequirementArgs,
@@ -147,7 +148,8 @@ export interface RbacDecorators<T extends RbacTypeConfig = DefaultRbacTypes> {
 
 /**
  * Returns the requirement decorators with names checked against your typed names
- * (the same `T` as `createRbac<T>(...)`). Runtime behaviour is the same as the top-level decorators.
+ * (the same `T` as `createRbac<T>(...)`, or `typeof rbac`). Runtime behaviour is the same as the top-level
+ * decorators.
  *
  * ```ts
  * type AppTypes = { permissions: 'edit articles' | 'delete articles'; roles: 'admin' | 'writer' }
@@ -156,8 +158,13 @@ export interface RbacDecorators<T extends RbacTypeConfig = DefaultRbacTypes> {
  * @RequirePermissions('edit articles') // ok
  * @RequirePermissions('edit artcles')  // type error
  * ```
+ *
+ * `@CurrentRbac()` can't type its parameter (a Nest parameter decorator never does): annotate it with the same
+ * names, `@CurrentRbac() access: SubjectRbac<AppTypes>`.
  */
-export function createRbacDecorators<T extends RbacTypeConfig = DefaultRbacTypes>(): RbacDecorators<T> {
+export function createRbacDecorators<
+  T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes,
+>(): RbacDecorators<TypesOf<T>> {
   const decorators = {
     RequirePermissions: requirePermissions,
     RequireRoles: requireRoles,
@@ -165,7 +172,7 @@ export function createRbacDecorators<T extends RbacTypeConfig = DefaultRbacTypes
     CanAny: canAny,
     CanAll: canAll,
   } satisfies Record<keyof RbacDecorators, unknown>
-  return decorators as unknown as RbacDecorators<T>
+  return decorators as unknown as RbacDecorators<TypesOf<T>>
 }
 
 const defaults = createRbacDecorators()

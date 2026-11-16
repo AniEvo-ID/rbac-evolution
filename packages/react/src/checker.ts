@@ -60,6 +60,8 @@ export function createRbacChecker(
   const { roles, permissions } = snapshot ?? EMPTY
   const roleSet = new Set(roles)
   const permissionSet = new Set(permissions)
+  // Names the server's `before` hook denies (`snapshot({ checkBefore })`). Absent in older snapshots: nothing denied.
+  const deniedSet = new Set((snapshot?.denied ?? []).map((name) => name.trim()))
   const wildcard = options.wildcard ?? false
   // While loading, every check (`cannot` too) is false: neither a stale grant nor "no access" UI shows.
   const loading = options.loading ?? false
@@ -67,6 +69,8 @@ export function createRbacChecker(
 
   const can = (permission: string): boolean => {
     if (loading) return false
+    // Like the server: `before` runs first, so its denial wins over super-admin and stored grants.
+    if (deniedSet.has(permission.trim())) return false
     if (isSuperAdmin) return true
     const name = permission.trim()
     if (name === '') return false

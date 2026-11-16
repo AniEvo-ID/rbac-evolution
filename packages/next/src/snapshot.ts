@@ -27,7 +27,10 @@ export function snapshotSatisfies(
   const roles = new Set(snapshot.roles)
   const isSuperAdmin = (options.superAdminRoles ?? []).some((r) => roles.has(r))
   const hasRole = (role: string): boolean => roles.has(role.trim())
+  // Names the server's `before` hook denies (`snapshot({ checkBefore })`); older snapshots have none.
+  const denied = new Set((snapshot.denied ?? []).map((name) => name.trim()))
   const can = (permission: string): boolean => {
+    if (denied.has(permission.trim())) return false
     if (isSuperAdmin) return true
     const name = permission.trim()
     if (name === '') return false
