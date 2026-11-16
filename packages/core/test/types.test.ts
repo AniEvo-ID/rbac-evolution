@@ -311,7 +311,9 @@ describe('type tests', () => {
       expectTypeOf(user.getPermissionNames).returns.toEqualTypeOf<Promise<string[]>>()
       expectTypeOf(role.get).returns.toEqualTypeOf<Promise<Role>>()
       expectTypeOf(role.getPermissionNames).returns.toEqualTypeOf<Promise<string[]>>()
-      expectTypeOf<RbacSnapshot>().toEqualTypeOf<{ roles: string[]; permissions: string[] }>()
+      // `denied` is optional (1.x addition): snapshots without it stay valid.
+      expectTypeOf<RbacSnapshot>().toEqualTypeOf<{ roles: string[]; permissions: string[]; denied?: string[] | undefined }>()
+      expectTypeOf<{ roles: string[]; permissions: string[] }>().toMatchTypeOf<RbacSnapshot>()
 
       // Resolved scope.
       expectTypeOf(user.subject).toEqualTypeOf<Subject>()

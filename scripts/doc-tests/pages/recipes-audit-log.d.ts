@@ -12,3 +12,8 @@ declare namespace Express {
     user?: { id: number }
   }
 }
+declare const adapter: RbacAdapter
+/** A subject changed from a script. */
+declare const user: Subject
+/** The seed definition of the app. */
+declare const seed: SyncDefinition

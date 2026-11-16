@@ -73,13 +73,62 @@ With wildcards on, you check permissions that you never created. `articles.edit`
 
 Everything that checks permissions understands wildcards: `can()`, `canAny()`, `canAll()`, `hasPermissionTo()`, `hasDirectPermission()`, `hasAnyPermission()`, `hasAllPermissions()` and `rbac.role(...).hasPermissionTo()`.
 
-::: warning
-`rbac.subjectsWithPermission()` does **not** expand wildcards. It only finds subjects that have exactly the permission you ask for (directly or via a role).
-:::
+`rbac.subjectsWithPermission()` matches exact permission rows by default. Pass `expandWildcards: true` to also find the subjects whose wildcard covers the name, directly or through a role:
+
+```ts
+await rbac.subjectsWithPermission('user', 'articles.edit')                            // exact holders only
+await rbac.subjectsWithPermission('user', 'articles.edit', { expandWildcards: true }) // + articles.*, articles, *
+```
+
+See [Querying subjects](/advanced/querying-subjects#wildcards).
+
+## A shorter name covers the longer ones
+
+The third matching rule is easy to miss. A stored permission **without** `*` still covers every permission that
+starts with it:
+
+```ts
+await rbac.sync({ permissions: ['orders.refund', 'orders.refund.large'] })
+await rbac.for(user).givePermissionTo('orders.refund')
+
+await rbac.for(user).can('orders.refund.large') // true: `orders.refund` is shorter
+```
+
+If `orders.refund.large` was meant as a stricter permission, whoever holds `orders.refund` has it anyway. To catch
+this, `sync()` and `createPermission()` check, with `wildcard: true`, whether one name implies another only by
+being shorter. Names with a `*` part, like `orders.*`, are not reported: there the wide match is the point.
+
+By default this logs a one-time warning per pair when `NODE_ENV` is `development`, the way deprecations are
+reported:
+
+```text
+[rbac-evolution] `orders.refund` also grants `orders.refund.large` (guard `web`): with wildcards, a shorter name implies the longer ones. ...
+```
+
+Choose what happens with the `wildcardPrefixCheck` option:
+
+| Value | Effect |
+| --- | --- |
+| `'warn'` (default) | One `console.warn` per pair, only when `NODE_ENV` is `development`. Nothing else changes. |
+| `'error'` | Throws `RbacError` with code `INVALID_WILDCARD_PERMISSION` before writing anything, in every environment. `sync()` throws for a dry run too, so CI can catch it. |
+| `'off'` | No check. |
+
+```ts
+const rbac = createRbac({ adapter, wildcard: true, wildcardPrefixCheck: 'error' })
+```
+
+What is checked:
+
+- `sync()` looks at the permissions of each guard **as they will be after the sync** (stored names plus the
+  definition, minus what `prune` removes), and reports the pairs that involve at least one name from the definition.
+- `createPermission()` compares the new name with the stored names of its guard, in both directions.
+
+To fix a reported pair, rename one side so neither name is a prefix of the other, for example `orders.refund.standard`
+and `orders.refund.large`, or grant the wide permission on purpose as `orders.refund.*`.
 
 ## Validation
 
-When wildcards are on, `createPermission()` validates the name. Empty parts or subparts, like `articles..edit` or `articles.edit,`, throw `InvalidWildcardPermission`.
+When wildcards are on, `createPermission()` validates the name. Empty parts or subparts, like `articles..edit` or `articles.edit,`, throw `InvalidWildcardPermission`. It also runs the [prefix check](#a-shorter-name-covers-the-longer-ones).
 
 ## Front end
 

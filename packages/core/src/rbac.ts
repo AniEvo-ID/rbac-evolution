@@ -8,7 +8,15 @@ import {
   RoleAlreadyExists,
   RoleDoesNotExist,
 } from './errors'
-import { RbacEmitter, type RbacEventListener, type RbacEventName } from './events'
+import {
+  type ActorOptions,
+  type ActorResolver,
+  type RbacActor,
+  RbacEmitter,
+  type RbacEventListener,
+  type RbacEventName,
+} from './events'
+import { expandWildcardPermissions, type SubjectsWithPermissionOptions } from './query'
 import { type SyncDefinition, type SyncOptions, type SyncResult, syncDefinition } from './sync'
 import type {
   DefaultRbacTypes,
@@ -22,10 +30,18 @@ import type {
   Role,
   RoleInput,
   RoleName,
+  SnapshotOptions,
   Subject,
   TeamId,
 } from './types'
-import { parseWildcardPermission, wildcardImplies } from './wildcard'
+import {
+  findPrefixImplications,
+  parseWildcardPermission,
+  prefixCheckActive,
+  reportPrefixImplications,
+  type WildcardPrefixCheck,
+  wildcardImplies,
+} from './wildcard'
 
 export interface GuardOptions {
   /** Guard name, e.g. `web` or `api`. Defaults to `defaultGuard`. */
@@ -74,6 +90,19 @@ export interface RbacOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
    * Evaluated after `before` (if `before` returned `undefined`).
    */
   superAdminRoles?: readonly RoleName<T>[] | undefined
+  /**
+   * With `wildcard: true`, what `sync()` and `createPermission()` do when one permission name implies another
+   * only because it is shorter (`orders.refund` implies `orders.refund.large`): `'warn'` logs a one-time
+   * warning when `NODE_ENV` is `development`, `'error'` throws before writing, `'off'` says nothing.
+   * Default: `'warn'`.
+   */
+  wildcardPrefixCheck?: WildcardPrefixCheck | undefined
+  /**
+   * Returns who makes the current change, for the `actor` field of events, when a write call doesn't pass
+   * `actor` itself. Read it from your request context (e.g. an `AsyncLocalStorage`). Only called when an
+   * event has listeners. Default: none, and events carry no `actor` unless a call passes one.
+   */
+  getActor?: ActorResolver | undefined
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -142,6 +171,13 @@ export interface RbacInternals<T extends RbacTypeConfig = DefaultRbacTypes> {
   resolvePermissions(inputs: readonly PermissionInput[], guardName: string): Promise<Permission[]>
   resolveRoles(inputs: readonly RoleInput[], guardName: string, teamId: TeamId): Promise<Role[]>
   permissionMatches(granted: readonly string[], required: string): boolean
+  readonly wildcardPrefixCheck: WildcardPrefixCheck
+  /** `createPermission`, optionally without the wildcard prefix check (`sync` runs its own). */
+  createPermission(
+    name: string,
+    options: GuardOptions & ActorOptions,
+    check: { prefixCheck: boolean },
+  ): Promise<Permission>
 }
 
 /** Set by a static block of `Rbac`, the only place that can read its private fields. */
@@ -170,7 +206,8 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   readonly #cacheTtl: number
   readonly #before: BeforeHook<T> | undefined
   readonly #superAdminRoles: readonly string[]
-  readonly #events = new RbacEmitter()
+  readonly #events: RbacEmitter
+  readonly #wildcardPrefixCheck: WildcardPrefixCheck
   /** Bumped on every change, so a lookup that started before the change never caches its stale result. */
   #generation = 0
   readonly #internals: RbacInternals<T>
@@ -188,6 +225,8 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     this.#cacheTtl = options.cacheTtl ?? DAY_MS
     this.#before = options.before
     this.#superAdminRoles = options.superAdminRoles ?? []
+    this.#events = new RbacEmitter(options.getActor)
+    this.#wildcardPrefixCheck = options.wildcardPrefixCheck ?? 'warn'
     this.#internals = {
       events: this.#events,
       remember: (key, compute) => this.#remember(key, compute),
@@ -199,18 +238,22 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
       resolvePermissions: (inputs, guardName) => this.#resolvePermissions(inputs, guardName),
       resolveRoles: (inputs, guardName, teamId) => this.#resolveRoles(inputs, guardName, teamId),
       permissionMatches: (granted, required) => this.#permissionMatches(granted, required),
+      wildcardPrefixCheck: this.#wildcardPrefixCheck,
+      createPermission: (name, options, check) => this.#createPermission(name, options, check),
     }
   }
 
   /** Work with the roles & permissions of a subject (usually a user). */
-  for(subject: Subject, options: ScopeOptions = {}): SubjectRbac<T> {
-    return new SubjectRbac<T>(this, subject, this.#resolveGuard(options.guard), this.#resolveTeam(options.team))
+  for(subject: Subject, options: ScopeOptions & ActorOptions = {}): SubjectRbac<T> {
+    const { actor } = options
+    return new SubjectRbac<T>(this, subject, this.#resolveGuard(options.guard), this.#resolveTeam(options.team), actor)
   }
 
   /** Work with the permissions of a role. */
-  role(role: RoleInput<RoleName<T>>, options: ScopeOptions = {}): RoleRbac<T> {
-    if (typeof role !== 'string') return new RoleRbac<T>(this, role, role.guardName, role.teamId)
-    return new RoleRbac<T>(this, role, this.#resolveGuard(options.guard), this.#resolveTeam(options.team))
+  role(role: RoleInput<RoleName<T>>, options: ScopeOptions & ActorOptions = {}): RoleRbac<T> {
+    const { actor } = options
+    if (typeof role !== 'string') return new RoleRbac<T>(this, role, role.guardName, role.teamId, actor)
+    return new RoleRbac<T>(this, role, this.#resolveGuard(options.guard), this.#resolveTeam(options.team), actor)
   }
 
   // ----------------------------------------------------------------------- events
@@ -230,7 +273,15 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
 
   // ------------------------------------------------------------------ permissions
 
-  async createPermission(name: PermissionName<T>, options: GuardOptions = {}): Promise<Permission> {
+  async createPermission(name: PermissionName<T>, options: GuardOptions & ActorOptions = {}): Promise<Permission> {
+    return this.#createPermission(name, options, { prefixCheck: true })
+  }
+
+  async #createPermission(
+    name: string,
+    options: GuardOptions & ActorOptions,
+    { prefixCheck }: { prefixCheck: boolean },
+  ): Promise<Permission> {
     const guardName = this.#resolveGuard(options.guard)
     const permissionName = normalizeName(name)
     if (this.wildcard) parseWildcardPermission(permissionName)
@@ -238,9 +289,14 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     if (await this.findPermission(permissionName as PermissionName<T>, { guard: guardName })) {
       throw new PermissionAlreadyExists(permissionName, guardName)
     }
+    if (prefixCheck && this.wildcard && prefixCheckActive(this.#wildcardPrefixCheck)) {
+      const names = (await this.adapter.findPermissions({ guardName })).map((p) => p.name)
+      const pairs = findPrefixImplications([...names, permissionName], new Set([permissionName]))
+      reportPrefixImplications(this.#wildcardPrefixCheck, pairs, guardName)
+    }
     const permission = await this.adapter.createPermission({ name: permissionName, guardName })
     await this.forgetCachedPermissions()
-    await this.#events.emit({ event: 'permission.created', permission })
+    await this.#events.emit({ event: 'permission.created', permission }, options.actor)
     return permission
   }
 
@@ -264,7 +320,7 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return permission ?? null
   }
 
-  async findOrCreatePermission(name: PermissionName<T>, options: GuardOptions = {}): Promise<Permission> {
+  async findOrCreatePermission(name: PermissionName<T>, options: GuardOptions & ActorOptions = {}): Promise<Permission> {
     return (await this.findPermission(name, options)) ?? this.createPermission(name, options)
   }
 
@@ -272,17 +328,20 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return this.adapter.findPermissions({ guardName: this.#resolveGuard(options.guard) })
   }
 
-  async deletePermission(permission: PermissionInput<PermissionName<T>>, options: GuardOptions = {}): Promise<void> {
+  async deletePermission(
+    permission: PermissionInput<PermissionName<T>>,
+    options: GuardOptions & ActorOptions = {},
+  ): Promise<void> {
     const guardName = typeof permission === 'string' ? this.#resolveGuard(options.guard) : permission.guardName
     const [resolved] = await this.#resolvePermissions([permission], guardName)
     await this.adapter.deletePermission(resolved!.id)
     await this.forgetCachedPermissions()
-    await this.#events.emit({ event: 'permission.deleted', permission: resolved! })
+    await this.#events.emit({ event: 'permission.deleted', permission: resolved! }, options.actor)
   }
 
   // ------------------------------------------------------------------------ roles
 
-  async createRole(name: RoleName<T>, options: ScopeOptions = {}): Promise<Role> {
+  async createRole(name: RoleName<T>, options: ScopeOptions & ActorOptions = {}): Promise<Role> {
     const guardName = this.#resolveGuard(options.guard)
     const teamId = this.#resolveTeam(options.team)
     const roleName = normalizeName(name)
@@ -292,7 +351,7 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
 
     const role = await this.adapter.createRole({ name: roleName, guardName, teamId })
     await this.forgetCachedPermissions()
-    await this.#events.emit({ event: 'role.created', role, teamId: role.teamId })
+    await this.#events.emit({ event: 'role.created', role, teamId: role.teamId }, options.actor)
     return role
   }
 
@@ -335,7 +394,7 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return roles.filter((r) => holders.has(idKey(r.id)))
   }
 
-  async findOrCreateRole(name: RoleName<T>, options: ScopeOptions = {}): Promise<Role> {
+  async findOrCreateRole(name: RoleName<T>, options: ScopeOptions & ActorOptions = {}): Promise<Role> {
     return (await this.findRole(name, options)) ?? this.createRole(name, options)
   }
 
@@ -345,11 +404,11 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return this.adapter.findRoles({ guardName: this.#resolveGuard(options.guard), teamIds: this.#visibleTeams(teamId) })
   }
 
-  async deleteRole(role: RoleInput<RoleName<T>>, options: ScopeOptions = {}): Promise<void> {
+  async deleteRole(role: RoleInput<RoleName<T>>, options: ScopeOptions & ActorOptions = {}): Promise<void> {
     const resolved = await this.role(role, options).get()
     await this.adapter.deleteRole(resolved.id)
     await this.forgetCachedPermissions()
-    await this.#events.emit({ event: 'role.deleted', role: resolved, teamId: resolved.teamId })
+    await this.#events.emit({ event: 'role.deleted', role: resolved, teamId: resolved.teamId }, options.actor)
   }
 
   // ------------------------------------------------------------------------- sync
@@ -406,16 +465,21 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   /**
    * Ids of subjects of `subjectType` that have ANY of the given permissions in the given scope —
    * directly or via one of their roles (spatie: `User::permission('edit')->get()`).
-   * Throws `PermissionDoesNotExist` for unknown permissions. Wildcards are not expanded.
+   * Throws `PermissionDoesNotExist` for unknown permissions. Wildcards are not expanded, unless
+   * `expandWildcards: true` is passed with `wildcard: true`: then holders of a wildcard that implies a name
+   * (`articles.*`, `*`) are returned too, and the names don't need to exist.
    */
   async subjectsWithPermission(
     subjectType: string,
     permissions: Many<PermissionInput<PermissionName<T>>>,
-    options: ScopeOptions = {},
+    options: SubjectsWithPermissionOptions = {},
   ): Promise<Id[]> {
     const guardName = this.#resolveGuard(options.guard)
     const teamId = this.#resolveTeam(options.team)
-    const resolved = await this.#resolvePermissions(flatten([permissions]), guardName)
+    const resolved =
+      options.expandWildcards && this.wildcard
+        ? expandWildcardPermissions(await this.adapter.findPermissions({ guardName }), flatten([permissions]), guardName)
+        : await this.#resolvePermissions(flatten([permissions]), guardName)
     if (resolved.length === 0) return []
     const permissionIds = resolved.map((p) => p.id)
     const wanted = new Set(permissionIds.map(idKey))
@@ -565,14 +629,17 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
 /** Permissions of a single role. Obtain with `rbac.role('writer')`. */
 export class RoleRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   readonly #core: RbacInternals<T>
+  readonly #actor: RbacActor | undefined
 
   constructor(
     private readonly rbac: Rbac<T>,
     private readonly input: RoleInput,
     readonly guardName: string,
     readonly teamId: TeamId,
+    actor?: RbacActor,
   ) {
     this.#core = internalsOf(rbac)
+    this.#actor = actor
   }
 
   /** Returns the role, throwing `RoleDoesNotExist` if it can't be found. */
@@ -628,7 +695,7 @@ export class RoleRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
    */
   async syncSubjects(subjectType: string, ids: readonly Id[]): Promise<this> {
     const role = await this.get()
-    const scope = { guard: role.guardName, team: this.teamId }
+    const scope = { guard: role.guardName, team: this.teamId, actor: this.#actor }
     const before = await this.rbac.adapter.getSubjectIdsWithRoles(subjectType, [role.id], this.teamId)
     const current = new Set(before.map(String))
     const wanted = new Set(ids.map(String))
@@ -677,7 +744,7 @@ export class RoleRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
       permissions,
       guardName: role.guardName,
       teamId: role.teamId,
-    })
+    }, this.#actor)
   }
 }
 
@@ -690,14 +757,17 @@ interface SubjectState {
 /** Roles & permissions of a single subject. Obtain with `rbac.for(user)`. */
 export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   readonly #core: RbacInternals<T>
+  readonly #actor: RbacActor | undefined
 
   constructor(
     private readonly rbac: Rbac<T>,
     readonly subject: Subject,
     readonly guardName: string,
     readonly teamId: TeamId,
+    actor?: RbacActor,
   ) {
     this.#core = internalsOf(rbac)
+    this.#actor = actor
   }
 
   /**
@@ -712,6 +782,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return this.rbac.for(this.subject, {
       guard: options.guard ?? this.guardName,
       team: options.team === undefined ? this.teamId : options.team,
+      actor: this.#actor,
     })
   }
 
@@ -940,9 +1011,18 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return true
   }
 
-  /** Serializable `{ roles, permissions }` — e.g. to hydrate a React/Vue client. */
-  async snapshot(): Promise<RbacSnapshot> {
-    return { roles: await this.getRoleNames(), permissions: await this.getPermissionNames() }
+  /**
+   * Serializable `{ roles, permissions }` — e.g. to hydrate a React/Vue client. With `checkBefore`, the `before`
+   * hook runs for those names and the ones it denies are listed in `denied`, so the UI hides them too.
+   */
+  async snapshot(options: SnapshotOptions<T> = {}): Promise<RbacSnapshot> {
+    const snapshot: RbacSnapshot = { roles: await this.getRoleNames(), permissions: await this.getPermissionNames() }
+    if (options.checkBefore === undefined) return snapshot
+    const denied: string[] = []
+    for (const name of new Set(options.checkBefore.map((n) => n.trim()))) {
+      if (name !== '' && (await this.#core.gate(this, name)) === false) denied.push(name)
+    }
+    return { ...snapshot, denied }
   }
 
   // ------------------------------------------------------------------- internal
@@ -1009,7 +1089,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
       roles,
       guardName: this.guardName,
       teamId: this.teamId,
-    })
+    }, this.#actor)
   }
 
   private async emitPermissions(
@@ -1024,7 +1104,7 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
       permissions,
       guardName: this.guardName,
       teamId: this.teamId,
-    })
+    }, this.#actor)
   }
 
   private static roleMatches(role: Role, wanted: RoleInput): boolean {

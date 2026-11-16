@@ -17,14 +17,19 @@ export type {
   SyncRolePermissions,
   SyncRoleUpdate,
 } from './sync'
+export type { SubjectsWithPermissionOptions } from './query'
 
 export type {
+  ActorOptions,
+  ActorResolver,
   PermissionAttachedEvent,
   PermissionCreatedEvent,
   PermissionDeletedEvent,
   PermissionDetachedEvent,
   PermissionTarget,
+  RbacActor,
   RbacEvent,
+  RbacEventBase,
   RbacEventListener,
   RbacEventMap,
   RbacEventName,
@@ -57,6 +62,7 @@ export {
 export type { RbacErrorCode } from './errors'
 
 export { parseWildcardPermission, wildcardImplies } from './wildcard'
+export type { WildcardPrefixCheck } from './wildcard'
 
 export {
   permissionRequirement,
@@ -92,6 +98,7 @@ export type {
   Role,
   RoleInput,
   RoleName,
+  SnapshotOptions,
   Subject,
   TeamId,
 } from './types'

@@ -1,4 +1,5 @@
 import { RbacError } from './errors'
+import type { ActorOptions } from './events'
 import type { Rbac, RbacInternals } from './rbac'
 import type {
   DefaultRbacTypes,
@@ -10,7 +11,7 @@ import type {
   RoleName,
   TeamId,
 } from './types'
-import { parseWildcardPermission } from './wildcard'
+import { findPrefixImplications, parseWildcardPermission, prefixCheckActive, reportPrefixImplications } from './wildcard'
 
 /** The permissions of a role in a {@link SyncDefinition}: an explicit list, or `'*'` for every permission of the guard. */
 export type SyncRolePermissions<T extends RbacTypeConfig = DefaultRbacTypes> = readonly PermissionName<T>[] | '*'
@@ -38,7 +39,7 @@ export interface SyncDefinition<T extends RbacTypeConfig = DefaultRbacTypes> {
   roles?: { readonly [R in RoleName<T>]?: SyncRolePermissions<T> } | undefined
 }
 
-export interface SyncOptions {
+export interface SyncOptions extends ActorOptions {
   /** Default guard for definitions without a `guard`. Default: `defaultGuard`. */
   guard?: string | undefined
   /** Default team for definitions without a `team`. */
@@ -189,6 +190,7 @@ export async function syncDefinition<T extends RbacTypeConfig>(
 ): Promise<SyncResult> {
   const blocks = normalize(core, definition, options)
   const prune = options.prune ?? false
+  const { actor } = options
   const dryRun = options.dryRun ?? false
   const result: SyncResult = {
     dryRun,
@@ -229,6 +231,12 @@ export async function syncDefinition<T extends RbacTypeConfig>(
       ...existingNames.filter((n) => !stale.some((p) => p.name === n)),
       ...declared.filter((n) => !existingNames.includes(n)),
     ])
+    // A short name implying the longer ones is easy to miss: report the pairs that involve a declared name,
+    // in the permissions as they will be after the sync. Runs before any write, so `'error'` changes nothing.
+    if (rbac.wildcard && prefixCheckActive(core.wildcardPrefixCheck)) {
+      const pairs = findPrefixImplications(finalPermissions.get(guard)!, new Set(declared))
+      reportPrefixImplications(core.wildcardPrefixCheck, pairs, guard)
+    }
   }
 
   // ------------------------------------------------------------- roles, per guard + team
@@ -281,7 +289,8 @@ export async function syncDefinition<T extends RbacTypeConfig>(
   // ---------------------------------------------------------------------------- apply
   // Engine methods are used for every write, so the usual events fire and the cache is cleared.
   for (const { name, guard } of result.created.permissions) {
-    await rbac.createPermission(name as PermissionName<T>, { guard })
+    // Checked above already, against the names left after pruning (pruning runs last).
+    await core.createPermission(name, { guard, actor }, { prefixCheck: false })
   }
   for (const plan of plans) {
     const changed =
@@ -289,12 +298,13 @@ export async function syncDefinition<T extends RbacTypeConfig>(
       plan.desired.length !== plan.current.length ||
       plan.desired.some((p) => !plan.current.includes(p))
     if (!changed) continue
-    const role = plan.existing ?? (await rbac.createRole(plan.name as RoleName<T>, { guard: plan.guard, team: plan.team }))
+    const role =
+      plan.existing ?? (await rbac.createRole(plan.name as RoleName<T>, { guard: plan.guard, team: plan.team, actor }))
     if (plan.existing === null && plan.desired.length === 0) continue
-    await rbac.role(role).syncPermissions(plan.desired as PermissionName<T>[])
+    await rbac.role(role, { actor }).syncPermissions(plan.desired as PermissionName<T>[])
   }
-  for (const role of rolesToDelete) await rbac.deleteRole(role)
-  for (const permission of permissionsToDelete) await rbac.deletePermission(permission)
+  for (const role of rolesToDelete) await rbac.deleteRole(role, { actor })
+  for (const permission of permissionsToDelete) await rbac.deletePermission(permission, { actor })
 
   return result
 }
