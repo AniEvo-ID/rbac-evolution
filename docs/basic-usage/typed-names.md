@@ -57,6 +57,7 @@ await rbac.for(user).can('edit articles')         // ok, same value
 
 A neat side effect: seeding becomes a loop over the enum.
 
+<!-- doc-test: skip -->
 ```ts
 for (const name of Object.values(Permission)) {
   await rbac.findOrCreatePermission(name)

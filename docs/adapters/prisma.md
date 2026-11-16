@@ -169,6 +169,7 @@ See [Teams](/basic-usage/teams) for how global roles and team roles work togethe
 
 ## Options
 
+<!-- doc-test: skip -->
 ```ts
 new PrismaAdapter(prisma, options?)
 ```

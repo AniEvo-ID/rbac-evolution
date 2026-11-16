@@ -369,6 +369,7 @@ export const config = {
 
 Overrides return a `Response`:
 
+<!-- doc-test: skip -->
 ```ts
 import { NextResponse } from 'next/server'
 
@@ -380,6 +381,7 @@ createRbacMiddleware<NextRequest>({
 
 The middleware function returns `undefined` when the request may continue, so it composes with other logic:
 
+<!-- doc-test: skip -->
 ```ts
 const rbacMiddleware = createRbacMiddleware<NextRequest>({ /* ... */ })
 

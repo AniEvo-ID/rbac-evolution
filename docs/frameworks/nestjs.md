@@ -189,6 +189,7 @@ decorator is a type error. See [Typed names](/basic-usage/typed-names).
 Injects the `SubjectRbac` that `RbacGuard` resolved — the same object as `rbac.for(subject, { guard, team })` — or
 `null` for guests (only possible on routes without requirements).
 
+<!-- doc-test: skip -->
 ```ts
 @Get('me/permissions')
 @UseGuards(RbacGuard) // or any @Require*() decorator, or globalGuard: true

@@ -71,13 +71,14 @@ Create the engine and the server helpers in `server/utils` (auto-imported in eve
 // server/utils/rbac.ts
 import { createRbac } from '@anievo-id/rbac-evolution'
 import { createRbacServer } from '@anievo-id/rbac-evolution-nuxt/server'
+import type { H3Event } from 'h3'
 
 export const rbac = createRbac({ adapter: yourAdapter })
 
 export const rbacServer = createRbacServer({
   rbac,
   // Return null or undefined for guests.
-  getSubject: async (event) => {
+  getSubject: async (event: H3Event) => {
     const session = await getUserSession(event) // your auth (nuxt-auth-utils, a JWT, …)
     return session.user ? { type: 'user', id: session.user.id } : null
   },
@@ -227,6 +228,7 @@ Page rules check the client-side snapshot. They improve UX, but API routes still
 
 `createRbacServer()` returns helpers that mirror the Express guards:
 
+<!-- doc-test: skip -->
 ```ts
 // server/api/articles/index.post.ts
 export default defineEventHandler(async (event) => {

@@ -43,6 +43,9 @@ jobs:
       # Bundle size of the client packages (react, vue, next/middleware), limits in .size-limit.json.
       - if: matrix.node == 22
         run: pnpm size
+      # Doc tests: the TypeScript code blocks of the main docs pages type-check against the built packages.
+      - if: matrix.node == 22
+        run: pnpm doc:test
 
   # Runs every package's tests against real PostgreSQL and MySQL servers (the PG_URL / MYSQL_URL suites,
   # which are skipped when those variables are absent).

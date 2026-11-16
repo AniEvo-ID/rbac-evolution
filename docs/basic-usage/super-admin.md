@@ -48,6 +48,7 @@ const rbac = createRbac({
 
 `subject` is the same helper that `rbac.for()` returns. It has `subject` (the `{ type, id }` object), `guardName`, `teamId`, and methods like `hasRole()`:
 
+<!-- doc-test: skip -->
 ```ts
 before: async ({ subject }) => {
   if (subject.guardName === 'web' && (await subject.hasRole('owner'))) return true

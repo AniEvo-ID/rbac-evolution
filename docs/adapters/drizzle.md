@@ -38,6 +38,7 @@ bun add @anievo-id/rbac-evolution @anievo-id/rbac-evolution-drizzle drizzle-orm
 
 The tables are built by a factory function, `pgRbacSchema()`, `sqliteRbacSchema()` or `mysqlRbacSchema()`. Each returns the five tables described in the [adapters overview](/adapters/overview#the-five-tables):
 
+<!-- doc-test: skip -->
 ```ts
 { permissions, roles, roleHasPermissions, modelHasRoles, modelHasPermissions }
 ```
@@ -148,6 +149,7 @@ If you use a prefix, add it to every table, constraint and index name in the fil
 
 Each dialect has a factory function that takes a Drizzle database instance and, optionally, the schema object:
 
+<!-- doc-test: skip -->
 ```ts
 drizzlePgAdapter(db, schema?: PgRbacSchema): RbacAdapter
 drizzleSqliteAdapter(db, schema?: SqliteRbacSchema): RbacAdapter

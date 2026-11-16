@@ -6,6 +6,7 @@ Most checks start from a subject ("can **this user** edit articles?"). Sometimes
 
 Returns the ids of subjects of the given type that have **any** of the given roles.
 
+<!-- doc-test: skip -->
 ```ts
 rbac.subjectsWithRole(
   subjectType: string,
@@ -25,6 +26,7 @@ await rbac.subjectsWithRole('user', 'admin', { team: 42 })    // admins in team 
 
 Returns the ids of subjects of the given type that have **any** of the given permissions, either **directly or through one of their roles**.
 
+<!-- doc-test: skip -->
 ```ts
 rbac.subjectsWithPermission(
   subjectType: string,

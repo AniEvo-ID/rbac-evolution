@@ -2,6 +2,7 @@
 
 To store roles and permissions somewhere the built-in adapters don't cover (TypeORM, Kysely, MikroORM, Mongoose, DynamoDB, a remote API), implement the `RbacAdapter` interface. It has 17 small async methods. The engine handles name validation, guards, teams, wildcards, caching and events before it calls them, so an adapter only stores and loads rows.
 
+<!-- doc-test: skip -->
 ```ts
 import type { RbacAdapter } from '@anievo-id/rbac-evolution'
 
@@ -216,6 +217,7 @@ The source code of the built-in adapters is a good reference. `MemoryAdapter` (i
 
 The core package ships a conformance suite at `@anievo-id/rbac-evolution/testing`. It registers a [Vitest](https://vitest.dev) `describe` block that tests every rule on this page, plus a full flow through `createRbac`.
 
+<!-- doc-test: skip -->
 ```ts
 runAdapterTests(
   name: string,

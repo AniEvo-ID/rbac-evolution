@@ -202,6 +202,7 @@ If the engine was created with `createRbac({ wildcard: true })`, pass `wildcard`
 `articles.*` also satisfies `useCan('articles.edit')`. The `Rbac` instance exposes the setting, so on the server you
 can forward it directly: `wildcard={rbac.wildcard}`.
 
+<!-- doc-test: skip -->
 ```tsx
 <RbacProvider snapshot={snapshot} wildcard={rbac.wildcard}>
 ```
@@ -220,6 +221,7 @@ the same list to the provider; users with one of these roles then pass every per
 export const SUPER_ADMIN_ROLES = ['super-admin']
 ```
 
+<!-- doc-test: skip -->
 ```tsx
 <RbacProvider snapshot={snapshot} superAdminRoles={SUPER_ADMIN_ROLES}>
 ```

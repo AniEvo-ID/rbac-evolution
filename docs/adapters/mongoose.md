@@ -49,6 +49,7 @@ Links are separate documents rather than arrays embedded in roles or users. Each
 
 ## Adapter
 
+<!-- doc-test: skip -->
 ```ts
 mongooseAdapter(options?: { connection?: Connection; prefix?: string }): MongooseRbacAdapter
 ```

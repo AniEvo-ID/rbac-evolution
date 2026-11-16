@@ -129,6 +129,7 @@ The table interfaces are also exported one by one: `PermissionsTable`, `RolesTab
 
 ## Adapter
 
+<!-- doc-test: skip -->
 ```ts
 kyselyAdapter(db, options?: { dialect?: RbacDialect; prefix?: string }): KyselyRbacAdapter
 ```
