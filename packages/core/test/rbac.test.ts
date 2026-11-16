@@ -260,3 +260,38 @@ describe('teams', () => {
     expect(() => plain.for(alice, { team: 1 })).toThrowError(expect.objectContaining({ code: 'TEAMS_NOT_ENABLED' }))
   })
 })
+
+describe('public surface', () => {
+  const INTERNAL = [
+    'events',
+    'gate',
+    'permissionExists',
+    'permissionMatches',
+    'remember',
+    'resolveGuard',
+    'resolvePermissions',
+    'resolveRoles',
+    'resolveTeam',
+    'visibleTeams',
+  ]
+
+  it('keeps the engine internals out of reach on Rbac, RoleRbac and SubjectRbac', () => {
+    const rbac = createRbac({ adapter: new MemoryAdapter() })
+    const objects: object[] = [rbac, rbac.role('writer'), rbac.for(alice)]
+    for (const object of objects) {
+      for (const name of INTERNAL) expect(name in object, `${object.constructor.name}.${name}`).toBe(false)
+    }
+  })
+
+  it('still runs internals for each instance separately', async () => {
+    const a = createRbac({ adapter: new MemoryAdapter(), superAdminRoles: ['admin'] })
+    const b = createRbac({ adapter: new MemoryAdapter() })
+    for (const rbac of [a, b]) {
+      await rbac.createPermission('edit')
+      await rbac.createRole('admin')
+      await rbac.for(alice).assignRole('admin')
+    }
+    expect(await a.for(alice).can('edit')).toBe(true)
+    expect(await b.for(alice).can('edit')).toBe(false)
+  })
+})

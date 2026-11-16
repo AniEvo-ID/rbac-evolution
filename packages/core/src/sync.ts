@@ -1,5 +1,5 @@
 import { RbacError } from './errors'
-import type { Rbac } from './rbac'
+import type { Rbac, RbacInternals } from './rbac'
 import type {
   DefaultRbacTypes,
   Id,
@@ -120,7 +120,7 @@ function pushUnique(list: string[], name: string): void {
 
 /** Validates (definitions may come from JSON) and normalizes the definition into blocks. */
 function normalize<T extends RbacTypeConfig>(
-  rbac: Rbac<T>,
+  core: RbacInternals<T>,
   definition: SyncDefinition<T> | readonly SyncDefinition<T>[],
   options: SyncOptions,
 ): Block[] {
@@ -134,12 +134,12 @@ function normalize<T extends RbacTypeConfig>(
 
     const guardInput = def['guard'] ?? options.guard
     if (guardInput !== undefined && typeof guardInput !== 'string') throw invalid(`${at}.guard must be a string.`)
-    const guard = rbac.resolveGuard(guardInput === undefined ? undefined : cleanName(guardInput, `${at}.guard`))
+    const guard = core.resolveGuard(guardInput === undefined ? undefined : cleanName(guardInput, `${at}.guard`))
     const teamInput = def['team'] !== undefined ? def['team'] : options.team
     if (teamInput !== undefined && teamInput !== null && typeof teamInput !== 'string' && typeof teamInput !== 'number') {
       throw invalid(`${at}.team must be a string, a number or null.`)
     }
-    const team = rbac.resolveTeam(teamInput)
+    const team = core.resolveTeam(teamInput)
 
     let block = blocks.find((b) => b.guard === guard && idKey(b.team) === idKey(team))
     if (!block) {
@@ -183,10 +183,11 @@ function normalize<T extends RbacTypeConfig>(
 /** @internal Implementation of {@link Rbac.sync}. */
 export async function syncDefinition<T extends RbacTypeConfig>(
   rbac: Rbac<T>,
+  core: RbacInternals<T>,
   definition: SyncDefinition<T> | readonly SyncDefinition<T>[],
   options: SyncOptions = {},
 ): Promise<SyncResult> {
-  const blocks = normalize(rbac, definition, options)
+  const blocks = normalize(core, definition, options)
   const prune = options.prune ?? false
   const dryRun = options.dryRun ?? false
   const result: SyncResult = {
