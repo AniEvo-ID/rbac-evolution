@@ -182,15 +182,18 @@ describe('loading state', () => {
       <Cannot permission="articles.edit"><span>read-only</span></Cannot>
       <Can permission="articles.edit" fallback={<span>no-edit</span>}>edit</Can>
       <HasRole role="admin" fallback={<span>not-admin</span>}>admin</HasRole>
+      <UnlessRole role="admin"><span>unless-admin</span></UnlessRole>
     </RbacProvider>
   )
 
   it('renders nothing (not even the fallback) while loading, then the normal result', () => {
     const { rerender } = render(gates(true))
-    for (const text of ['read-only', 'no-edit', 'not-admin']) expect(screen.queryByText(text)).toBeNull()
+    for (const text of ['read-only', 'no-edit', 'not-admin', 'unless-admin']) expect(screen.queryByText(text)).toBeNull()
 
     rerender(gates(false))
-    for (const text of ['read-only', 'no-edit', 'not-admin']) expect(screen.queryByText(text)).not.toBeNull()
+    for (const text of ['read-only', 'no-edit', 'not-admin', 'unless-admin']) {
+      expect(screen.queryByText(text)).not.toBeNull()
+    }
   })
 
   it('exposes loading on the checker; checks still deny', () => {
