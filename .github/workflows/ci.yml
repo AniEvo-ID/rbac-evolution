@@ -114,6 +114,76 @@ jobs:
       # package's coverage drops below its floor in coverage-floor.json (raise floors, never lower them).
       - run: node scripts/test-report.mjs --out=coverage-report.json --floor=coverage-floor.json
 
+  peers:
+    # Oldest (and newest, where it is newer than the dev dependency) supported version of each framework
+    # or ORM peer, from the support matrix in planning/02-compatibility-and-semver.md. The dev dependency
+    # (the newest supported major) is already tested by the `ci` job. Each entry swaps that package's
+    # dev dependency for the listed versions; the lockfile change stays inside this job.
+    name: peers (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: express 4
+            pkg: '@anievo-id/rbac-evolution-express'
+            deps: express@4 @types/express@4
+          - name: hono 4.0
+            pkg: '@anievo-id/rbac-evolution-hono'
+            deps: hono@4.0.0
+          - name: nestjs 10
+            pkg: '@anievo-id/rbac-evolution-nestjs'
+            deps: '@nestjs/common@10 @nestjs/core@10 @nestjs/platform-express@10 @nestjs/testing@10 reflect-metadata@0.1.13'
+          - name: nestjs 11
+            pkg: '@anievo-id/rbac-evolution-nestjs'
+            deps: '@nestjs/common@11 @nestjs/core@11 @nestjs/platform-express@11 @nestjs/testing@11'
+          - name: next 14 + react 18
+            pkg: '@anievo-id/rbac-evolution-next'
+            deps: next@14 react@18 react-dom@18 @types/react@18
+          - name: next 16
+            pkg: '@anievo-id/rbac-evolution-next'
+            deps: next@16
+          - name: nuxt 3
+            pkg: '@anievo-id/rbac-evolution-nuxt'
+            deps: nuxt@3 @nuxt/schema@3
+          - name: react 18
+            pkg: '@anievo-id/rbac-evolution-react'
+            deps: react@18 react-dom@18 @types/react@18 @types/react-dom@18
+          - name: vue 3.3
+            pkg: '@anievo-id/rbac-evolution-vue'
+            deps: vue@3.3
+          - name: prisma 5.12
+            pkg: '@anievo-id/rbac-evolution-prisma'
+            deps: '@prisma/client@5.12.0 prisma@5.12.0'
+          - name: drizzle-orm 0.38
+            pkg: '@anievo-id/rbac-evolution-drizzle'
+            deps: drizzle-orm@0.38.0
+          - name: drizzle-orm 0.45
+            pkg: '@anievo-id/rbac-evolution-drizzle'
+            deps: drizzle-orm@0.45
+          - name: kysely 0.28.0
+            pkg: '@anievo-id/rbac-evolution-kysely'
+            deps: kysely@0.28.0
+            # The package's own sources build (with .d.ts) on 0.28.0, but two test fixtures don't type-check
+            # before 0.28.15: kysely's MysqlPool type rejects mysql2's Pool, and a select over a union of
+            # table names isn't callable. Runtime tests still run.
+            skip_typecheck: true
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Rewrites the lockfile in this job only; nothing is committed.
+      - run: pnpm --filter "${{ matrix.pkg }}" add -D ${{ matrix.deps }}
+      - run: pnpm --filter "${{ matrix.pkg }}" ls --depth 0
+      - run: pnpm --filter "${{ matrix.pkg }}..." build
+      - if: ${{ !matrix.skip_typecheck }}
+        run: pnpm --filter "${{ matrix.pkg }}" typecheck
+      - run: pnpm --filter "${{ matrix.pkg }}" test
+
   bun:
     # Runs the built packages under the Bun runtime: core + the shared adapter conformance
     # suite, Drizzle on bun:sqlite, Hono on Bun.serve, and the CLI via `bun`.

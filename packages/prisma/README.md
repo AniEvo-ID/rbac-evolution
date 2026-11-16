@@ -10,7 +10,7 @@ npm i @anievo-id/rbac-evolution @anievo-id/rbac-evolution-prisma @prisma/client
 npm i -D prisma
 ```
 
-Requires `@prisma/client` 5.12 or later.
+Requires `@prisma/client` 5.12 or later, or 6. Prisma 7 is not supported yet.
 
 ## Usage
 

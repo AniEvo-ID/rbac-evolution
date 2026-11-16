@@ -33,7 +33,7 @@ bun add @anievo-id/rbac-evolution @anievo-id/rbac-evolution-kysely kysely
 
 :::
 
-`kysely` 0.27 or later is a peer dependency. Install your database driver as usual.
+`kysely` 0.28 is a peer dependency (0.29 moved `Migration` to `kysely/migration`, which `rbacMigration()` uses, and is not supported yet). Install your database driver as usual.
 
 ## Schema
 

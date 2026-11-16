@@ -24,7 +24,7 @@ bun add @anievo-id/rbac-evolution @anievo-id/rbac-evolution-mongoose mongoose
 
 :::
 
-`mongoose` 8 or later is a peer dependency.
+`mongoose` 8 is a peer dependency. Mongoose 9 is not tested yet.
 
 ## Collections
 

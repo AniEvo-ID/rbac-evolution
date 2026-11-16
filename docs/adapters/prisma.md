@@ -27,7 +27,7 @@ bun add @anievo-id/rbac-evolution @anievo-id/rbac-evolution-prisma
 Prisma itself (`@prisma/client` and the `prisma` CLI) is a peer dependency, and a Prisma project already has it installed.
 
 ::: warning Prisma version
-Use `@prisma/client` **5.12 or later**. Older versions don't support `createMany` on SQLite, and the adapter needs it.
+Use `@prisma/client` **5.12 or later, or 6**. Prisma 7 is not supported yet. Older versions don't support `createMany` on SQLite, and the adapter needs it.
 :::
 
 ## 1. Add the models to your schema

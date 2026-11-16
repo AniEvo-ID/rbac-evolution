@@ -10,6 +10,7 @@ import type {
   Directive,
   GlobalComponents,
   GlobalDirectives,
+  InjectionKey,
   MaybeRefOrGetter,
   Plugin,
   Ref,
@@ -90,7 +91,8 @@ describe('VueRbac instance: refs vs plain values', () => {
     }
     expectTypeOf(rbac.isSuperAdmin).toEqualTypeOf<() => boolean>()
     expectTypeOf<NameList>().toEqualTypeOf<string | readonly string[]>()
-    expectTypeOf(RBAC_KEY).toMatchTypeOf<symbol>()
+    // `InjectionKey` is a `Symbol` interface before Vue 3.5 and `symbol & ...` from 3.5 on.
+    expectTypeOf(RBAC_KEY).toEqualTypeOf<InjectionKey<VueRbac>>()
 
     void function neverCalled() {
       rbac.can(['a', 'b'] as const)

@@ -9,7 +9,7 @@
 npm i @anievo-id/rbac-evolution @anievo-id/rbac-evolution-mongoose mongoose
 ```
 
-Requires `mongoose` 8 or later.
+Requires `mongoose` 8. Mongoose 9 is not tested yet.
 
 ## Usage
 

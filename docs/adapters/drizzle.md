@@ -32,7 +32,7 @@ bun add @anievo-id/rbac-evolution @anievo-id/rbac-evolution-drizzle drizzle-orm
 
 :::
 
-`drizzle-orm` 0.36 or later is a peer dependency. Install your database driver as usual.
+`drizzle-orm` 0.38 or later is a peer dependency. Install your database driver as usual.
 
 ## Schema
 

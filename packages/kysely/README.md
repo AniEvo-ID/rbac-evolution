@@ -9,7 +9,7 @@ adapter for PostgreSQL, MySQL, SQLite and SQL Server.
 npm i @anievo-id/rbac-evolution @anievo-id/rbac-evolution-kysely kysely
 ```
 
-Install your database driver as usual. `kysely` 0.27 or later is required.
+Install your database driver as usual. Requires `kysely` 0.28 (0.29 is not supported yet: it moved `Migration` to `kysely/migration`).
 
 ## Usage
 

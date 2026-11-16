@@ -66,8 +66,23 @@ These only change in a major release:
 | MongoDB | 6+ |
 | TypeScript | 5.0+, with `moduleResolution` set to `node16`, `nodenext` or `bundler` |
 
-Each framework integration supports the versions in its `peerDependencies`. CI tests the oldest and the newest
-supported major of each framework. See the [test report](/quality).
+| Framework or ORM | Supported in 1.x |
+| --- | --- |
+| Express | 4, 5 |
+| Fastify | 5 |
+| Hono | 4 |
+| Next.js | 14, 15, 16 |
+| Nuxt | 3, 4 |
+| NestJS | 10, 11, 12 |
+| React | 18, 19 |
+| Vue | 3.3+ |
+| Prisma | 5.12+, 6 |
+| Drizzle ORM | 0.38+ |
+| Kysely | 0.28 |
+| Mongoose | 8 |
+
+These match each package's `peerDependencies`. CI tests the oldest and the newest supported version of each one (the
+`peers` job). See the [test report](/quality).
 
 TypeScript's legacy `moduleResolution: "node"` (node10) ignores the `exports` field. The main entry point of each
 package still resolves there, but subpaths such as `/testing`, `/pg` or `/middleware` don't. It is not supported.

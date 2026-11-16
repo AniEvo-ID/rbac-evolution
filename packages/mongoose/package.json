@@ -56,7 +56,7 @@
     "@anievo-id/rbac-evolution": "workspace:^"
   },
   "peerDependencies": {
-    "mongoose": ">=8"
+    "mongoose": "^8.0.0"
   },
   "devDependencies": {
     "mongodb-memory-server": "^10.1.0",
