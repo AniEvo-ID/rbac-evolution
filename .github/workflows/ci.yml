@@ -171,6 +171,11 @@ jobs:
             # before 0.28.15: kysely's MysqlPool type rejects mysql2's Pool, and a select over a union of
             # table names isn't callable. Runtime tests still run.
             skip_typecheck: true
+          # Newer than the dev dependency, which stays on 0.28 because the `ci` job runs Node 20 and Kysely 0.29
+          # needs Node 22 (this job runs on 22).
+          - name: kysely 0.29
+            pkg: '@anievo-id/rbac-evolution-kysely'
+            deps: kysely@0.29
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1

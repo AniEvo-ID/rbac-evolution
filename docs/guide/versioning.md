@@ -78,7 +78,7 @@ These only change in a major release:
 | Vue | 3.3+ |
 | Prisma | 5.12+, 6 |
 | Drizzle ORM | 0.38+ |
-| Kysely | 0.28 |
+| Kysely | 0.28, 0.29 (Node.js 22+ and TypeScript 5.4+, Kysely's own minimums) |
 | Mongoose | 8 |
 
 These match each package's `peerDependencies`. CI tests the oldest and the newest supported version of each one (the

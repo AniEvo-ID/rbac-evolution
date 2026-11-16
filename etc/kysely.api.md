@@ -4,7 +4,7 @@
 
 ## `@anievo-id/rbac-evolution-kysely`
 
-22 exports.
+23 exports.
 
 ```ts
 // KyselyAdapterOptions: interface
@@ -84,6 +84,12 @@ type RbacDatabase<Prefix extends string = ''> = {
 // RbacDialect: type
 type RbacDialect = 'postgres' | 'mysql' | 'sqlite' | 'mssql';
 
+// RbacMigration: interface
+interface RbacMigration {
+    up(db: Kysely<any>): Promise<void>;
+    down?(db: Kysely<any>): Promise<void>;
+}
+
 // RbacMigrationOptions: interface
 interface RbacMigrationOptions extends RbacTableOptions {
     dialect?: RbacDialect | undefined;
@@ -142,10 +148,10 @@ declare function dropRbacTables(db: Kysely<any>, options?: RbacTableOptions): Pr
 declare function kyselyAdapter(db: Kysely<any>, options?: KyselyAdapterOptions): KyselyRbacAdapter;
 
 // rbacExpiryMigration: function
-declare function rbacExpiryMigration(options?: RbacMigrationOptions): Migration;
+declare function rbacExpiryMigration(options?: RbacMigrationOptions): RbacMigration;
 
 // rbacMigration: function
-declare function rbacMigration(options?: RbacMigrationOptions): Migration;
+declare function rbacMigration(options?: RbacMigrationOptions): RbacMigration;
 
 // tableNames: const
 declare const tableNames: (options?: RbacTableOptions) => RbacTableNames;

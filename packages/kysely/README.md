@@ -9,7 +9,9 @@ adapter for PostgreSQL, MySQL, SQLite and SQL Server.
 npm i @anievo-id/rbac-evolution @anievo-id/rbac-evolution-kysely kysely
 ```
 
-Install your database driver as usual. Requires `kysely` 0.28 (0.29 is not supported yet: it moved `Migration` to `kysely/migration`).
+Install your database driver as usual. Requires `kysely` 0.28 or 0.29 (0.29 itself needs Node.js 22+ and
+TypeScript 5.4+). On 0.29, import Kysely's `Migrator` from `kysely/migration`; `rbacMigration()` works with either
+version's `Migrator`.
 
 ## Usage
 

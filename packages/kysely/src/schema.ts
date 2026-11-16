@@ -1,4 +1,4 @@
-import { type ColumnDefinitionBuilder, type CreateTableBuilder, type Kysely, type Migration, sql } from 'kysely'
+import { type ColumnDefinitionBuilder, type CreateTableBuilder, type Kysely, sql } from 'kysely'
 import { type RbacDialect, detectDialect } from './dialect'
 import { type RbacTableOptions, tableNames } from './tables'
 
@@ -11,6 +11,17 @@ export interface RbacMigrationOptions extends RbacTableOptions {
    * For tables that already exist, use `addRbacExpiryColumns` / `rbacExpiryMigration` instead.
    */
   expiry?: boolean | undefined
+}
+
+/**
+ * A Kysely migration, as returned by {@link rbacMigration} and {@link rbacExpiryMigration}. It has the same shape
+ * as Kysely's own `Migration` type, which is exported by `kysely` on 0.28 and by `kysely/migration` on 0.29, so it
+ * can be passed to the `Migrator` of either version. `down` is optional only to match that type: the helpers
+ * always set it.
+ */
+export interface RbacMigration {
+  up(db: Kysely<any>): Promise<void>
+  down?(db: Kysely<any>): Promise<void>
 }
 
 type Col = (c: ColumnDefinitionBuilder) => ColumnDefinitionBuilder
@@ -190,14 +201,14 @@ export async function dropRbacExpiryColumns(db: Kysely<any>, options: RbacTableO
 }
 
 /**
- * A Kysely `Migration` that adds (`up`) and removes (`down`) the `expires_at` columns. Add it after
+ * A Kysely migration that adds (`up`) and removes (`down`) the `expires_at` columns. Add it after
  * `rbacMigration()` to upgrade a 1.1 database for `kyselyAdapter(db, { expiry: true })`.
  *
  * ```ts
  * provider: { getMigrations: async () => ({ '0001_rbac': rbacMigration(), '0002_rbac_expiry': rbacExpiryMigration() }) }
  * ```
  */
-export function rbacExpiryMigration(options: RbacMigrationOptions = {}): Migration {
+export function rbacExpiryMigration(options: RbacMigrationOptions = {}): RbacMigration {
   return {
     up: (db) => addRbacExpiryColumns(db, options),
     down: (db) => dropRbacExpiryColumns(db, options),
@@ -213,7 +224,7 @@ export async function dropRbacTables(db: Kysely<any>, options: RbacTableOptions 
 }
 
 /**
- * A Kysely `Migration` that creates (`up`) and drops (`down`) the rbac-evolution tables.
+ * A Kysely migration that creates (`up`) and drops (`down`) the rbac-evolution tables.
  *
  * ```ts
  * const migrator = new Migrator({
@@ -222,7 +233,7 @@ export async function dropRbacTables(db: Kysely<any>, options: RbacTableOptions 
  * })
  * ```
  */
-export function rbacMigration(options: RbacMigrationOptions = {}): Migration {
+export function rbacMigration(options: RbacMigrationOptions = {}): RbacMigration {
   return {
     up: (db) => createRbacTables(db, options),
     down: (db) => dropRbacTables(db, options),
