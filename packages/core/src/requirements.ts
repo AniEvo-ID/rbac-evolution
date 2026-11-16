@@ -11,6 +11,69 @@ export type RequirementKind = 'permission' | 'role' | 'role_or_permission'
 /** A name, a pipe-separated list (`'edit|delete'` = any of), or an array of names. */
 export type RequirementNames = string | readonly string[]
 
+// ---------------------------------------------------------------------------- typed guard arguments
+//
+// Types for integrations whose guards take `(...names, options?)`, like `requirePermission('a|b', 'c', { any: true })`.
+// With typed names (see `RbacTypeConfig`), every name, including each part of a pipe list, must be one of `N`.
+// Without them (`N` is `string`), any name is accepted. In both cases a call with no names, or with options
+// before the last argument, is a type error, because it would throw (or ignore the options) at runtime.
+
+type TrimSpaces<S extends string> = S extends ` ${infer R}` ? TrimSpaces<R> : S extends `${infer L} ` ? TrimSpaces<L> : S
+
+/** The first `|`-separated part of `S` that is not in `N`, or `never` when every part is. */
+type UnknownPart<S extends string, N extends string> = S extends `${infer A}|${infer B}`
+  ? TrimSpaces<A> extends N
+    ? UnknownPart<B, N>
+    : TrimSpaces<A>
+  : TrimSpaces<S> extends N
+    ? never
+    : TrimSpaces<S>
+
+/** Shown in the type error when a name is not one of the typed names. */
+export interface UnknownRequirementName<S extends string> {
+  'rbac-evolution: unknown name': S
+}
+
+/** Shown in the type error when an options object is not the last argument. */
+export interface OptionsMustBeLast {
+  'rbac-evolution: options must be the last argument': true
+}
+
+/** Shown in the type error when a guard gets no names. */
+export interface NamesRequired {
+  'rbac-evolution: at least one name is required': true
+}
+
+/** `S` when every part of the pipe list `S` is in `N` (always, for plain `string` names), else an error type. */
+export type CheckRequirementName<S extends string, N extends string> = string extends N
+  ? S
+  : string extends S
+    ? S
+    : [UnknownPart<S, N>] extends [never]
+      ? S
+      : S & UnknownRequirementName<UnknownPart<S, N>>
+
+type CheckNames<X, N extends string> = X extends string
+  ? CheckRequirementName<X, N>
+  : X extends readonly string[]
+    ? { [K in keyof X]: X[K] extends string ? CheckRequirementName<X[K], N> : X[K] }
+    : OptionsMustBeLast
+
+/**
+ * Validates a guard's `(...names, options?)` arguments `A` against the names `N` and the options type `O`.
+ * Use it as `fn<const A extends readonly (RequirementNames | O)[]>(...args: A & RequirementArgs<A, N, O>)`.
+ * Arguments that are not a fixed tuple (a spread `string[]`) are not checked.
+ */
+export type RequirementArgs<A extends readonly unknown[], N extends string, O> = number extends A['length']
+  ? A
+  : A extends readonly []
+    ? [names: NamesRequired]
+    : A extends readonly [...infer Init, infer Last]
+      ? Last extends RequirementNames
+        ? { [K in keyof A]: CheckNames<A[K], N> }
+        : [...{ [K in keyof Init]: CheckNames<Init[K], N> }, O]
+      : A
+
 /** A normalized requirement. Every group must pass; a group passes when ANY of its names matches. */
 export interface RbacRequirement {
   kind: RequirementKind

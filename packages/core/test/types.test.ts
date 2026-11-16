@@ -50,6 +50,9 @@ import {
   REQUIREMENT_MESSAGES,
   type RequirementKind,
   type RequirementNames,
+  type RequirementArgs,
+  type CheckRequirementName,
+  type UnknownRequirementName,
   type Role,
   RoleAlreadyExists,
   type RoleAttachedEvent,
@@ -730,5 +733,46 @@ describe('type tests', () => {
       expectTypeOf(wildcardImplies).toEqualTypeOf<(granted: string, required: string) => boolean>()
       expect(wildcardImplies('articles.*', 'articles.edit')).toBe(true)
     })
+  })
+})
+
+describe('RequirementArgs (typed guard arguments for integrations)', () => {
+  type Opts = { any?: boolean | undefined }
+  type Names = 'edit' | 'delete' | 'publish'
+  const guard =
+    <N extends string>() =>
+    <const A extends readonly (RequirementNames | Opts)[]>(...args: A & RequirementArgs<A, N, Opts>): number =>
+      args.length
+  const typed = guard<Names>()
+  const loose = guard<string>()
+
+  it('accepts typed names, pipe lists, arrays and trailing options', () => {
+    expect(typed('edit')).toBe(1)
+    expect(typed('edit|delete', 'publish')).toBe(2)
+    expect(typed('edit | delete')).toBe(1)
+    expect(typed(['edit', 'delete'], { any: true })).toBe(2)
+    expect(loose('anything|else', { any: true })).toBe(2)
+    const spread: string[] = ['x']
+    expect(typed(...spread)).toBe(1)
+  })
+
+  it('rejects unknown names, missing names and options that are not last', () => {
+    void function neverCalled() {
+      // @ts-expect-error typo
+      typed('edti')
+      // @ts-expect-error typo inside a pipe list
+      typed('edit|delte')
+      // @ts-expect-error typo inside an array
+      typed(['edit', 'nope'])
+      // @ts-expect-error no names
+      typed()
+      // @ts-expect-error no names, also without typed names
+      loose()
+      // @ts-expect-error options before a name
+      loose({ any: true }, 'edit')
+    }
+    expectTypeOf<CheckRequirementName<'edit|nope', Names>>().toEqualTypeOf<'edit|nope' & UnknownRequirementName<'nope'>>()
+    expectTypeOf<CheckRequirementName<'edit|delete', Names>>().toEqualTypeOf<'edit|delete'>()
+    expectTypeOf<CheckRequirementName<'whatever', string>>().toEqualTypeOf<'whatever'>()
   })
 })
