@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-prisma",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Prisma storage adapter for rbac-evolution.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
