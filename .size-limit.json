@@ -12,6 +12,12 @@
     "limit": "7 kB"
   },
   {
+    "name": "@anievo-id/rbac-evolution-sveltekit (context + checker)",
+    "path": "packages/sveltekit/dist/context.svelte.js",
+    "ignore": ["svelte"],
+    "limit": "2 kB"
+  },
+  {
     "name": "@anievo-id/rbac-evolution-next/middleware",
     "path": "packages/next/dist/middleware.js",
     "ignore": ["next", "react"],

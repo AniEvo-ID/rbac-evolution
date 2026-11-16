@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const rows = [
-  ['React', 'Next.js', 'Vue', 'Nuxt', 'Express', 'Hono', 'Fastify', 'NestJS', 'Node.js 20+', 'Bun'],
+  ['React', 'Next.js', 'Vue', 'Nuxt', 'Express', 'Hono', 'Fastify', 'NestJS', 'SvelteKit', 'tRPC', 'Node.js 20+', 'Bun'],
   ['Prisma', 'Drizzle', 'Kysely', 'Mongoose', 'PostgreSQL', 'MySQL', 'SQLite', 'SQL Server', 'MongoDB', 'Memory'],
 ]
 </script>

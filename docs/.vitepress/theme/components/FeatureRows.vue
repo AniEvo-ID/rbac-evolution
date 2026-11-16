@@ -41,7 +41,7 @@ await rbac.for(user).can('edit articles')`,
     no: '02',
     label: 'Every framework',
     title: 'Guards for the stack you already run',
-    text: 'Middleware and route guards for Express, Fastify, Hono, NestJS and Next.js, plus <Can>, useCan() and v-can for React, Vue and Nuxt.',
+    text: 'Middleware and route guards for Express, Fastify, Hono, NestJS, Next.js, SvelteKit and tRPC, plus <Can>, useCan() and v-can for React, Vue, Nuxt and Svelte.',
     points: ['401 for guests, 403 for missing access', 'Server checks first, UI helpers second'],
     file: 'src/server.ts',
     code: `app.use(rbacMiddleware({ rbac, getSubject }))
