@@ -1,91 +1,46 @@
 # @anievo-id/rbac-evolution-nuxt
 
-📖 **[Documentation](https://creation.anievo.id/rbac-evolution/frameworks/nuxt)**
+Nuxt 3 and 4 module for [RBAC Evolution](https://github.com/AniEvo-ID/rbac-evolution): the Vue directives and
+components, the user's snapshot hydrated from SSR, `definePageMeta({ rbac })` route rules and Nitro helpers for
+server-side checks.
 
-Nuxt 3 / 4 module for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution). It installs [`@anievo-id/rbac-evolution-vue`](https://www.npmjs.com/package/@anievo-id/rbac-evolution-vue)
-(`v-can`, `v-role`, `<Can>`, `<HasRole>`, `$can`), hydrates the user's snapshot from SSR, auto-imports
-`useRbac()` / `useCan()` & co., adds a route middleware for `definePageMeta({ rbac })`, and ships Nitro helpers
-for server-side enforcement.
+## Install
 
 ```bash
-npm i @anievo-id/rbac-evolution @anievo-id/rbac-evolution-nuxt
+npm i @anievo-id/rbac-evolution @anievo-id/rbac-evolution-nuxt nuxt vue
 ```
 
-## Setup
+## Usage
 
 ```ts
 // nuxt.config.ts
 export default defineNuxtConfig({
   modules: ['@anievo-id/rbac-evolution-nuxt'],
-  rbac: {
-    wildcard: true, // must mirror createRbac({ wildcard })
-    superAdminRoles: ['super-admin'],
-    unauthenticatedRedirect: '/login', // optional, otherwise a 401 error page
-    forbiddenRedirect: '/403', // optional, otherwise a 403 error page
-  },
+  rbac: { wildcard: true }, // must mirror createRbac({ wildcard })
 })
 ```
-
-Resolve the subject on the server — the module's plugin reads `event.context.rbac` during SSR and sends the
-snapshot to the client through `useState`:
 
 ```ts
 // server/utils/rbac.ts
 import { createRbac } from '@anievo-id/rbac-evolution'
 import { createRbacServer } from '@anievo-id/rbac-evolution-nuxt/server'
 
-export const rbac = createRbac({ adapter: yourAdapter })
+export const rbac = createRbac({ adapter: yourAdapter, wildcard: true })
+export const rbacServer = createRbacServer({ rbac, getSubject: (event) => getUserSubject(event) }) // yours
 
-export const rbacServer = createRbacServer({
-  rbac,
-  getSubject: async (event) => {
-    const user = await getUserFromSession(event) // your auth
-    return user ? { type: 'user', id: user.id } : null
-  },
-})
-
-// server/middleware/rbac.ts
-export default defineEventHandler((event) => rbacServer.resolve(event))
+// server/middleware/rbac.ts:   export default defineEventHandler((event) => rbacServer.resolve(event))
+// server/api/articles/[id].delete.ts:   await rbacServer.requirePermission(event, 'articles.delete')
 ```
 
-## Pages & components
+In pages: `definePageMeta({ rbac: { permission: 'articles.edit' } })`, `useCan('articles.publish')`,
+`v-can="'articles.delete'"` and `<HasRole role="admin">`.
 
-```vue
-<script setup lang="ts">
-definePageMeta({ rbac: { permission: 'articles.edit' } })
+> Client checks only decide what the UI shows. Enforce access in server routes with `rbacServer.require*()`.
 
-const canPublish = useCan('articles.publish')
-const rbac = useRbac()
-</script>
+## Documentation
 
-<template>
-  <button v-if="canPublish">Publish</button>
-  <button v-can="'articles.delete'">Delete</button>
-  <HasRole role="admin">Admin tools</HasRole>
-  <p v-if="rbac.isGuest()">Please log in</p>
-</template>
-```
+https://creation.anievo.id/rbac-evolution/frameworks/nuxt
 
-Route rules use the Express semantics: `permission` (all; `'a|b'` = any; `any: true`), `role` (any; `all: true`),
-`roleOrPermission` (any), plus per-route `redirect` / `guestRedirect`.
+## License
 
-After login or logout, update the client: `useRbac().setSnapshot(await $fetch('/api/me/permissions'))` or
-`useRbac().setSnapshot(null)`.
-
-## Server-side enforcement
-
-Client checks only decide what the UI shows. Enforce in API routes:
-
-```ts
-// server/api/articles/[id].delete.ts
-export default defineEventHandler(async (event) => {
-  const rbac = await rbacServer.requirePermission(event, 'articles.delete')
-  // ...
-})
-```
-
-`requirePermission`, `requireRole` and `requireRoleOrPermission` throw a 401 / 403 error whose `data` is the
-Express body (`{ error, reason, message }`).
-
-With a typed engine (`createRbac<AppRbac>()`), `createRbacServer` checks every name.
-`requirePermission(event, 'articles.edti')` is then a compile error. With an untyped engine, any string is accepted.
+MIT

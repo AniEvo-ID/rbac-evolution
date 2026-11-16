@@ -126,6 +126,16 @@ export default defineConfig({
           { text: 'Roles vs permissions', link: '/best-practices/roles-vs-permissions' },
           { text: 'Security', link: '/best-practices/security' },
           { text: 'Threat model', link: '/best-practices/threat-model' },
+          { text: 'Production checklist', link: '/best-practices/production' },
+        ],
+      },
+      {
+        text: 'Recipes',
+        items: [
+          { text: 'Auth.js in Next.js', link: '/recipes/authjs' },
+          { text: 'Multi-tenant SaaS', link: '/recipes/multi-tenant' },
+          { text: 'Admin UI for roles', link: '/recipes/admin-ui' },
+          { text: 'Audit log', link: '/recipes/audit-log' },
         ],
       },
     ],
