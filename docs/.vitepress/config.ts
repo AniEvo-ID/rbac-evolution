@@ -135,6 +135,7 @@ export default defineConfig({
             { text: 'Hono', link: '/frameworks/hono' },
             { text: 'Fastify', link: '/frameworks/fastify' },
             { text: 'NestJS', link: '/frameworks/nestjs' },
+            { text: 'tRPC', link: '/frameworks/trpc' },
           ],
         },
         {

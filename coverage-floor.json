@@ -77,6 +77,12 @@
     "functions": 96,
     "statements": 98
   },
+  "@anievo-id/rbac-evolution-trpc": {
+    "lines": 100,
+    "branches": 100,
+    "functions": 100,
+    "statements": 100
+  },
   "@anievo-id/rbac-evolution-vue": {
     "lines": 97,
     "branches": 97,

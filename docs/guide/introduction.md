@@ -54,6 +54,7 @@ You install only the pieces you use.
 | `@anievo-id/rbac-evolution-fastify` | Fastify plugin and `preHandler` guards |
 | `@anievo-id/rbac-evolution-hono` | Hono middleware (Node, Bun, Cloudflare Workers and other edge runtimes) |
 | `@anievo-id/rbac-evolution-nestjs` | NestJS module, guard and decorators |
+| `@anievo-id/rbac-evolution-trpc` | tRPC middleware: `requirePermission`, `requireRole`, `requireRoleOrPermission` for procedures |
 | `@anievo-id/rbac-evolution-cli` | Command-line tool to create roles, assign them and inspect the setup |
 
 ::: tip

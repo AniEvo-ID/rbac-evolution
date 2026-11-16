@@ -1,0 +1,5 @@
+---
+'@anievo-id/rbac-evolution-trpc': minor
+---
+
+New package: `@anievo-id/rbac-evolution-trpc`, the tRPC (v11) integration. `t.procedure.use(requirePermission('posts.edit'))`, `requireRole()`, `requireRoleOrPermission()`, `canAny()` and `canAll()` take the same arguments as the other integrations (pipe lists, `{ any }` / `{ all }`, `{ guard }`, `exposeRequirements`), and after them `ctx.rbac` is a non-null `SubjectRbac`. `createRbacContext()` builds `ctx.rbac` in `createContext`; `createGuards<AppRbac>()` (or `createGuards<AppRbac, 'api'>()` with names per guard) checks names at compile time, and its `resolve` option reads the subject from the call instead. Denials throw a `TRPCError` `UNAUTHORIZED` / `FORBIDDEN`; `rbacErrorFormatter` gives clients the usual `{ error, reason, message, required? }` body as `error.data.rbac`.

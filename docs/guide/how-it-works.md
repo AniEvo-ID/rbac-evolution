@@ -35,6 +35,7 @@ flowchart LR
     hono["hono"]
     nestjs["nestjs"]
     next["next"]
+    trpc["trpc"]
   end
 
   subgraph ui["UI integrations"]
@@ -54,6 +55,7 @@ flowchart LR
   hono --> core
   nestjs --> core
   next --> core
+  trpc --> core
   react --> core
   vue --> core
   nuxt --> core
@@ -74,6 +76,7 @@ Most packages also have a peer dependency on the library they plug into, so you 
 | `-hono` | `hono` 4+ | |
 | `-nestjs` | `@nestjs/common`, `@nestjs/core` 10 to 12, `reflect-metadata` | |
 | `-next` | `next` 14+, `react` 18+ | |
+| `-trpc` | `@trpc/server` 11+ | |
 | `-react` | `react` 18+ | |
 | `-vue` | `vue` 3.3+ | |
 | `-nuxt` | `nuxt` 3 or 4, `vue` 3.3+ | `-vue`, `@nuxt/kit` |
@@ -267,6 +270,8 @@ Some details:
 - Every guard is wrapped in `asyncHandler()`, so an error (for example from the database) goes to `next(err)` on Express 4 and 5.
 
 The other integrations follow the same shape: resolve the subject once per request, scope it with `rbac.for()`, then check it in a guard. Fastify, Hono, NestJS and the Nuxt server helpers use the same `satisfiesRequirement()` from the core, so the checks are identical. Fastify, Hono, NestJS and Next.js send the same 401 and 403 JSON bodies. Nuxt's server helpers throw an error with status 401 or 403 and put the same fields in its `data`. See [Frameworks](/frameworks/express).
+
+The tRPC middleware uses `satisfiesRequirement()` too. It throws a `TRPCError` (`UNAUTHORIZED` or `FORBIDDEN`) whose cause carries the same fields, and `rbacErrorFormatter` sends them to the client as `error.data.rbac`. See [tRPC](/frameworks/trpc).
 
 ## Data model
 

@@ -172,6 +172,9 @@ jobs:
           - name: mongoose 8.0
             pkg: '@anievo-id/rbac-evolution-mongoose'
             deps: mongoose@8.0.0
+          - name: trpc 11.0
+            pkg: '@anievo-id/rbac-evolution-trpc'
+            deps: '@trpc/server@11.0.0 @trpc/client@11.0.0'
           - name: kysely 0.28.0
             pkg: '@anievo-id/rbac-evolution-kysely'
             deps: kysely@0.28.0

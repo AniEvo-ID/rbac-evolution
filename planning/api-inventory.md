@@ -539,6 +539,51 @@ Static file `./sql/mysql.sql`.
 | `useRbac` | function |  | keep |
 
 
+## @anievo-id/rbac-evolution-trpc
+
+### `@anievo-id/rbac-evolution-trpc`
+
+36 exports (11 values, 25 types).
+
+| Export | Kind | Notes | Decision |
+| --- | --- | --- | --- |
+| `canAll` | const |  | keep |
+| `canAny` | const |  | keep |
+| `createGuards` | function |  | keep |
+| `CreateGuardsOptions` | interface |  | keep |
+| `createRbacContext` | function |  | keep |
+| `getRbacErrorBody` | function |  | keep |
+| `Guard` | type |  | keep |
+| `GuardCallOptions` | interface |  | keep |
+| `GuardContext` | interface |  | keep |
+| `GuardHandler` | type |  | keep |
+| `GuardHandlerOptions` | interface |  | keep |
+| `GuardHandlers` | interface |  | keep |
+| `GuardKind` | type |  | keep |
+| `GuardNames` | type |  | keep |
+| `Guards` | interface |  | keep |
+| `GuardsFor` | type |  | keep |
+| `GuardSubject` | type |  | keep |
+| `PermissionGuardOptions` | interface |  | keep |
+| `RbacAccessError` | class |  | keep |
+| `RbacContext` | type |  | keep |
+| `RbacContextMissingError` | class |  | keep |
+| `RbacContextOptions` | interface |  | keep |
+| `RbacErrorBody` | type |  | keep |
+| `rbacErrorFormatter` | function |  | keep |
+| `RbacMiddleware` | type |  | keep |
+| `RbacProcedureContext` | interface |  | keep |
+| `RbacResolver` | type |  | keep |
+| `requirePermission` | const |  | keep |
+| `requireRole` | const |  | keep |
+| `requireRoleOrPermission` | const |  | keep |
+| `RoleGuardOptions` | interface |  | keep |
+| `RoleOrPermissionGuardOptions` | type |  | keep |
+| `RouteGuardOptions` | interface |  | keep |
+| `ScopedGuard` | type |  | keep |
+| `ScopedGuards` | interface |  | keep |
+| `TypesOf` | type |  | keep |
+
 ## @anievo-id/rbac-evolution-vue
 
 ### `@anievo-id/rbac-evolution-vue`

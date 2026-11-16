@@ -4,6 +4,13 @@ The highlights of each minor release. Every package shares one version number, s
 with `1.x` of all the others. Full details are in the
 [changelog](https://github.com/AniEvo-ID/rbac-evolution/blob/main/packages/core/CHANGELOG.md).
 
+## 1.4
+
+- **tRPC.** `@anievo-id/rbac-evolution-trpc` guards tRPC v11 procedures:
+  `t.procedure.use(requirePermission('posts.edit'))`, with the same arguments as the other integrations, and
+  `ctx.rbac` is a typed, non-null subject after the guard. Denials are `TRPCError`s (`UNAUTHORIZED` /
+  `FORBIDDEN`), and `rbacErrorFormatter` sends the usual `reason` to the client. See [tRPC](/frameworks/trpc).
+
 ## 1.3: Prisma 7, Kysely 0.29 and Mongoose 9
 
 Support for the current major versions of three ORMs. The older versions stay supported, and nothing changes on
