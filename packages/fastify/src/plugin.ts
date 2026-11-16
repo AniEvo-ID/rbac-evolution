@@ -1,4 +1,13 @@
-import type { DefaultRbacTypes, Rbac, RbacTypeConfig, Subject, SubjectRbac, TeamId } from '@anievo-id/rbac-evolution'
+import type {
+  DefaultGuardName,
+  DefaultRbacTypes,
+  Rbac,
+  RbacTypeConfig,
+  ScopedGuardName,
+  Subject,
+  SubjectRbac,
+  TeamId,
+} from '@anievo-id/rbac-evolution'
 import type { FastifyPluginAsync, FastifyRequest } from 'fastify'
 import fp from 'fastify-plugin'
 
@@ -29,6 +38,8 @@ export type RegisteredRbacTypes = RbacRegister extends { rbac: infer R } ? Types
 
 /**
  * A Fastify request whose `rbac` has the names of `T` (a names type like `AppRbac`, or `typeof rbac`).
+ * With per-guard names, `G` is the guard of the request (the default guard's names by default):
+ * `RbacRequest<typeof rbac, FastifyRequest, 'api'>` on the routes of an `api` middleware.
  * For typing a handler without a global {@link RbacRegister}, e.g. when two plugins use different engines:
  *
  * ```ts
@@ -38,12 +49,13 @@ export type RegisteredRbacTypes = RbacRegister extends { rbac: infer R } ? Types
 export type RbacRequest<
   T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes,
   Req = FastifyRequest,
+  G extends string = DefaultGuardName<TypesOf<T>>,
 > = Omit<Req, 'rbac'> & {
   /**
    * Roles & permissions of the current subject, set by the rbac-evolution plugin.
    * `null` for guests, `undefined` when the plugin did not run for this request.
    */
-  rbac?: SubjectRbac<TypesOf<T>> | null | undefined
+  rbac?: SubjectRbac<TypesOf<T>, ScopedGuardName<TypesOf<T>, G>> | null | undefined
 }
 
 /** Request hook in which `request.rbac` is resolved. */

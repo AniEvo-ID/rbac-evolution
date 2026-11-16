@@ -15,6 +15,7 @@ import {
   type CacheStore,
   createRbac,
   type DefaultRbacTypes,
+  type ExpiryArgs,
   type FindPermissionsQuery,
   type FindRolesQuery,
   GuardDoesNotMatch,
@@ -278,8 +279,10 @@ describe('type tests', () => {
       expectTypeOf(user.can).parameter(0).toEqualTypeOf<AppPermission | Permission>()
       expectTypeOf(user.cannot).parameter(0).toEqualTypeOf<PermissionInput<AppPermission>>()
       expectTypeOf(user.hasRole).parameter(0).toEqualTypeOf<Many<RoleInput<AppRole>>>()
-      expectTypeOf(user.assignRole).parameters.toEqualTypeOf<Many<AppRole | Role>[]>()
-      expectTypeOf(user.givePermissionTo).parameters.toEqualTypeOf<Many<AppPermission | Permission>[]>()
+      // Subject writes take an optional `{ expiresAt }` last (1.2).
+      expectTypeOf(user.assignRole).parameters.toEqualTypeOf<ExpiryArgs<Many<AppRole | Role>>>()
+      expectTypeOf(user.givePermissionTo).parameters.toEqualTypeOf<ExpiryArgs<Many<AppPermission | Permission>>>()
+      expectTypeOf(user.removeRole).parameters.toEqualTypeOf<Many<AppRole | Role>[]>()
       expectTypeOf(role.givePermissionTo).parameters.toEqualTypeOf<Many<AppPermission | Permission>[]>()
 
       // `this`-returning mutators chain.
@@ -476,6 +479,7 @@ describe('type tests', () => {
             case 'INVALID_WILDCARD_PERMISSION':
             case 'INVALID_SYNC_DEFINITION':
             case 'ADAPTER_METHOD_MISSING':
+            case 'EXPIRY_NOT_SUPPORTED':
               return code
             default: {
               const never: never = code

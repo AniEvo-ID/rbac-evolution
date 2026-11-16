@@ -28,6 +28,20 @@ await user.givePermissionTo(['edit articles', 'publish articles'])
 
 Giving a permission the subject already has does nothing. Revoking one it doesn't have does nothing either. Using a name that doesn't exist throws `PermissionDoesNotExist`.
 
+### For a limited time
+
+A direct permission can end on its own (1.2, needs an adapter created with `{ expiry: true }`). Pass a last
+`{ expiresAt }`; from that moment on, checks treat the permission as gone:
+
+```ts
+await user.givePermissionTo('customers.impersonate', { expiresAt: new Date(Date.now() + 2 * 3_600_000) })
+
+await user.getDirectPermissionAssignments() // [{ permission: { name: 'customers.impersonate', ... }, expiresAt: ... }]
+```
+
+Giving it again sets a new end (the latest call wins); without `expiresAt` it becomes permanent. Permissions the
+subject has through a role are not affected. See [Temporary access](/basic-usage/temporary-access).
+
 ## Syncing
 
 `syncPermissions()` replaces all of the subject's direct permissions with the given list. Permissions it gets through roles are not touched.

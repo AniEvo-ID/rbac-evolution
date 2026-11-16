@@ -4,7 +4,7 @@ import type { Permission, PermissionInput } from './types'
 import { wildcardImplies } from './wildcard'
 
 /** Options of {@link Rbac.subjectsWithPermission}. */
-export interface SubjectsWithPermissionOptions extends ScopeOptions {
+export interface SubjectsWithPermissionOptions<G extends string = string> extends ScopeOptions<G> {
   /**
    * With `wildcard: true`, also return subjects whose granted permission is a wildcard that implies one of the
    * given names (`articles.*` or `*` for `articles.edit`), directly or through a role. The names then don't need

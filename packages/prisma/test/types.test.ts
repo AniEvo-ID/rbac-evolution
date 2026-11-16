@@ -17,6 +17,7 @@ import {
   type PrismaRbacRoleHasPermissionDelegate,
 } from '../src'
 import type { Prisma as SqlitePrisma, PrismaClient as SqliteClient } from './generated'
+import type { PrismaClient as LegacyClient } from './generated-legacy'
 import type { Prisma as MysqlPrisma, PrismaClient as MysqlClient } from './generated-mysql'
 import type { Prisma as PgPrisma, PrismaClient as PgClient } from './generated-pg'
 
@@ -62,6 +63,9 @@ describe('prisma: types', () => {
     expectTypeOf<SqliteClient>().toMatchTypeOf<PrismaRbacClient>()
     expectTypeOf<PgClient>().toMatchTypeOf<PrismaRbacClient>()
     expectTypeOf<MysqlClient>().toMatchTypeOf<PrismaRbacClient>()
+    // A client generated from the 1.1 models (no `expiresAt`) still fits: 1.2 added no field to these types.
+    expectTypeOf<LegacyClient>().not.toBeAny()
+    expectTypeOf<LegacyClient>().toMatchTypeOf<PrismaRbacClient>()
 
     // `prisma.$transaction(async (tx) => ...)`: no `$transaction` on `tx`
     expectTypeOf<SqlitePrisma.TransactionClient>().toMatchTypeOf<PrismaRbacClient>()
@@ -109,8 +113,9 @@ describe('prisma: types', () => {
     expect(typeof _bad).toBe('function')
   })
 
-  it('PrismaAdapterOptions: skipDuplicates, exactOptionalPropertyTypes', () => {
-    expectTypeOf<PrismaAdapterOptions>().toEqualTypeOf<{ skipDuplicates?: boolean }>()
+  it('PrismaAdapterOptions: skipDuplicates, expiry, exactOptionalPropertyTypes', () => {
+    expectTypeOf<PrismaAdapterOptions>().toEqualTypeOf<{ skipDuplicates?: boolean; expiry?: boolean }>()
+    expectTypeOf(PrismaAdapter).toBeConstructibleWith(fakeClient(), { expiry: true })
     expectTypeOf(PrismaAdapter).toBeConstructibleWith(fakeClient())
     expectTypeOf(PrismaAdapter).toBeConstructibleWith(fakeClient(), {})
     expectTypeOf(PrismaAdapter).toBeConstructibleWith(fakeClient(), { skipDuplicates: true })

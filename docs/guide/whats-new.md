@@ -4,6 +4,22 @@ The highlights of each minor release. Every package shares one version number, s
 with `1.x` of all the others. Full details are in the
 [changelog](https://github.com/AniEvo-ID/rbac-evolution/blob/main/packages/core/CHANGELOG.md).
 
+## 1.2
+
+- **Typed names per guard.** `createRbac<{ guards: { web: {...}; api: {...} }; defaultGuard: 'web' }>()` types the
+  roles and permissions of each guard, and every name is checked in the guard you work in:
+  `rbac.for(key, { guard: 'api' }).can('api-keys.manage')` is a type error when `api-keys.manage` is a `web`
+  permission. `sync()` checks each block against its own guard. Flat configs keep their meaning. See
+  [Typed names: names per guard](/basic-usage/typed-names#names-per-guard).
+- **Route guards narrow too.** `createGuards<AppRbac, 'api'>()`, `createRbacDecorators<AppRbac, 'api'>()`,
+  `createNextRbac({ rbac, guard: 'api' })` and `createRbacServer({ rbac, guard: 'api' })` take the names of the
+  request's guard, a route's `{ guard }` option those of that guard, and `isRoleName()` / `isPermissionName()` take
+  `{ guard }` (with `names.guards`). See [Multiple guards](/basic-usage/multiple-guards#typed-names-per-guard).
+- **Temporary access.** `assignRole()`, `givePermissionTo()` and the syncs take `{ expiresAt }`; from then on every
+  check, query, snapshot and cache entry treats the link as gone, and `rbac.pruneExpired()` cleans up. It is opt-in
+  per adapter (`{ expiry: true }`, plus one nullable column), so 1.1 databases keep working unchanged. See
+  [Temporary access](/basic-usage/temporary-access).
+
 ## 1.1: lifecycle, typed requests and audit
 
 No breaking changes: every addition is opt-in, and code written for 1.0 behaves the same.

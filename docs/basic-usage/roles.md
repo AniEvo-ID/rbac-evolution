@@ -43,6 +43,20 @@ await user.removeRole('editor')
 
 Assigning a role the subject already has is a no-op. An unknown role name throws `RoleDoesNotExist`.
 
+### Temporary roles
+
+Give a role until a given moment with a last `{ expiresAt }` argument (1.2, needs an adapter created with
+`{ expiry: true }`). From that moment on, `hasRole()`, `can()` and every other check treat it as gone:
+
+```ts
+await user.assignRole('on-call', { expiresAt: new Date('2026-03-02T08:00:00Z') })
+
+await user.getRoleAssignments() // [{ role: { name: 'on-call', ... }, expiresAt: 2026-03-02T08:00:00.000Z }]
+```
+
+Assigning the role again sets a new end, or makes it permanent without `expiresAt`: the latest call wins. See
+[Temporary access](/basic-usage/temporary-access) for the details, `syncRoles()` included.
+
 ### Syncing roles
 
 `syncRoles()` makes the given roles the subject's only roles:

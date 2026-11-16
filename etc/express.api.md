@@ -4,7 +4,7 @@
 
 ## `@anievo-id/rbac-evolution-express`
 
-25 exports.
+28 exports.
 
 ```ts
 // Guard: type
@@ -33,7 +33,7 @@ type GuardKind = RequirementKind;
 type GuardNames = RequirementNames;
 
 // GuardRequest: type
-type GuardRequest<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes> = DefaultRbacTypes extends TypesOf<T> ? Request : RbacRequest<T>;
+type GuardRequest<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes, G extends string = DefaultGuardName<TypesOf<T>>> = DefaultRbacTypes extends TypesOf<T> ? Request : RbacRequest<T, Request, G>;
 
 // Guards: interface
 interface Guards<T extends RbacTypeConfig = DefaultRbacTypes> {
@@ -43,6 +43,11 @@ interface Guards<T extends RbacTypeConfig = DefaultRbacTypes> {
     canAny: Guard<PermissionName<T>, RouteGuardOptions<GuardRequest<T>>>;
     canAll: Guard<PermissionName<T>, RouteGuardOptions<GuardRequest<T>>>;
 }
+
+// GuardsFor: type
+type GuardsFor<T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>> = T extends {
+    guards: object;
+} ? ScopedGuards<T, G> : Guards<T>;
 
 // PermissionGuardOptions: interface
 interface PermissionGuardOptions<Req = Request> extends RouteGuardOptions<Req> {
@@ -68,8 +73,8 @@ interface RbacRegister {
 }
 
 // RbacRequest: type
-type RbacRequest<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes, Req = Request> = Omit<Req, 'rbac'> & {
-    rbac?: SubjectRbac<TypesOf<T>> | null | undefined;
+type RbacRequest<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes, Req = Request, G extends string = DefaultGuardName<TypesOf<T>>> = Omit<Req, 'rbac'> & {
+    rbac?: SubjectRbac<TypesOf<T>, ScopedGuardName<TypesOf<T>, G>> | null | undefined;
 };
 
 // RegisteredRbacTypes: type
@@ -90,6 +95,18 @@ interface RouteGuardOptions<Req = Request> extends GuardHandlers<Req> {
     guard?: string | undefined;
 }
 
+// ScopedGuard: type
+type ScopedGuard<T extends RbacTypeConfig, G extends string, K extends GuardKind, O> = <const A extends readonly (GuardNames | O)[]>(...args: A & GuardRequirementArgs<A, T, K, G, O>) => RequestHandler;
+
+// ScopedGuards: interface
+interface ScopedGuards<T extends RbacTypeConfig, G extends string = DefaultGuardName<T>> {
+    requirePermission: ScopedGuard<T, G, 'permission', PermissionGuardOptions<GuardRequest<T, G>>>;
+    requireRole: ScopedGuard<T, G, 'role', RoleGuardOptions<GuardRequest<T, G>>>;
+    requireRoleOrPermission: ScopedGuard<T, G, 'role_or_permission', RoleOrPermissionGuardOptions<GuardRequest<T, G>>>;
+    canAny: ScopedGuard<T, G, 'permission', RouteGuardOptions<GuardRequest<T, G>>>;
+    canAll: ScopedGuard<T, G, 'permission', RouteGuardOptions<GuardRequest<T, G>>>;
+}
+
 // asyncHandler: function
 declare function asyncHandler(fn: (req: Request, res: Response, next: NextFunction) => Promise<void>): RequestHandler;
 
@@ -100,7 +117,7 @@ declare const canAll: Guard<string, RouteGuardOptions>;
 declare const canAny: Guard<string, RouteGuardOptions>;
 
 // createGuards: function
-declare function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes>(defaults?: GuardHandlers<GuardRequest<TypesOf<T>>>): Guards<TypesOf<T>>;
+declare function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes, G extends GuardName<TypesOf<T>> = DefaultGuardName<TypesOf<T>> & GuardName<TypesOf<T>>>(defaults?: GuardHandlers<GuardRequest<TypesOf<T>, G>>): GuardsFor<TypesOf<T>, G>;
 
 // rbacMiddleware: function
 declare function rbacMiddleware<T extends RbacTypeConfig = DefaultRbacTypes>(options: RbacMiddlewareOptions<T>): RequestHandler;

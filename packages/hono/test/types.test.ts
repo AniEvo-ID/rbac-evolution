@@ -28,6 +28,7 @@ import {
   type GuardKind,
   type GuardNames,
   type Guards,
+  type GuardsFor,
   type PermissionGuardOptions,
   type RbacEnv,
   rbacMiddleware,
@@ -40,6 +41,8 @@ import {
   type RoleGuardOptions,
   type RoleOrPermissionGuardOptions,
   type RouteGuardOptions,
+  type ScopedGuard,
+  type ScopedGuards,
 } from '../src'
 
 const rbac = createRbac({ adapter: new MemoryAdapter() })
@@ -479,5 +482,99 @@ describe('hono types: per-route guard option', () => {
     }
     expectTypeOf(check).toBeFunction()
     expectTypeOf<RouteGuardOptions['guard']>().toEqualTypeOf<string | undefined>()
+  })
+})
+
+// ------------------------------------------------------------------------------------- per-guard names (1.2)
+
+type GuardedRbac = {
+  guards: {
+    web: { roles: 'admin' | 'editor'; permissions: 'articles.edit' | 'api-keys.manage' }
+    api: { roles: 'read-only' | 'full-access'; permissions: 'orders.read' | 'orders.write' }
+  }
+  defaultGuard: 'web'
+}
+
+describe('hono types: per-guard names', () => {
+  const guarded = createRbac<GuardedRbac>({ adapter: new MemoryAdapter() })
+  const engine = createRbac<AppTypes>({ adapter: new MemoryAdapter() })
+
+  it('returns ScopedGuards for a per-guard config, and the 1.1 Guards otherwise', () => {
+    expectTypeOf(createGuards<GuardedRbac>()).toEqualTypeOf<ScopedGuards<GuardedRbac, 'web'>>()
+    expectTypeOf(createGuards<typeof guarded, 'api'>()).toEqualTypeOf<ScopedGuards<GuardedRbac, 'api'>>()
+    expectTypeOf(createGuards<AppTypes>()).toEqualTypeOf<Guards<AppTypes>>()
+    expectTypeOf(createGuards<AppTypes, 'api'>()).toEqualTypeOf<Guards<AppTypes>>()
+    expectTypeOf<GuardsFor<AppTypes>>().toEqualTypeOf<Guards<AppTypes>>()
+    expectTypeOf<GuardsFor>().toEqualTypeOf<Guards>()
+    expectTypeOf(createGuards<GuardedRbac>().canAny).toEqualTypeOf<
+      ScopedGuard<GuardedRbac, 'web', 'permission', RouteGuardOptions<GuardHandlerContext<GuardedRbac, 'web'>>>
+    >()
+  })
+
+  it("checks names against the request's guard, or the route's `guard` option", () => {
+    function routes() {
+      const web = createGuards<GuardedRbac>()
+      const api = createGuards<GuardedRbac, 'api'>()
+      const anyGuard: string = 'api'
+
+      web.requirePermission('articles.edit|api-keys.manage')
+      web.requirePermission('orders.read', { guard: 'api' })
+      web.requireRole('read-only', { guard: 'api', all: true })
+      web.requireRoleOrPermission('full-access|orders.write', { guard: 'api' })
+      api.requirePermission('orders.read', 'orders.write', { any: true })
+      api.canAll('orders.read')
+      api.requirePermission('api-keys.manage', { guard: 'web' })
+      web.requirePermission('orders.read', { guard: anyGuard })
+
+      // @ts-expect-error -- `api-keys.manage` is a `web` permission
+      api.requirePermission('api-keys.manage')
+      // @ts-expect-error -- `api-keys.manage` is a `web` permission
+      web.requirePermission('api-keys.manage', { guard: 'api' })
+      // @ts-expect-error -- `admin` is a `web` role
+      api.requireRole('admin')
+      // @ts-expect-error -- not a typed guard
+      web.requirePermission('orders.read', { guard: 'apii' })
+      // @ts-expect-error -- not a typed guard
+      createGuards<GuardedRbac, 'apii'>()
+    }
+    expectTypeOf(routes).toBeFunction()
+  })
+
+  it("types c.var.rbac with the middleware's guard", () => {
+    expectTypeOf(rbacMiddleware({ rbac: guarded, getSubject: guest })).toEqualTypeOf<
+      MiddlewareHandler<Env & RbacEnv<GuardedRbac, 'web'>>
+    >()
+    expectTypeOf(rbacMiddleware({ rbac: guarded, guard: 'api', getSubject: guest })).toEqualTypeOf<
+      MiddlewareHandler<Env & RbacEnv<GuardedRbac, 'api'>>
+    >()
+    expectTypeOf<RbacVariables<GuardedRbac, 'api'>['rbac']>().toEqualTypeOf<SubjectRbac<GuardedRbac, 'api'> | null>()
+    expectTypeOf<RbacVariables<GuardedRbac>['rbac']>().toEqualTypeOf<SubjectRbac<GuardedRbac, 'web'> | null>()
+    // Flat configs: unchanged, whatever the guard.
+    expectTypeOf<RbacVariables<AppTypes, 'api'>['rbac']>().toEqualTypeOf<SubjectRbac<AppTypes> | null>()
+    expectTypeOf(rbacMiddleware({ rbac: engine, guard: 'api', getSubject: guest })).toEqualTypeOf<
+      MiddlewareHandler<Env & RbacEnv<AppTypes>>
+    >()
+
+    function routes() {
+      new Hono()
+        .use(rbacMiddleware({ rbac: guarded, guard: 'api', getSubject: guest }))
+        .get('/orders', createGuards<GuardedRbac, 'api'>().requirePermission('orders.read'), async (c) => {
+          await c.var.rbac?.can('orders.write')
+          // @ts-expect-error -- `c.var.rbac` is in guard `api`
+          await c.var.rbac?.can('articles.edit')
+          return c.json({})
+        })
+      // @ts-expect-error -- not a typed guard
+      rbacMiddleware({ rbac: guarded, guard: 'apii', getSubject: guest })
+      createGuards<GuardedRbac, 'api'>({
+        onForbidden: async (c) => {
+          await c.var.rbac?.hasRole('read-only')
+          // @ts-expect-error -- the request is in guard `api`
+          await c.var.rbac?.hasRole('admin')
+          return c.text('nope', 403)
+        },
+      })
+    }
+    expectTypeOf(routes).toBeFunction()
   })
 })

@@ -9,6 +9,7 @@
 ```ts
 // PrismaAdapter: class
 declare class PrismaAdapter implements RbacAdapter {
+    readonly supportsExpiry: boolean;
     constructor(prisma: PrismaRbacClient, options?: PrismaAdapterOptions);
     createPermission(data: {
         name: string;
@@ -27,21 +28,25 @@ declare class PrismaAdapter implements RbacAdapter {
     attachRolePermissions(roleId: Id, permissionIds: readonly Id[]): Promise<void>;
     detachRolePermissions(roleId: Id, permissionIds?: readonly Id[]): Promise<void>;
     getSubjectRoleIds(subject: Subject, teamId: TeamId): Promise<Id[]>;
-    attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId): Promise<void>;
+    attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId, options?: AttachLinkOptions): Promise<void>;
     detachSubjectRoles(subject: Subject, roleIds: readonly Id[] | undefined, teamId: TeamId): Promise<void>;
     getSubjectPermissionIds(subject: Subject, teamId: TeamId): Promise<Id[]>;
-    attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId): Promise<void>;
+    attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId, options?: AttachLinkOptions): Promise<void>;
     detachSubjectPermissions(subject: Subject, permissionIds: readonly Id[] | undefined, teamId: TeamId): Promise<void>;
-    getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]>;
-    getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]>;
+    getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId, options?: ActiveLinkOptions): Promise<Id[]>;
+    getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId, options?: ActiveLinkOptions): Promise<Id[]>;
     getSubjectLinks(subject: Subject): Promise<SubjectLinks>;
     getTeamLinks(teamId: Id): Promise<SubjectLinks>;
     detachTeamLinks(teamId: Id): Promise<void>;
+    getSubjectRoleLinks(subject: Subject, teamId: TeamId): Promise<SubjectRoleLink[]>;
+    getSubjectPermissionLinks(subject: Subject, teamId: TeamId): Promise<SubjectPermissionLink[]>;
+    deleteExpiredLinks(now: Date): Promise<DeletedLinkCounts>;
 }
 
 // PrismaAdapterOptions: interface
 interface PrismaAdapterOptions {
     skipDuplicates?: boolean | undefined;
+    expiry?: boolean | undefined;
 }
 
 // PrismaRbacClient: interface

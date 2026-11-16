@@ -37,6 +37,44 @@ export function runMongoSuite(name: string, uri: () => string | Promise<string>,
     return new MongooseRbacAdapter(models)
   })
 
+  runAdapterTests(`${name} (expiry)`, async () => {
+    await clear(models)
+    return new MongooseRbacAdapter(models, { expiry: true })
+  })
+
+  describe(`${name}: expiry`, () => {
+    it('stores expiresAt as a Date; without { expiry: true } never writes the field', async () => {
+      await clear(models)
+      const adapter = new MongooseRbacAdapter(models, { expiry: true })
+      const r = await adapter.createRole({ name: 'r', guardName: 'web', teamId: null })
+      const at = new Date('2030-01-01T00:00:00.123Z')
+      await adapter.attachSubjectRoles({ type: 'user', id: 1 }, [r.id], null, { expiresAt: at })
+      const doc = await models.ModelHasRole.collection.findOne({ subjectId: '1' })
+      expect(doc?.['expiresAt']).toEqual(at)
+
+      await new MongooseRbacAdapter(models).attachSubjectRoles({ type: 'user', id: 2 }, [r.id], null)
+      const plain = await models.ModelHasRole.collection.findOne({ subjectId: '2' })
+      expect(plain).not.toHaveProperty('expiresAt')
+      // A document without the field (written before 1.2) is permanent.
+      expect(await adapter.getSubjectRoleLinks({ type: 'user', id: 2 }, null)).toMatchObject([{ expiresAt: null }])
+      expect(await adapter.getSubjectIdsWithRoles('user', [r.id], null, { now: new Date('2031-01-01') })).toEqual(['2'])
+    })
+
+    it('refuses { expiry: true } with models that have no expiresAt field', () => {
+      const schema = new mongoose.Schema({ roleId: mongoose.Schema.Types.ObjectId }, { versionKey: false })
+      const legacy = conn.model(`rbac:legacy_${Date.now()}`, schema)
+      expect(() => new MongooseRbacAdapter({ ...models, ModelHasRole: legacy as never }, { expiry: true })).toThrow(
+        /expiresAt/,
+      )
+      expect(() => new MongooseRbacAdapter({ ...models, ModelHasRole: legacy as never })).not.toThrow()
+    })
+
+    it('mongooseAdapter({ expiry: true }) passes the option on', async () => {
+      expect(mongooseAdapter({ connection: conn, prefix, expiry: true }).supportsExpiry).toBe(true)
+      expect(mongooseAdapter({ connection: conn, prefix }).supportsExpiry).toBe(false)
+    })
+  })
+
   describe(`${name}: specifics`, () => {
     it('uses prefixed collections and reuses registered models', async () => {
       await clear(models)

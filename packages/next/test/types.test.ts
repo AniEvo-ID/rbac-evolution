@@ -10,6 +10,8 @@ import type {
   ForbiddenReason,
   NextRbac,
   NextRbacOptions,
+  NextRbacFor,
+  ScopedNextRbac,
   RequireOptions,
   WithRbacOptions,
 } from '../src'
@@ -412,3 +414,67 @@ type NextRequestLike = Request & { nextUrl: URL; cookies: { get(name: string): u
 function withNames<Args extends unknown[], R>(action: (...args: Args) => MaybePromise<R>) {
   return nextRbac.withPermission('articles.edit', action)
 }
+
+// ------------------------------------------------------------------------------------- per-guard names (1.2)
+
+describe('per-guard names', () => {
+  type GuardedRbac = {
+    guards: {
+      web: { roles: 'admin' | 'editor'; permissions: 'articles.edit' | 'api-keys.manage' }
+      api: { roles: 'read-only' | 'full-access'; permissions: 'orders.read' | 'orders.write' }
+    }
+    defaultGuard: 'web'
+  }
+  const guarded = createRbac<GuardedRbac>({ adapter: new MemoryAdapter() })
+  const web = createNextRbac({ rbac: guarded, getSubject: () => null })
+  const api = createNextRbac({ rbac: guarded, guard: 'api', getSubject: () => null })
+
+  it('takes the guard of the helpers from the `guard` option', () => {
+    expectTypeOf(web).toEqualTypeOf<ScopedNextRbac<GuardedRbac, 'web'>>()
+    expectTypeOf(api).toEqualTypeOf<ScopedNextRbac<GuardedRbac, 'api'>>()
+    // Flat configs: unchanged, whatever the guard.
+    expectTypeOf(
+      createNextRbac({ rbac: createRbac<AppTypes>({ adapter: new MemoryAdapter() }), guard: 'api', getSubject: () => null }),
+    ).toEqualTypeOf<NextRbac<AppTypes>>()
+    expectTypeOf<NextRbacFor<AppTypes>>().toEqualTypeOf<NextRbac<AppTypes>>()
+    expectTypeOf<NextRbacFor>().toEqualTypeOf<NextRbac>()
+    // @ts-expect-error -- not a typed guard
+    createNextRbac({ rbac: guarded, guard: 'apii', getSubject: () => null })
+  })
+
+  it('checks names against the guard of the call', () => {
+    async function check() {
+      await web.can('articles.edit')
+      await web.can('orders.read', { guard: 'api' })
+      await api.can('orders.read')
+      await api.hasRole(['read-only', 'full-access'])
+      await web.hasAllRoles('full-access', { guard: 'api' })
+      await api.requirePermission('orders.write')
+      await web.requirePermission('orders.read|orders.write', { guard: 'api', all: true })
+      await web.requireRoleOrPermission('admin|articles.edit')
+      await web.authorize({ role: 'read-only' }, { guard: 'api' })
+      web.withPermission('orders.read', async () => 1, { guard: 'api' })
+      web.withRole('admin', async () => 1)
+      web.withRbac(async () => new Response(), { permission: 'orders.read', guard: 'api' })
+      api.withRbac(async () => new Response(), { role: 'admin', guard: 'web' })
+      const anyGuard: string = 'api'
+      await web.can('orders.read', { guard: anyGuard })
+
+      // @ts-expect-error -- `api-keys.manage` is a `web` permission
+      await api.can('api-keys.manage')
+      // @ts-expect-error -- `api-keys.manage` is a `web` permission
+      await web.can('api-keys.manage', { guard: 'api' })
+      // @ts-expect-error -- `admin` is a `web` role
+      await web.requireRole('admin', { guard: 'api' })
+      // @ts-expect-error -- `orders.read` is an `api` permission
+      await web.authorize({ permission: 'orders.read' })
+      // @ts-expect-error -- `orders.read` is an `api` permission
+      web.withRbac(async () => new Response(), { permission: 'orders.read' })
+      // @ts-expect-error -- not a typed guard
+      web.withRbac(async () => new Response(), { permission: 'orders.read', guard: 'apii' })
+      // @ts-expect-error -- not a typed guard
+      await web.can('orders.read', { guard: 'apii' })
+    }
+    expectTypeOf(check).toBeFunction()
+  })
+})

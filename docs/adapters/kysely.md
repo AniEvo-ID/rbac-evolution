@@ -101,12 +101,66 @@ The adapter reads the unprefixed tables unless you pass the same `prefix` to `ky
 | `id` | `serial` | `integer auto_increment` | `integer autoincrement` | `integer identity` |
 | `name`, `guard_name`, `subject_type`, `subject_id`, `team_id` | `text` | `varchar(255)` utf8mb4, `utf8mb4_bin` | `text` | `nvarchar(255)`, `Latin1_General_100_BIN2` |
 | `created_at`, `updated_at` | `timestamptz` | `datetime` | `integer` (unix seconds) | `datetime2` |
+| `expires_at` (optional, [expiry](#expiry-1-2)) | `timestamptz` | `datetime(3)` | `integer` (unix milliseconds) | `datetime2(3)` |
 
 On MySQL and SQL Server the string columns use a binary collation (`utf8mb4_bin`, `Latin1_General_100_BIN2`), so `'Edit'` and `'edit'` are different names, as on PostgreSQL and SQLite.
 
 ::: warning SQL Server tables created before 0.6.6
 Older versions created the SQL Server columns with the database's default collation, which is usually case-insensitive: `'Edit'` and `'edit'` were treated as the same name. `createRbacTables` skips tables that already exist, so recreate them (or change the column collation) to get case-sensitive names.
 :::
+
+## Expiry (1.2)
+
+[Temporary access](/basic-usage/temporary-access) stores when a role assignment or direct permission ends in a
+nullable `expires_at` column of `model_has_roles` and `model_has_permissions`. It is **off by default**:
+`createRbacTables` creates the 1.1 tables, and the adapter never selects or writes `expires_at`, so a 1.1 database
+keeps working after the upgrade, unchanged.
+
+To turn it on in an existing app:
+
+1. Add the column with the migration helper, after your existing `rbacMigration()`. Existing rows get `NULL`, which
+   means permanent:
+
+   ```ts
+   import { Migrator } from 'kysely'
+   import { rbacExpiryMigration, rbacMigration } from '@anievo-id/rbac-evolution-kysely'
+
+   const migrator = new Migrator({
+     db,
+     provider: {
+       async getMigrations() {
+         return { '0001_rbac': rbacMigration(), '0002_rbac_expiry': rbacExpiryMigration(), ...yourMigrations }
+       },
+     },
+   })
+
+   await migrator.migrateToLatest()
+   ```
+
+   In a migration file, call the helpers yourself. Both skip tables that already have (or no longer have) the
+   column, so they are safe to run twice:
+
+   ```ts
+   // migrations/0002_rbac_expiry.ts
+   import type { Kysely } from 'kysely'
+   import { addRbacExpiryColumns, dropRbacExpiryColumns } from '@anievo-id/rbac-evolution-kysely'
+
+   export const up = (db: Kysely<any>) => addRbacExpiryColumns(db)
+   export const down = (db: Kysely<any>) => dropRbacExpiryColumns(db) // the expiries are lost
+   ```
+
+   A new database can create the column right away with `createRbacTables(db, { expiry: true })`. All three take
+   the same `{ dialect, prefix }` options as `createRbacTables`.
+
+2. Create the adapter with the option:
+
+   ```ts
+   const adapter = kyselyAdapter(db, { expiry: true })
+   ```
+
+Without the option, an `expiresAt` throws `EXPIRY_NOT_SUPPORTED` and writes nothing. With the option but no column,
+every query on the link tables fails, so migrate first. `RbacDatabase` doesn't list `expires_at`; add it to your own
+table types if you query it.
 
 ## Typing your `Database`
 
@@ -131,7 +185,7 @@ The table interfaces are also exported one by one: `PermissionsTable`, `RolesTab
 
 <!-- doc-test: skip -->
 ```ts
-kyselyAdapter(db, options?: { dialect?: RbacDialect; prefix?: string }): KyselyRbacAdapter
+kyselyAdapter(db, options?: { dialect?: RbacDialect; prefix?: string; expiry?: boolean }): KyselyRbacAdapter
 ```
 
 `RbacDialect` is `'postgres' | 'mysql' | 'sqlite' | 'mssql'`.
@@ -197,6 +251,7 @@ await user.can('edit articles') // true
 | --- | --- |
 | `kyselyAdapter(db, options?)`, `KyselyRbacAdapter` | function / class |
 | `createRbacTables(db, options?)`, `dropRbacTables(db, options?)`, `rbacMigration(options?)` | functions |
+| `addRbacExpiryColumns(db, options?)`, `dropRbacExpiryColumns(db, options?)`, `rbacExpiryMigration(options?)` | functions |
 | `detectDialect(db)`, `tableNames(options?)` | functions |
 | `RbacDatabase<Prefix>`, `PermissionsTable`, `RolesTable`, `RoleHasPermissionsTable`, `ModelHasRolesTable`, `ModelHasPermissionsTable` | types |
 | `RbacDialect`, `KyselyAdapterOptions`, `RbacMigrationOptions`, `RbacTableOptions`, `RbacTableNames`, `RbacTimestamp` | types |
@@ -216,6 +271,9 @@ await user.can('edit articles') // true
 - **New ids** come from `RETURNING` on PostgreSQL and SQLite (3.35 or later), `OUTPUT` on SQL Server, and the driver's insert id on MySQL.
 - **Link cleanup.** `deleteRole` and `deletePermission` delete the link rows themselves before deleting the row, so cleanup works even when SQLite foreign keys are off (the default).
 - **Timestamps.** The adapter never writes or returns `created_at` / `updated_at`. They keep their default values.
+- **Expiry writes.** With `{ expiry: true }`, an attach inserts the missing links with their `expires_at`, then
+  updates `expires_at` of the links the exact subject already held (the latest call wins). `pruneExpired()` is one
+  `DELETE ... WHERE expires_at <= now` per table. On SQLite the column holds unix milliseconds.
 - **SQL Server** is covered like the other dialects: the full conformance suite, including exact matching of names and subject ids, runs against SQL Server 2022 in CI. SQL Server ignores trailing spaces when it compares text; the adapter compares every row again in JavaScript, so this can't mix up subjects.
 
 ## Transactions

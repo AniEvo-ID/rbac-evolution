@@ -42,6 +42,8 @@ import {
   type RbacDecorator,
   type RbacDecoratorOptions,
   type RbacDecorators,
+  type RbacDecoratorsFor,
+  type ScopedRbacDecorators,
   type RbacModuleOptions,
   type RbacRequirement,
   type RequirementKind,
@@ -439,6 +441,77 @@ describe('nestjs types: per-route guard option', () => {
       typed.RequireRoles('admn', { guard: 'api' })
       // @ts-expect-error -- options must be the last argument
       CanAll({ guard: 'api' }, 'a')
+    }
+    expectTypeOf(check).toBeFunction()
+  })
+})
+
+// ------------------------------------------------------------------------------------- per-guard names (1.2)
+
+describe('nestjs types: per-guard names', () => {
+  type GuardedRbac = {
+    guards: {
+      web: { roles: 'admin' | 'editor'; permissions: 'articles.edit' | 'api-keys.manage' }
+      api: { roles: 'read-only' | 'full-access'; permissions: 'orders.read' | 'orders.write' }
+    }
+    defaultGuard: 'web'
+  }
+  type AppTypes = { permissions: 'edit articles' | 'delete articles'; roles: 'admin' | 'writer' }
+  const guarded = createRbac<GuardedRbac>({ adapter: new MemoryAdapter() })
+
+  it('returns ScopedRbacDecorators for a per-guard config, and the 1.1 RbacDecorators otherwise', () => {
+    expectTypeOf(createRbacDecorators<GuardedRbac>()).toEqualTypeOf<ScopedRbacDecorators<GuardedRbac, 'web'>>()
+    expectTypeOf(createRbacDecorators<typeof guarded, 'api'>()).toEqualTypeOf<ScopedRbacDecorators<GuardedRbac, 'api'>>()
+    expectTypeOf(createRbacDecorators<AppTypes>()).toEqualTypeOf<RbacDecorators<AppTypes>>()
+    expectTypeOf(createRbacDecorators<AppTypes, 'api'>()).toEqualTypeOf<RbacDecorators<AppTypes>>()
+    expectTypeOf<RbacDecoratorsFor>().toEqualTypeOf<RbacDecorators>()
+    expectTypeOf(createRbacDecorators<GuardedRbac>().CanAll).returns.toEqualTypeOf<RbacDecorator>()
+  })
+
+  it("checks names against the subject's guard, or the decorator's `guard` option", () => {
+    const web = createRbacDecorators<GuardedRbac>()
+    const api = createRbacDecorators<GuardedRbac, 'api'>()
+    function declare() {
+      @Controller('orders')
+      @api.RequireRoles('read-only|full-access')
+      class OrdersController {
+        @Get('a')
+        @api.RequirePermissions('orders.read')
+        @api.CanAny('orders.read', 'orders.write')
+        @web.RequirePermissions('orders.write', { guard: 'api' })
+        @web.RequireRoles('full-access', { guard: 'api', all: true })
+        @web.RequireRoleOrPermission('admin|articles.edit')
+        @api.RequirePermissions('api-keys.manage', { guard: 'web' })
+        a() {}
+      }
+      return OrdersController
+    }
+    function invalid() {
+      // @ts-expect-error -- `api-keys.manage` is a `web` permission
+      api.RequirePermissions('api-keys.manage')
+      // @ts-expect-error -- `api-keys.manage` is a `web` permission
+      web.RequirePermissions('api-keys.manage', { guard: 'api' })
+      // @ts-expect-error -- `admin` is a `web` role
+      api.RequireRoles('admin')
+      // @ts-expect-error -- not a typed guard
+      web.CanAll('orders.read', { guard: 'apii' })
+      // @ts-expect-error -- not a typed guard
+      createRbacDecorators<GuardedRbac, 'apii'>()
+    }
+    expectTypeOf(declare).toBeFunction()
+    expectTypeOf(invalid).toBeFunction()
+  })
+
+  it('getRbac<T, G>() types the subject with the names of the guard', () => {
+    expectTypeOf(getRbac<GuardedRbac>).returns.toEqualTypeOf<SubjectRbac<GuardedRbac, 'web'> | null>()
+    expectTypeOf(getRbac<typeof guarded, 'api'>).returns.toEqualTypeOf<SubjectRbac<GuardedRbac, 'api'> | null>()
+    // Flat configs: unchanged, whatever the guard.
+    expectTypeOf(getRbac<AppTypes, 'api'>).returns.toEqualTypeOf<SubjectRbac<AppTypes> | null>()
+    async function check(context: ExecutionContext) {
+      const access = getRbac<GuardedRbac, 'api'>(context)
+      await access?.can('orders.read')
+      // @ts-expect-error -- `articles.edit` is a `web` permission
+      await access?.can('articles.edit')
     }
     expectTypeOf(check).toBeFunction()
   })

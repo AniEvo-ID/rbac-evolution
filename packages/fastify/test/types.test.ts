@@ -32,6 +32,7 @@ import {
   type GuardNames,
   type GuardRequest,
   type Guards,
+  type GuardsFor,
   type PermissionGuardOptions,
   type RbacHook,
   RbacMiddlewareMissingError,
@@ -46,6 +47,8 @@ import {
   type RoleGuardOptions,
   type RoleOrPermissionGuardOptions,
   type RouteGuardOptions,
+  type ScopedGuard,
+  type ScopedGuards,
 } from '../src'
 
 const rbac = createRbac({ adapter: new MemoryAdapter() })
@@ -464,5 +467,90 @@ describe('fastify types: per-route guard option', () => {
     }
     expectTypeOf(check).toBeFunction()
     expectTypeOf<RouteGuardOptions['guard']>().toEqualTypeOf<string | undefined>()
+  })
+})
+
+// ------------------------------------------------------------------------------------- per-guard names (1.2)
+
+type GuardedRbac = {
+  guards: {
+    web: { roles: 'admin' | 'editor'; permissions: 'articles.edit' | 'api-keys.manage' }
+    api: { roles: 'read-only' | 'full-access'; permissions: 'orders.read' | 'orders.write' }
+  }
+  defaultGuard: 'web'
+}
+
+describe('fastify types: per-guard names (createGuards<T, G>())', () => {
+  const guarded = createRbac<GuardedRbac>({ adapter: new MemoryAdapter() })
+
+  it('returns ScopedGuards for a per-guard config, and the 1.1 Guards otherwise', () => {
+    expectTypeOf(createGuards<GuardedRbac>()).toEqualTypeOf<ScopedGuards<GuardedRbac, 'web'>>()
+    expectTypeOf(createGuards<typeof guarded, 'api'>()).toEqualTypeOf<ScopedGuards<GuardedRbac, 'api'>>()
+    expectTypeOf(createGuards<AppTypes>()).toEqualTypeOf<Guards<AppTypes>>()
+    expectTypeOf(createGuards<AppTypes, 'api'>()).toEqualTypeOf<Guards<AppTypes>>()
+    expectTypeOf<GuardsFor<AppTypes>>().toEqualTypeOf<Guards<AppTypes>>()
+    expectTypeOf<GuardsFor>().toEqualTypeOf<Guards>()
+    expectTypeOf(createGuards<GuardedRbac>().requirePermission).toEqualTypeOf<
+      ScopedGuard<GuardedRbac, 'web', 'permission', PermissionGuardOptions<GuardRequest<GuardedRbac, 'web'>>>
+    >()
+  })
+
+  it("checks names against the request's guard, or the route's `guard` option", () => {
+    function routes() {
+      const web = createGuards<GuardedRbac>()
+      const api = createGuards<GuardedRbac, 'api'>()
+      const anyGuard: string = 'api'
+
+      web.requirePermission('articles.edit|api-keys.manage')
+      web.requireRole('admin', 'editor', { all: true })
+      web.requirePermission('orders.read', { guard: 'api' })
+      web.requireRole('read-only', { guard: 'api', all: true })
+      web.requireRoleOrPermission('full-access|orders.write', { guard: 'api' })
+      api.requirePermission('orders.read', 'orders.write', { any: true })
+      api.canAny(['orders.read', 'orders.write'])
+      api.canAll('orders.read')
+      api.requirePermission('api-keys.manage', { guard: 'web' })
+      // A non-literal guard: the names of every guard.
+      web.requirePermission('orders.read', { guard: anyGuard })
+
+      // @ts-expect-error -- `api-keys.manage` is a `web` permission
+      api.requirePermission('api-keys.manage')
+      // @ts-expect-error -- `api-keys.manage` is a `web` permission
+      web.requirePermission('api-keys.manage', { guard: 'api' })
+      // @ts-expect-error -- each part of a pipe list is checked in the route's guard
+      web.requirePermission('orders.read|articles.edit', { guard: 'api' })
+      // @ts-expect-error -- `admin` is a `web` role
+      api.requireRole('admin')
+      // @ts-expect-error -- `orders.read` is an `api` permission
+      web.canAny('orders.read', 'articles.edit')
+      // @ts-expect-error -- not a typed guard
+      web.requirePermission('orders.read', { guard: 'apii' })
+      // @ts-expect-error -- not a typed guard
+      createGuards<GuardedRbac, 'apii'>()
+      // @ts-expect-error -- not a name of any guard
+      web.requirePermission('orders.delete', { guard: anyGuard })
+    }
+    expectTypeOf(routes).toBeFunction()
+  })
+
+  it("types the handlers' request with the request's guard", () => {
+    expectTypeOf<GuardRequest<GuardedRbac>>().toEqualTypeOf<RbacRequest<GuardedRbac, FastifyRequest, 'web'>>()
+    expectTypeOf<RbacRequest<GuardedRbac, FastifyRequest, 'api'>['rbac']>().toEqualTypeOf<
+      SubjectRbac<GuardedRbac, 'api'> | null | undefined
+    >()
+    expectTypeOf<RbacRequest<GuardedRbac>['rbac']>().toEqualTypeOf<SubjectRbac<GuardedRbac, 'web'> | null | undefined>()
+    // Flat configs: unchanged, whatever the guard.
+    expectTypeOf<RbacRequest<AppTypes, FastifyRequest, 'api'>['rbac']>().toEqualTypeOf<
+      SubjectRbac<AppTypes> | null | undefined
+    >()
+
+    createGuards<GuardedRbac, 'api'>({
+      onForbidden: async (request, reply) => {
+        await request.rbac?.can('orders.read')
+        // @ts-expect-error -- the request is in guard `api`
+        await request.rbac?.can('articles.edit')
+        await reply.code(403).send()
+      },
+    })
   })
 })

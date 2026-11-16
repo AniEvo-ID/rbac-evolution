@@ -10,9 +10,11 @@ export { createRbac, Rbac, RoleRbac, SubjectRbac } from './rbac'
 export type { BeforeContext, BeforeHook, GuardOptions, RbacOptions, ScopeOptions } from './rbac'
 export type { RevokeAllOptions, SubjectTeamsOptions } from './bulk'
 export { isPermissionName, isRoleName } from './names'
-export type { RbacNames } from './names'
+export type { RbacGuardNames, RbacNames } from './names'
 export type {
+  GuardSyncDefinition,
   SyncDefinition,
+  SyncDefinitions,
   SyncOptions,
   SyncPermissionChange,
   SyncResult,
@@ -21,6 +23,7 @@ export type {
   SyncRoleUpdate,
 } from './sync'
 export type { SubjectsWithPermissionOptions } from './query'
+export type { ExpiryArgs, ExpiryOptions, PermissionAssignment, RoleAssignment } from './expiry'
 
 export type {
   ActorOptions,
@@ -43,6 +46,9 @@ export type {
 } from './events'
 
 export type {
+  ActiveLinkOptions,
+  AttachLinkOptions,
+  DeletedLinkCounts,
   FindPermissionsQuery,
   FindRolesQuery,
   RbacAdapter,
@@ -51,7 +57,7 @@ export type {
   SubjectPermissionLink,
   SubjectRoleLink,
 } from './adapter'
-export { MemoryAdapter } from './adapters/memory'
+export { MemoryAdapter, type MemoryAdapterOptions } from './adapters/memory'
 
 export { MemoryCache, type MemoryCacheOptions } from './cache'
 export type { CacheStore } from './cache'
@@ -80,30 +86,40 @@ export {
   UNAUTHENTICATED_MESSAGE,
 } from './requirements'
 export type {
+  CheckRequirementGuard,
   CheckRequirementName,
+  GuardRequirementArgs,
   NamesRequired,
   OptionsMustBeLast,
   PermissionRequirementOptions,
   RbacRequirement,
   RequirementArgs,
+  RequirementGuard,
   RequirementKind,
+  RequirementName,
   RequirementNames,
   RoleRequirementOptions,
+  UnknownGuardName,
   UnknownRequirementName,
 } from './requirements'
 
 export type {
+  CheckGuard,
+  DefaultGuardName,
   DefaultRbacTypes,
+  GuardName,
   Id,
   Many,
   Permission,
   PermissionInput,
   PermissionName,
+  RbacGuardTypes,
   RbacSnapshot,
   RbacTypeConfig,
   Role,
   RoleInput,
   RoleName,
+  ScopedGuardName,
   SnapshotOptions,
   Subject,
   TeamId,

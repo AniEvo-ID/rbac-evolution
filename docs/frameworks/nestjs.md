@@ -302,6 +302,47 @@ export class ApiController {
 }
 ```
 
+### Names per guard
+
+With [typed names per guard](/basic-usage/typed-names#names-per-guard), tell `createRbacDecorators()` the guard of
+the module (`RbacModule`'s `guard`). The names of each guard then follow it, and a decorator's `{ guard }` option
+takes the names of that guard:
+
+```ts
+import { Controller, Get } from '@nestjs/common'
+import type { SubjectRbac } from '@anievo-id/rbac-evolution'
+import { createRbacDecorators, CurrentRbac } from '@anievo-id/rbac-evolution-nestjs'
+
+type AppRbac = {
+  guards: {
+    web: { roles: 'admin' | 'editor'; permissions: 'articles.edit' | 'api-keys.manage' }
+    api: { roles: 'read-only' | 'full-access'; permissions: 'orders.read' | 'orders.write' }
+  }
+  defaultGuard: 'web'
+}
+
+// In a module with RbacModule.forRoot({ rbac, guard: 'api', getSubject })
+const { RequirePermissions, RequireRoles } = createRbacDecorators<AppRbac, 'api'>()
+
+@Controller('orders')
+class OrdersController {
+  @Get()
+  @RequirePermissions('orders.read')
+  list(@CurrentRbac() access: SubjectRbac<AppRbac, 'api'>) {
+    return access.can('orders.write')
+  }
+
+  @Get('keys')
+  @RequireRoles('admin', { guard: 'web' }) // checked in `web`
+  @RequirePermissions('api-keys.manage') // type error: a `web` permission
+  keys() {}
+}
+```
+
+The second type argument is a type only: at runtime `RbacModule`'s `guard` decides, as before. A `guard` that is a
+`string` variable accepts the names of every guard. `getRbac<AppRbac, 'api'>(context)` types the subject the same
+way.
+
 ## Other transports
 
 `RbacGuard` works for HTTP, microservices (`rpc`), WebSockets (`ws`) and GraphQL: the subject is cached per request

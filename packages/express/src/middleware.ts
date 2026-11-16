@@ -1,4 +1,13 @@
-import type { DefaultRbacTypes, Rbac, RbacTypeConfig, Subject, SubjectRbac, TeamId } from '@anievo-id/rbac-evolution'
+import type {
+  DefaultGuardName,
+  DefaultRbacTypes,
+  Rbac,
+  RbacTypeConfig,
+  ScopedGuardName,
+  Subject,
+  SubjectRbac,
+  TeamId,
+} from '@anievo-id/rbac-evolution'
 import type { NextFunction, Request, RequestHandler, Response } from 'express'
 
 type MaybePromise<T> = T | Promise<T>
@@ -28,21 +37,24 @@ export type RegisteredRbacTypes = RbacRegister extends { rbac: infer R } ? Types
 
 /**
  * An Express request whose `rbac` has the names of `T` (a names type like `AppRbac`, or `typeof rbac`).
+ * With per-guard names, `G` is the guard of the request (the default guard's names by default):
+ * `RbacRequest<typeof rbac, Request, 'api'>` on the routes of an `api` middleware.
  * For typing a handler without a global {@link RbacRegister}, e.g. when two routers use different engines:
  *
  * ```ts
  * app.get('/articles', (req: RbacRequest<typeof rbac>, res) => { ... })
  * ```
  */
-export type RbacRequest<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes, Req = Request> = Omit<
-  Req,
-  'rbac'
-> & {
+export type RbacRequest<
+  T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes,
+  Req = Request,
+  G extends string = DefaultGuardName<TypesOf<T>>,
+> = Omit<Req, 'rbac'> & {
   /**
    * Roles & permissions of the current subject, set by `rbacMiddleware()`.
    * `null` for guests, `undefined` when the middleware did not run.
    */
-  rbac?: SubjectRbac<TypesOf<T>> | null | undefined
+  rbac?: SubjectRbac<TypesOf<T>, ScopedGuardName<TypesOf<T>, G>> | null | undefined
 }
 
 export interface RbacMiddlewareOptions<T extends RbacTypeConfig = DefaultRbacTypes> {

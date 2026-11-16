@@ -39,15 +39,23 @@ interface FindRolesQuery {
 interface RolePermissionLink { roleId: Id; permissionId: Id }
 
 // rows of model_has_roles / model_has_permissions, for the optional methods
-interface SubjectRoleLink { subject: Subject; roleId: Id; teamId: TeamId }
-interface SubjectPermissionLink { subject: Subject; permissionId: Id; teamId: TeamId }
+// (`expiresAt` only from adapters with expiry: null = permanent)
+interface SubjectRoleLink { subject: Subject; roleId: Id; teamId: TeamId; expiresAt?: Date | null }
+interface SubjectPermissionLink { subject: Subject; permissionId: Id; teamId: TeamId; expiresAt?: Date | null }
 interface SubjectLinks { roles: SubjectRoleLink[]; permissions: SubjectPermissionLink[] }
+
+// expiry (1.2): only passed to adapters with `supportsExpiry: true`
+interface AttachLinkOptions { expiresAt: Date | null }
+interface ActiveLinkOptions { now: Date }
+interface DeletedLinkCounts { roles: number; permissions: number }
 ```
 
 ## The interface
 
 ```ts
 interface RbacAdapter {
+  readonly supportsExpiry?: boolean // optional, see Expiry
+
   // permissions
   createPermission(data: { name: string; guardName: string }): Promise<Permission>
   findPermissions(query?: FindPermissionsQuery): Promise<Permission[]>
@@ -65,22 +73,27 @@ interface RbacAdapter {
 
   // subject ↔ role
   getSubjectRoleIds(subject: Subject, teamId: TeamId): Promise<Id[]>
-  attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId): Promise<void>
+  attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId, options?: AttachLinkOptions): Promise<void>
   detachSubjectRoles(subject: Subject, roleIds: readonly Id[] | undefined, teamId: TeamId): Promise<void>
 
   // subject ↔ permission (direct permissions)
   getSubjectPermissionIds(subject: Subject, teamId: TeamId): Promise<Id[]>
-  attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId): Promise<void>
+  attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId, options?: AttachLinkOptions): Promise<void>
   detachSubjectPermissions(subject: Subject, permissionIds: readonly Id[] | undefined, teamId: TeamId): Promise<void>
 
   // reverse lookups
-  getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]>
-  getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]>
+  getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId, options?: ActiveLinkOptions): Promise<Id[]>
+  getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId, options?: ActiveLinkOptions): Promise<Id[]>
 
   // optional bulk operations
   getSubjectLinks?(subject: Subject): Promise<SubjectLinks>
   getTeamLinks?(teamId: Id): Promise<SubjectLinks>
   detachTeamLinks?(teamId: Id): Promise<void>
+
+  // optional expiry (1.2), needed with `supportsExpiry: true`
+  getSubjectRoleLinks?(subject: Subject, teamId: TeamId): Promise<SubjectRoleLink[]>
+  getSubjectPermissionLinks?(subject: Subject, teamId: TeamId): Promise<SubjectPermissionLink[]>
+  deleteExpiredLinks?(now: Date): Promise<DeletedLinkCounts>
 }
 ```
 
@@ -163,6 +176,30 @@ The rules:
   restricted to the ids that subject holds in the team).
 
 The conformance suite tests each optional method the adapter has, and skips the tests of the ones it doesn't.
+
+### Expiry
+
+[Temporary access](/basic-usage/temporary-access) (1.2) is optional too. An adapter without it keeps working
+unchanged: the engine never passes the new arguments to it, and refuses an `expiresAt` with
+`EXPIRY_NOT_SUPPORTED`. To support it, store a nullable expiry per row of `model_has_roles` and
+`model_has_permissions`, then:
+
+| Member | What to do |
+| --- | --- |
+| `supportsExpiry: true` | Declare support. Without it the rest is never used. |
+| `attachSubjectRoles` / `attachSubjectPermissions` | The engine now passes `{ expiresAt }` as the fourth argument. Store it on **every** given link: insert the missing ones with it, and update it on the ones the subject already holds (the latest call wins). `null` means permanent. Called without options (as by a 1.1 engine), write permanent links. |
+| `getSubjectIdsWithRoles` / `getSubjectIdsWithPermissions` | The engine now passes `{ now }`. Skip links whose expiry is at or before `now` (`expires_at IS NULL OR expires_at > now`). Without options, don't filter. |
+| `getSubjectRoleLinks(subject, teamId)` / `getSubjectPermissionLinks(subject, teamId)` | Every link of the subject in that team, **expired ones included**, each with `expiresAt` (`Date` or `null`). Match exactly, like `getSubjectRoleIds`. The engine filters by its clock. |
+| `getSubjectLinks` / `getTeamLinks` | Also return `expiresAt` on each link, so `teams()` and the events of `revokeAll()` / `deleteTeam()` skip expired ones. |
+| `deleteExpiredLinks(now)` | Delete every link (any subject, team, guard) with an expiry at or before `now`; return the counts. Used by `rbac.pruneExpired()`. |
+
+`getSubjectRoleIds` / `getSubjectPermissionIds` keep returning every stored link, expired or not; with expiry on,
+the engine reads `getSubject*Links` instead. Compare times in your database with the `now` the engine gives, never
+with the database clock. With `supportsExpiry: true` but one of the three methods missing, the calls that need it
+throw `ADAPTER_METHOD_MISSING`.
+
+The conformance suite runs its expiry tests only when the adapter has `supportsExpiry: true`, so an adapter without
+expiry passes it unchanged.
 
 ### Ids
 
@@ -274,6 +311,8 @@ runAdapterTests(
 
 - `factory` runs **before every test** and must return an adapter backed by **empty** storage.
 - Set `teams: false` if your adapter doesn't support team-scoped data. The team-specific tests are then skipped.
+- The expiry tests run only when the adapter returned by `factory` has `supportsExpiry: true`. There is no option for
+  it: the adapter declares it.
 - `vitest` (2.x or later) is an optional peer dependency of the core package. Install it if you use this entry point.
 
 ```ts

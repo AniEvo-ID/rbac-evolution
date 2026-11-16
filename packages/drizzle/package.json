@@ -74,6 +74,9 @@
     "./sql/pg.sql": "./sql/pg.sql",
     "./sql/sqlite.sql": "./sql/sqlite.sql",
     "./sql/mysql.sql": "./sql/mysql.sql",
+    "./sql/pg-expiry.sql": "./sql/pg-expiry.sql",
+    "./sql/sqlite-expiry.sql": "./sql/sqlite-expiry.sql",
+    "./sql/mysql-expiry.sql": "./sql/mysql-expiry.sql",
     "./package.json": "./package.json"
   },
   "files": [

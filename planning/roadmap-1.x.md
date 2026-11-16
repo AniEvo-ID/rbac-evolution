@@ -6,8 +6,8 @@ library makes hard today. Additions only: none of them needs a breaking change, 
 | # | Gap | Today | Possible addition | Status |
 | --- | --- | --- | --- | --- |
 | 1 | Request helpers lose typed names | `req.rbac`, `request.rbac` and `c.var.rbac` are `SubjectRbac` even with `createRbac<AppRbac>()` | Make the middleware and module options generic over the engine | 1.1: `RbacRegister`, `RbacRequest<T>`, `RbacEnv<T>`, `getRbac<T>()` |
-| 2 | Typed names are per engine, not per guard | A `web` permission compiles on an `api` route | Typed config keyed by guard | Open |
-| 3 | No expiry on assignments | Temporary access needs an app table and a revoke job | `expiresAt` on roles and direct permissions | Open: needs a schema change, design first |
+| 2 | Typed names are per engine, not per guard | A `web` permission compiles on an `api` route | Typed config keyed by guard | 1.2: `createRbac<{ guards: { ... } }>()`, `createGuards<T, 'api'>()` |
+| 3 | No expiry on assignments | Temporary access needs an app table and a revoke job | `expiresAt` on roles and direct permissions | 1.2: `{ expiresAt }`, `getRoleAssignments()`, `pruneExpired()`; opt-in per adapter with `{ expiry: true }` |
 | 4 | No "remove from everything" | `syncRoles([])` plus `syncPermissions([])`, per guard and per team | `rbac.for(subject).revokeAll()` | 1.1: `revokeAll({ allGuards, allTeams })` |
 | 5 | No way to delete a team | List members per role and clear each one | `rbac.deleteTeam(teamId)` | 1.1: `rbac.deleteTeam()` |
 | 6 | No way to list a subject's teams | The app keeps its own membership table | `rbac.for(subject).teams()` | 1.1: `teams()` |

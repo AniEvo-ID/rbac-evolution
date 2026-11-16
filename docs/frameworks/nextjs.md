@@ -323,6 +323,34 @@ await requirePermission('articles.edit', { guard: 'api' }) // permission:article
 export const GET = withRbac(handler, { role: 'admin', guard: 'api' }) // route handler: 401 / 403
 ```
 
+### Names per guard
+
+With [typed names per guard](/basic-usage/typed-names#names-per-guard), the helpers take the names of their
+`guard` option (the default guard's without it), and a call's `{ guard }` takes the names of that guard:
+
+```ts
+import { createRbac } from '@anievo-id/rbac-evolution'
+import { createNextRbac } from '@anievo-id/rbac-evolution-next'
+
+type AppRbac = {
+  guards: {
+    web: { roles: 'admin' | 'editor'; permissions: 'articles.edit' | 'api-keys.manage' }
+    api: { roles: 'read-only' | 'full-access'; permissions: 'orders.read' | 'orders.write' }
+  }
+  defaultGuard: 'web'
+}
+
+const engine = createRbac<AppRbac>({ adapter })
+export const api = createNextRbac({ rbac: engine, guard: 'api', getSubject })
+
+await api.requirePermission('orders.read')
+await api.requirePermission('api-keys.manage') // type error: a `web` permission
+await api.requirePermission('api-keys.manage', { guard: 'web' }) // ok: checked in `web`
+export const GET = api.withRbac(handler, { permission: 'orders.write' })
+```
+
+A `guard` that is a `string` variable accepts the names of every guard; an unknown one is a type error.
+
 ## Middleware
 
 Import `createRbacMiddleware` from the **`/middleware`** entry point. It does not import `next/navigation`, so it

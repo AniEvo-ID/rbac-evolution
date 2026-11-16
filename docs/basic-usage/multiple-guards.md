@@ -69,6 +69,39 @@ await rbac.role('writer').givePermissionTo(apiPermission) // throws GuardDoesNot
 
 A role always works in its own guard, so `rbac.role(roleObject)` uses the role's `guardName` and ignores the `guard` option.
 
+## Typed names per guard
+
+[Typed names](/basic-usage/typed-names) can be per guard too: type the names of each guard under `guards`, and the
+compiler checks every name against the guard you work in. A permission that exists only in `api` is then a type
+error on a `web` subject, and the other way round.
+
+```ts
+import { createRbac, MemoryAdapter } from '@anievo-id/rbac-evolution'
+
+type AppRbac = {
+  guards: {
+    web: { roles: 'writer' | 'admin'; permissions: 'edit articles' }
+    api: { roles: 'integration'; permissions: 'read articles' | 'edit articles' }
+  }
+  defaultGuard: 'web'
+}
+
+const rbac = createRbac<AppRbac>({ adapter: new MemoryAdapter() })
+const client = { type: 'client', id: 'c_9f1c' }
+
+await rbac.createRole('integration', { guard: 'api' })
+await rbac.role('integration', { guard: 'api' }).givePermissionTo('read articles')
+await rbac.for(client, { guard: 'api' }).assignRole('integration')
+await rbac.for(client, { guard: 'api' }).assignRole('admin') // type error: `admin` is a `web` role
+await rbac.for(client).withScope({ guard: 'api' }).can('read articles')
+```
+
+`rbac.for(subject)` takes the default guard's names; `{ guard }` (on `for()`, `withScope()`, `role()`,
+`createRole()`, `createPermission()`, `find*()`, ...) takes that guard's names; `sync()` checks each block
+against its own `guard`. Pass `guard` as a literal: a `string` variable accepts the names of every guard. The
+guards of the integrations narrow the same way, by the request's guard and the route's `{ guard }` option.
+See [Typed names: names per guard](/basic-usage/typed-names#names-per-guard).
+
 ## With the integrations
 
-The Express middleware, the Next.js helpers and the CLI accept a guard too (`guard` option or `--guard` flag). See [Express](/frameworks/express), [Next.js](/frameworks/nextjs) and [CLI](/basic-usage/cli).
+The Express middleware, the Next.js helpers and the CLI accept a guard too (`guard` option or `--guard` flag). See [Express](/frameworks/express), [Next.js](/frameworks/nextjs) and [CLI](/basic-usage/cli). With [typed names per guard](#typed-names-per-guard), the names a route guard accepts follow its guard: `createGuards<AppRbac, 'api'>()` for the routes of an `api` middleware, and `{ guard: 'api' }` per route.

@@ -10,6 +10,7 @@ export type RbacErrorCode =
   | 'INVALID_WILDCARD_PERMISSION'
   | 'INVALID_SYNC_DEFINITION'
   | 'ADAPTER_METHOD_MISSING'
+  | 'EXPIRY_NOT_SUPPORTED'
 
 export class RbacError extends Error {
   readonly code: RbacErrorCode

@@ -4,7 +4,7 @@
 
 ## `@anievo-id/rbac-evolution-next`
 
-23 exports.
+25 exports.
 
 ```ts
 // AuthorizeResult: type
@@ -56,11 +56,16 @@ interface NextRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     withRbac<Args extends unknown[], const O extends WithRbacOptions>(handler: (...args: Args) => MaybePromise<Response>, options: O & CheckRequirement<O, T>): (...args: Args) => Promise<Response>;
 }
 
+// NextRbacFor: type
+type NextRbacFor<T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>> = T extends {
+    guards: object;
+} ? ScopedNextRbac<T, G> : NextRbac<T>;
+
 // NextRbacOptions: interface
-interface NextRbacOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
+interface NextRbacOptions<T extends RbacTypeConfig = DefaultRbacTypes, G extends string = string> {
     rbac: Rbac<T>;
     getSubject: () => MaybePromise<Subject | null | undefined>;
-    guard?: string | undefined;
+    guard?: G | undefined;
     team?: TeamId | (() => MaybePromise<TeamId | undefined>);
     loginUrl?: string | undefined;
     onUnauthenticated?: (() => never) | undefined;
@@ -108,7 +113,7 @@ declare class RbacUnauthorizedError extends Error {
 }
 
 // RequireOptions: interface
-interface RequireOptions extends ScopeOptions {
+interface RequireOptions<G extends string = string> extends ScopeOptions<G> {
     all?: boolean | undefined;
     loginUrl?: string | undefined;
     onUnauthenticated?: (() => never) | undefined;
@@ -133,6 +138,25 @@ type Requirement = {
     all?: never;
 };
 
+// ScopedNextRbac: interface
+interface ScopedNextRbac<T extends RbacTypeConfig, G extends string = DefaultGuardName<T>> {
+    rbac: Rbac<T>;
+    getSubject(): Promise<Subject | null>;
+    authorize<const Q extends Requirement, G2 extends string = G>(requirement: Q & CheckRequirement<Q, T, G2>, scope?: ScopeOptions<CheckGuard<T, G2>>): Promise<AuthorizeResult>;
+    getSnapshot(scope?: ScopeOptions): Promise<RbacSnapshot>;
+    can<G2 extends string = G>(permission: PermissionName<T, G2>, scope?: ScopeOptions<CheckGuard<T, G2>>): Promise<boolean>;
+    canAny<G2 extends string = G>(permissions: Many<PermissionName<T, G2>>, scope?: ScopeOptions<CheckGuard<T, G2>>): Promise<boolean>;
+    canAll<G2 extends string = G>(permissions: Many<PermissionName<T, G2>>, scope?: ScopeOptions<CheckGuard<T, G2>>): Promise<boolean>;
+    hasRole<G2 extends string = G>(role: Many<RoleName<T, G2>>, scope?: ScopeOptions<CheckGuard<T, G2>>): Promise<boolean>;
+    hasAllRoles<G2 extends string = G>(roles: Many<RoleName<T, G2>>, scope?: ScopeOptions<CheckGuard<T, G2>>): Promise<boolean>;
+    requirePermission<const S extends Many<string>, G2 extends string = G>(permission: S & CheckNames<S, PermissionName<T, G2>>, opts?: RequireOptions<CheckGuard<T, G2>>): Promise<Subject>;
+    requireRole<const S extends Many<string>, G2 extends string = G>(role: S & CheckNames<S, RoleName<T, G2>>, opts?: RequireOptions<CheckGuard<T, G2>>): Promise<Subject>;
+    requireRoleOrPermission<const S extends Many<string>, G2 extends string = G>(items: S & CheckNames<S, PermissionName<T, G2> | RoleName<T, G2>>, opts?: RequireOptions<CheckGuard<T, G2>>): Promise<Subject>;
+    withPermission<const S extends Many<string>, Args extends unknown[], R, G2 extends string = G>(permission: S & CheckNames<S, PermissionName<T, G2>>, action: (...args: Args) => MaybePromise<R>, scope?: ScopeOptions<CheckGuard<T, G2>> | undefined): (...args: Args) => Promise<R>;
+    withRole<const S extends Many<string>, Args extends unknown[], R, G2 extends string = G>(role: S & CheckNames<S, RoleName<T, G2>>, action: (...args: Args) => MaybePromise<R>, scope?: ScopeOptions<CheckGuard<T, G2>> | undefined): (...args: Args) => Promise<R>;
+    withRbac<Args extends unknown[], const O extends WithRbacOptions>(handler: (...args: Args) => MaybePromise<Response>, options: O & CheckRequirement<O, T, OptionsGuard<O, G>>): (...args: Args) => Promise<Response>;
+}
+
 // SnapshotCheckOptions: interface
 interface SnapshotCheckOptions {
     wildcard?: boolean | undefined;
@@ -146,7 +170,9 @@ type WithRbacOptions = Requirement & ScopeOptions;
 declare function compilePathPattern(pattern: string): RegExp;
 
 // createNextRbac: function
-declare function createNextRbac<T extends RbacTypeConfig = DefaultRbacTypes>(options: NextRbacOptions<T>): NextRbac<T>;
+declare function createNextRbac<T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>>(options: NextRbacOptions<T, G> & (T extends {
+    guards: object;
+} ? GuardOptions<CheckGuard<T, G>> : unknown)): NextRbacFor<T, ScopedGuardName<T, G>>;
 
 // createRbacMiddleware: function
 declare function createRbacMiddleware<Req extends MiddlewareRequest = MiddlewareRequest>(options: RbacMiddlewareOptions<Req>): (req: Req) => Promise<Response | undefined>;
@@ -178,9 +204,14 @@ type CheckNames<S, N extends string> = S extends string ? CheckRequirementName<S
 } : S;
 
 // CheckRequirement: type (not exported)
-type CheckRequirement<Q, T extends RbacTypeConfig> = {
-    [K in keyof Q]: K extends 'permission' ? CheckNames<Q[K], PermissionName<T>> : K extends 'role' ? CheckNames<Q[K], RoleName<T>> : K extends 'roleOrPermission' ? CheckNames<Q[K], PermissionName<T> | RoleName<T>> : Q[K];
+type CheckRequirement<Q, T extends RbacTypeConfig, G extends string = DefaultGuardName<T>> = {
+    [K in keyof Q]: K extends 'permission' ? CheckNames<Q[K], PermissionName<T, G>> : K extends 'role' ? CheckNames<Q[K], RoleName<T, G>> : K extends 'roleOrPermission' ? CheckNames<Q[K], PermissionName<T, G> | RoleName<T, G>> : K extends 'guard' ? Q[K] extends string ? CheckRequirementGuard<T, Q[K]> : Q[K] : Q[K];
 };
+
+// OptionsGuard: type (not exported)
+type OptionsGuard<O, G extends string> = O extends {
+    readonly guard: infer X extends string;
+} ? X : G;
 ```
 
 ## `@anievo-id/rbac-evolution-next/middleware`

@@ -1,14 +1,18 @@
 import { createRbac } from '@anievo-id/rbac-evolution'
 import { runAdapterTests } from '@anievo-id/rbac-evolution/testing'
 import { afterAll, beforeEach, describe, expect, it } from 'vitest'
-import { PrismaAdapter } from '../src'
+import { PrismaAdapter, type PrismaRbacClient } from '../src'
 import { PrismaClient } from './generated'
+import { PrismaClient as LegacyPrismaClient } from './generated-legacy'
 
 // `test/generated` + `test/.tmp/test.db` are created by `node test/prepare.mjs` (run by `pnpm test`).
 const prisma = new PrismaClient()
+// The same models without `expiresAt`, on their own database: a schema that was never upgraded (1.1).
+const legacy = new LegacyPrismaClient()
 
 afterAll(async () => {
   await prisma.$disconnect()
+  await legacy.$disconnect()
 })
 
 async function resetDatabase(): Promise<void> {
@@ -24,6 +28,91 @@ async function resetDatabase(): Promise<void> {
 runAdapterTests('PrismaAdapter', async () => {
   await resetDatabase()
   return new PrismaAdapter(prisma)
+})
+
+runAdapterTests('PrismaAdapter ({ expiry: true })', async () => {
+  await resetDatabase()
+  return new PrismaAdapter(prisma, { expiry: true })
+})
+
+async function resetLegacy(): Promise<void> {
+  await legacy.$transaction([
+    legacy.rbacModelHasPermission.deleteMany(),
+    legacy.rbacModelHasRole.deleteMany(),
+    legacy.rbacRoleHasPermission.deleteMany(),
+    legacy.rbacRole.deleteMany(),
+    legacy.rbacPermission.deleteMany(),
+  ])
+}
+
+runAdapterTests('PrismaAdapter on a 1.1 schema (no expiresAt)', async () => {
+  await resetLegacy()
+  return new PrismaAdapter(legacy)
+})
+
+describe('PrismaAdapter on a 1.1 schema (no expiresAt)', () => {
+  it('works as in 1.1 and refuses an expiresAt instead of granting permanent access', async () => {
+    await resetLegacy()
+    const rbac = createRbac({ adapter: new PrismaAdapter(legacy), cache: false })
+    await rbac.createRole('on-call')
+    await rbac.for({ type: 'user', id: 1 }).assignRole('on-call')
+    expect(await rbac.for({ type: 'user', id: 1 }).getRoleAssignments()).toEqual([
+      { role: expect.objectContaining({ name: 'on-call' }), expiresAt: null },
+    ])
+    await expect(
+      rbac.for({ type: 'user', id: 2 }).assignRole('on-call', { expiresAt: new Date(Date.now() + 60_000) }),
+    ).rejects.toMatchObject({ code: 'EXPIRY_NOT_SUPPORTED' })
+    expect(await legacy.rbacModelHasRole.count()).toBe(1)
+    expect(await rbac.pruneExpired()).toEqual({ roles: 0, permissions: 0 })
+  })
+
+  it('with { expiry: true } but no column, fails loudly on the first write', async () => {
+    await resetLegacy()
+    const rbac = createRbac({ adapter: new PrismaAdapter(legacy, { expiry: true }), cache: false })
+    await rbac.createRole('on-call')
+    await expect(
+      rbac.for({ type: 'user', id: 1 }).assignRole('on-call', { expiresAt: new Date(Date.now() + 60_000) }),
+    ).rejects.toThrow(/expiresAt/)
+    expect(await legacy.rbacModelHasRole.count()).toBe(0)
+  })
+})
+
+describe('PrismaAdapter ({ expiry: true }) specifics', () => {
+  it('needs updateMany on the link delegates', async () => {
+    await resetDatabase()
+    const client = {
+      ...prisma,
+      rbacPermission: prisma.rbacPermission,
+      rbacRole: prisma.rbacRole,
+      rbacRoleHasPermission: prisma.rbacRoleHasPermission,
+      rbacModelHasPermission: prisma.rbacModelHasPermission,
+      rbacModelHasRole: {
+        findMany: prisma.rbacModelHasRole.findMany.bind(prisma.rbacModelHasRole),
+        createMany: prisma.rbacModelHasRole.createMany.bind(prisma.rbacModelHasRole),
+        deleteMany: prisma.rbacModelHasRole.deleteMany.bind(prisma.rbacModelHasRole),
+        create: prisma.rbacModelHasRole.create.bind(prisma.rbacModelHasRole),
+        groupBy: prisma.rbacModelHasRole.groupBy.bind(prisma.rbacModelHasRole),
+      },
+    } as unknown as PrismaRbacClient
+    const adapter = new PrismaAdapter(client, { expiry: true })
+    const r = await adapter.createRole({ name: 'r', guardName: 'web', teamId: null })
+    await expect(
+      adapter.attachSubjectRoles({ type: 'user', id: 1 }, [r.id], null, { expiresAt: new Date() }),
+    ).rejects.toThrow(/updateMany/)
+  })
+
+  it('stores and filters by expires_at in the database', async () => {
+    await resetDatabase()
+    const adapter = new PrismaAdapter(prisma, { expiry: true })
+    const r = await adapter.createRole({ name: 'r', guardName: 'web', teamId: null })
+    const at = new Date('2030-01-01T00:00:00Z')
+    await adapter.attachSubjectRoles({ type: 'user', id: 1 }, [r.id], null, { expiresAt: at })
+    const [row] = await prisma.rbacModelHasRole.findMany()
+    expect(row!.expiresAt).toEqual(at)
+    // Without expiry, the adapter never writes the column: new links are NULL (permanent).
+    await new PrismaAdapter(prisma).attachSubjectRoles({ type: 'user', id: 2 }, [r.id], null)
+    expect((await prisma.rbacModelHasRole.findMany({ where: { subjectId: '2' } }))[0]!.expiresAt).toBeNull()
+  })
 })
 
 describe('PrismaAdapter on an interactive-transaction client', () => {

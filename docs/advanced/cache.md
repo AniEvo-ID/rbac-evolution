@@ -37,6 +37,25 @@ The cache is cleared as a whole after **every** change made through the engine: 
 
 Changes are rare compared to checks, so clearing everything is simple and safe: no entry can stay stale after a change. It matters for `deleteTeam()`: it changes the access of every member of the team, and clearing the whole cache drops all of their entries at once, not only the caller's.
 
+### Expiry
+
+With [temporary access](/basic-usage/temporary-access), a cached state must not outlive the role or permission
+that expires first inside it. The engine takes care of it in two ways:
+
+- **The TTL is capped.** An entry is stored for `cacheTtl` or until the earliest `expiresAt` in it, whichever is
+  sooner. A state with a role that ends in 10 minutes is stored for 10 minutes, not 24 hours. The same goes for
+  `teams()` entries. States without an expiry keep the full `cacheTtl`, and look exactly as in 1.1.
+- **The state carries its end.** An entry with an expiry also holds `validUntil` (epoch milliseconds). On a hit at or
+  after that moment, by the engine's clock, the engine ignores the entry and recomputes it. So a store that keeps it
+  a little longer (Redis `EX` rounds up to whole seconds, a store that ignores the TTL, clocks that differ between
+  servers) never serves an expired role.
+
+Nothing is cleared when a link expires: there is no change to react to, only time passing. `pruneExpired()` doesn't
+clear the cache either, because removing expired rows doesn't change any check.
+
+A [custom store](#custom-store) needs no change for this: it receives the shorter TTL in `set()`, and the extra
+field is plain JSON.
+
 ## Changing the TTL
 
 ```ts
@@ -92,7 +111,7 @@ interface CacheStore {
 Methods may be synchronous or return promises. The contract:
 
 - **`get`** returns the stored value, or **`undefined`** on a miss. Return `undefined`, not `null`: any value other than `undefined` counts as a hit.
-- **`set`** stores the value for `ttlMs` milliseconds. The value is a plain object made of arrays of `Role` and `Permission` objects, so `JSON.stringify` / `JSON.parse` round-trip it.
+- **`set`** stores the value for `ttlMs` milliseconds. The value is a plain object made of arrays of `Role` and `Permission` objects (plus, with [expiry](#expiry), numbers), so `JSON.stringify` / `JSON.parse` round-trip it. `ttlMs` can be shorter than `cacheTtl` when an assignment in the value expires sooner.
 - **`clear`** removes **every** RBAC Evolution entry. It is called after every change, so the store should be dedicated to RBAC Evolution or namespaced by your implementation. Don't flush a shared database.
 
 ### Redis example

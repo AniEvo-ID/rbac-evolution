@@ -9,6 +9,7 @@ import { describe, expect, expectTypeOf, it } from 'vitest'
 import {
   type ModelHasPermissionDoc,
   type ModelHasRoleDoc,
+  type MongooseAdapterOptions,
   MongooseRbacAdapter,
   type PermissionDoc,
   type RbacCollectionNames,
@@ -37,12 +38,15 @@ describe('mongoose: types', () => {
     const typed = createRbac<{ permissions: 'edit'; roles: 'writer' }>({ adapter: new MongooseRbacAdapter(adapter.models) })
     expectTypeOf(typed.for({ type: 'user', id: 'u1' }).hasRole).toBeCallableWith('writer')
 
-    expectTypeOf(MongooseRbacAdapter).constructorParameters.toEqualTypeOf<[models: RbacModels]>()
+    expectTypeOf(MongooseRbacAdapter).constructorParameters.toEqualTypeOf<
+      [models: RbacModels, options?: MongooseAdapterOptions]
+    >()
+    expectTypeOf<MongooseAdapterOptions>().toEqualTypeOf<{ expiry?: boolean }>()
     expectTypeOf(mongooseAdapter).parameters.toEqualTypeOf<[options?: RbacModelOptions]>()
   })
 
-  it('RbacModelOptions: connection + prefix, exactOptionalPropertyTypes', () => {
-    expectTypeOf<RbacModelOptions>().toEqualTypeOf<{ connection?: Connection; prefix?: string }>()
+  it('RbacModelOptions: connection + prefix + expiry, exactOptionalPropertyTypes', () => {
+    expectTypeOf<RbacModelOptions>().toEqualTypeOf<{ connection?: Connection; prefix?: string; expiry?: boolean }>()
     expectTypeOf(createRbacModels).parameters.toEqualTypeOf<[options?: RbacModelOptions]>()
     expectTypeOf(mongooseAdapter).toBeCallableWith()
     expectTypeOf(mongooseAdapter).toBeCallableWith({ prefix: 'rbac_' })

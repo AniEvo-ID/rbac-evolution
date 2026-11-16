@@ -1,5 +1,6 @@
 import type { RbacAdapter, SubjectLinks } from './adapter'
 import { RbacError } from './errors'
+import { earliest, expiryMs, isActive } from './expiry'
 import type { Rbac, RbacInternals, SubjectRbac } from './rbac'
 import type { Id, Permission, RbacTypeConfig, Role, Subject, TeamId } from './types'
 
@@ -56,23 +57,67 @@ function byGuard<V extends { guardName: string }>(items: readonly V[]): Map<stri
 
 interface TeamGroup {
   teamId: TeamId
+  /** Every link's target, expired ones included (they are removed too). */
   roleIds: Id[]
   permissionIds: Id[]
+  /** Targets of expired links, which events don't list: the subject no longer had them. */
+  expiredRoleIds: Set<string>
+  expiredPermissionIds: Set<string>
 }
 
-function groupByTeam(links: SubjectLinks): TeamGroup[] {
+function groupByTeam(links: SubjectLinks, now: number): TeamGroup[] {
   const groups = new Map<string, TeamGroup>()
   const group = (teamId: TeamId): TeamGroup => {
     let g = groups.get(idKey(teamId))
     if (!g) {
-      g = { teamId, roleIds: [], permissionIds: [] }
+      g = { teamId, roleIds: [], permissionIds: [], expiredRoleIds: new Set(), expiredPermissionIds: new Set() }
       groups.set(idKey(teamId), g)
     }
     return g
   }
-  for (const link of links.roles) group(link.teamId).roleIds.push(link.roleId)
-  for (const link of links.permissions) group(link.teamId).permissionIds.push(link.permissionId)
+  for (const link of links.roles) {
+    const g = group(link.teamId)
+    g.roleIds.push(link.roleId)
+    if (!isActive(link.expiresAt, now)) g.expiredRoleIds.add(idKey(link.roleId))
+  }
+  for (const link of links.permissions) {
+    const g = group(link.teamId)
+    g.permissionIds.push(link.permissionId)
+    if (!isActive(link.expiresAt, now)) g.expiredPermissionIds.add(idKey(link.permissionId))
+  }
   return [...groups.values()]
+}
+
+/** Every link of the subject in one team, as a {@link TeamGroup} (with expiry on, from the expiry-aware reads). */
+async function scopeGroup<T extends RbacTypeConfig>(
+  rbac: Rbac<T>,
+  core: RbacInternals<T>,
+  subject: Subject,
+  teamId: TeamId,
+): Promise<TeamGroup> {
+  const { adapter } = rbac
+  const empty: TeamGroup = {
+    teamId,
+    roleIds: [],
+    permissionIds: [],
+    expiredRoleIds: new Set(),
+    expiredPermissionIds: new Set(),
+  }
+  if (!core.expiry) {
+    return {
+      ...empty,
+      roleIds: await adapter.getSubjectRoleIds(subject, teamId),
+      permissionIds: await adapter.getSubjectPermissionIds(subject, teamId),
+    }
+  }
+  if (!adapter.getSubjectRoleLinks) throw missingMethod('getSubjectRoleLinks', '`revokeAll()` with expiry')
+  if (!adapter.getSubjectPermissionLinks) throw missingMethod('getSubjectPermissionLinks', '`revokeAll()` with expiry')
+  const links: SubjectLinks = {
+    roles: await adapter.getSubjectRoleLinks(subject, teamId),
+    permissions: await adapter.getSubjectPermissionLinks(subject, teamId),
+  }
+  const [group] = groupByTeam(links, core.now())
+  return group ? { ...group, teamId } : empty
 }
 
 async function emitDetached<T extends RbacTypeConfig>(
@@ -94,7 +139,7 @@ async function emitDetached<T extends RbacTypeConfig>(
 export async function revokeAll<T extends RbacTypeConfig>(
   rbac: Rbac<T>,
   core: RbacInternals<T>,
-  scope: SubjectRbac<T>,
+  scope: SubjectRbac<T, string>,
   options: RevokeAllOptions,
 ): Promise<void> {
   const { adapter } = rbac
@@ -104,15 +149,9 @@ export async function revokeAll<T extends RbacTypeConfig>(
   let groups: TeamGroup[]
   if (options.allTeams === true && rbac.teams) {
     if (!adapter.getSubjectLinks) throw missingMethod('getSubjectLinks', '`revokeAll({ allTeams: true })`')
-    groups = groupByTeam(await adapter.getSubjectLinks(subject))
+    groups = groupByTeam(await adapter.getSubjectLinks(subject), core.now())
   } else {
-    groups = [
-      {
-        teamId: scope.teamId,
-        roleIds: await adapter.getSubjectRoleIds(subject, scope.teamId),
-        permissionIds: await adapter.getSubjectPermissionIds(subject, scope.teamId),
-      },
-    ]
+    groups = [await scopeGroup(rbac, core, subject, scope.teamId)]
   }
 
   // The role & permission objects tell the guard of each link; with `allGuards` they are only needed for events.
@@ -137,7 +176,11 @@ export async function revokeAll<T extends RbacTypeConfig>(
         await adapter.detachSubjectPermissions(subject, permissions.map((p) => p.id), group.teamId)
       }
     }
-    removed.push({ teamId: group.teamId, roles, permissions })
+    removed.push({
+      teamId: group.teamId,
+      roles: roles.filter((r) => !group.expiredRoleIds.has(idKey(r.id))),
+      permissions: permissions.filter((p) => !group.expiredPermissionIds.has(idKey(p.id))),
+    })
   }
 
   await rbac.forgetCachedPermissions()
@@ -148,7 +191,7 @@ export async function revokeAll<T extends RbacTypeConfig>(
 export async function subjectTeams<T extends RbacTypeConfig>(
   rbac: Rbac<T>,
   core: RbacInternals<T>,
-  scope: SubjectRbac<T>,
+  scope: SubjectRbac<T, string>,
   options: SubjectTeamsOptions,
 ): Promise<Id[]> {
   if (!rbac.teams) throw teamsNotEnabled('`teams()`')
@@ -157,11 +200,13 @@ export async function subjectTeams<T extends RbacTypeConfig>(
   const guardName = options.allGuards === true ? null : scope.guardName
   const key = `rbac:teams:${JSON.stringify([guardName, subject.type, String(subject.id)])}`
 
-  return core.remember(key, async () => {
+  const compute = async (): Promise<{ teams: Id[]; validUntil?: number }> => {
     if (!adapter.getSubjectLinks) throw missingMethod('getSubjectLinks', '`teams()`')
     const links = await adapter.getSubjectLinks(subject)
-    let roles = links.roles.filter((l) => l.teamId !== null)
-    let permissions = links.permissions.filter((l) => l.teamId !== null)
+    const now = core.now()
+    // Expired links don't make the subject a member (with expiry off, `expiresAt` is never set).
+    let roles = links.roles.filter((l) => l.teamId !== null && isActive(l.expiresAt, now))
+    let permissions = links.permissions.filter((l) => l.teamId !== null && isActive(l.expiresAt, now))
 
     if (guardName !== null) {
       const roleIds = uniqueIds(roles.map((l) => l.roleId))
@@ -174,8 +219,15 @@ export async function subjectTeams<T extends RbacTypeConfig>(
       permissions = permissions.filter((l) => keepPermissions.has(idKey(l.permissionId)))
     }
 
-    return uniqueIds([...roles, ...permissions].map((l) => l.teamId as Id))
-  })
+    const teams = uniqueIds([...roles, ...permissions].map((l) => l.teamId as Id))
+    const validUntil = earliest([...roles, ...permissions].map((l) => expiryMs(l.expiresAt)))
+    return validUntil === undefined ? { teams } : { teams, validUntil }
+  }
+
+  if (!core.expiry) return core.remember(key, async () => (await compute()).teams)
+  // With expiry, the entry carries its own end (another key, so a process without expiry never reads it).
+  const entry = await core.remember(`${key}:expiry`, compute, (value) => value.validUntil)
+  return entry.teams
 }
 
 /** @internal Implementation of `Rbac.deleteTeam()`. */
@@ -196,17 +248,30 @@ export async function deleteTeam<T extends RbacTypeConfig>(
   const teamRoles = await adapter.findRoles({ teamIds: [teamId] })
 
   // Every subject with a link in the team, with the ids it holds there.
-  const subjects = new Map<string, { subject: Subject; roleIds: Id[]; permissionIds: Id[] }>()
+  // `active*` leave out expired links: they are removed too, but events only list what the subject still had.
+  const subjects = new Map<
+    string,
+    { subject: Subject; roleIds: Id[]; permissionIds: Id[]; activeRoleIds: Id[]; activePermissionIds: Id[] }
+  >()
   const entry = (subject: Subject) => {
     let e = subjects.get(subjectKey(subject))
     if (!e) {
-      e = { subject, roleIds: [], permissionIds: [] }
+      e = { subject, roleIds: [], permissionIds: [], activeRoleIds: [], activePermissionIds: [] }
       subjects.set(subjectKey(subject), e)
     }
     return e
   }
-  for (const link of links.roles) entry(link.subject).roleIds.push(link.roleId)
-  for (const link of links.permissions) entry(link.subject).permissionIds.push(link.permissionId)
+  const now = core.now()
+  for (const link of links.roles) {
+    const e = entry(link.subject)
+    e.roleIds.push(link.roleId)
+    if (isActive(link.expiresAt, now)) e.activeRoleIds.push(link.roleId)
+  }
+  for (const link of links.permissions) {
+    const e = entry(link.subject)
+    e.permissionIds.push(link.permissionId)
+    if (isActive(link.expiresAt, now)) e.activePermissionIds.push(link.permissionId)
+  }
 
   const track = core.events.has('role.detached') || core.events.has('permission.detached')
   const roleIds = uniqueIds(links.roles.map((l) => l.roleId))
@@ -227,7 +292,7 @@ export async function deleteTeam<T extends RbacTypeConfig>(
   await rbac.forgetCachedPermissions()
 
   if (track) {
-    for (const { subject, roleIds: held, permissionIds: direct } of subjects.values()) {
+    for (const { subject, activeRoleIds: held, activePermissionIds: direct } of subjects.values()) {
       const roles = uniqueIds(held).flatMap((id) => roleById.get(idKey(id)) ?? [])
       const permissions = uniqueIds(direct).flatMap((id) => permissionById.get(idKey(id)) ?? [])
       await emitDetached(core, subject, teamId, roles, permissions)

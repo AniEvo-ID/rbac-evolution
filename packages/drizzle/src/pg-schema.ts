@@ -15,7 +15,14 @@ const timestamps = () => ({
  * export const { permissions, roles, roleHasPermissions, modelHasRoles, modelHasPermissions } = pgRbacSchema()
  * ```
  */
-export function pgRbacSchema(options: RbacSchemaOptions = {}) {
+export function pgRbacSchema(options: RbacSchemaOptions & { expiry: true }): PgRbacExpirySchema
+export function pgRbacSchema(options?: RbacSchemaOptions): PgRbacSchema
+export function pgRbacSchema(options: RbacSchemaOptions = {}): PgRbacSchema | PgRbacExpirySchema {
+  return options.expiry === true ? buildPgExpiry(options) : buildPg(options)
+}
+
+/** The five tables, as in 1.1. */
+function buildPg(options: RbacSchemaOptions) {
   const n = tableNames(options)
 
   const permissions = pgTable(
@@ -98,4 +105,59 @@ export function pgRbacSchema(options: RbacSchemaOptions = {}) {
   return { permissions, roles, roleHasPermissions, modelHasRoles, modelHasPermissions }
 }
 
-export type PgRbacSchema = ReturnType<typeof pgRbacSchema>
+/**
+ * The tables of `pgRbacSchema({ expiry: true })`: the 1.1 tables, with a nullable `expires_at` column on
+ * `model_has_roles` and `model_has_permissions` (1.2).
+ */
+function buildPgExpiry(options: RbacSchemaOptions) {
+  const n = tableNames(options)
+  const { permissions, roles, roleHasPermissions } = buildPg(options)
+
+  const modelHasRoles = pgTable(
+    n.modelHasRoles,
+    {
+      roleId: integer('role_id')
+        .notNull()
+        .references(() => roles.id, { onDelete: 'cascade' }),
+      subjectType: text('subject_type').notNull(),
+      subjectId: text('subject_id').notNull(),
+      /** `''` = global (no team). */
+      teamId: text('team_id').notNull().default(''),
+      /** When the link ends (`NULL` = never). Only used by an adapter created with `{ expiry: true }`. */
+      expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
+    },
+    (t) => [
+      primaryKey({ name: `${n.modelHasRoles}_pkey`, columns: [t.subjectType, t.subjectId, t.teamId, t.roleId] }),
+      index(`${n.modelHasRoles}_role_id_index`).on(t.roleId),
+    ],
+  )
+
+  const modelHasPermissions = pgTable(
+    n.modelHasPermissions,
+    {
+      permissionId: integer('permission_id')
+        .notNull()
+        .references(() => permissions.id, { onDelete: 'cascade' }),
+      subjectType: text('subject_type').notNull(),
+      subjectId: text('subject_id').notNull(),
+      /** `''` = global (no team). */
+      teamId: text('team_id').notNull().default(''),
+      /** When the link ends (`NULL` = never). Only used by an adapter created with `{ expiry: true }`. */
+      expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }),
+    },
+    (t) => [
+      primaryKey({
+        name: `${n.modelHasPermissions}_pkey`,
+        columns: [t.subjectType, t.subjectId, t.teamId, t.permissionId],
+      }),
+      index(`${n.modelHasPermissions}_permission_id_index`).on(t.permissionId),
+    ],
+  )
+
+  return { permissions, roles, roleHasPermissions, modelHasRoles, modelHasPermissions }
+}
+
+/** The tables of `pgRbacSchema()`. */
+export type PgRbacSchema = ReturnType<typeof buildPg>
+/** The tables of `pgRbacSchema({ expiry: true })`: the subject-link tables have an `expiresAt` column. */
+export type PgRbacExpirySchema = ReturnType<typeof buildPgExpiry>

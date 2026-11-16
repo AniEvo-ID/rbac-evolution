@@ -3,14 +3,18 @@ import { createRbac } from '@anievo-id/rbac-evolution'
 import { runAdapterTests } from '@anievo-id/rbac-evolution/testing'
 import { Kysely, Migrator, sql } from 'kysely'
 import { describe, expect, it } from 'vitest'
-import { type RbacDatabase, createRbacTables, kyselyAdapter, rbacMigration } from '../src'
+import { type RbacDatabase, createRbacTables, kyselyAdapter, rbacExpiryMigration, rbacMigration } from '../src'
 import { count } from './shared'
 
 /** Fresh in-memory database per call. */
-async function freshDb(options: { prefix?: string; foreignKeys?: boolean; tables?: boolean } = {}) {
+async function freshDb(
+  options: { prefix?: string; foreignKeys?: boolean; tables?: boolean; expiry?: boolean } = {},
+) {
   const db = new Kysely<RbacDatabase>({ dialect: new LibsqlDialect({ url: ':memory:' }) })
   await sql`PRAGMA foreign_keys = ${sql.raw(options.foreignKeys === true ? 'ON' : 'OFF')}`.execute(db)
-  if (options.tables !== false) await createRbacTables(db, { prefix: options.prefix ?? '' })
+  if (options.tables !== false) {
+    await createRbacTables(db, { prefix: options.prefix ?? '', expiry: options.expiry === true })
+  }
   return db
 }
 
@@ -19,6 +23,10 @@ runAdapterTests('kysely (SQLite via libsql, foreign_keys=OFF)', async () => kyse
 
 runAdapterTests('kysely (SQLite via libsql, foreign_keys=ON)', async () =>
   kyselyAdapter(await freshDb({ foreignKeys: true })),
+)
+
+runAdapterTests('kysely (SQLite via libsql, expiry)', async () =>
+  kyselyAdapter(await freshDb({ expiry: true }), { expiry: true }),
 )
 
 describe('kysely sqlite: specifics', () => {
@@ -100,6 +108,25 @@ describe('kysely sqlite: specifics', () => {
     const down = await migrator.migrateDown()
     expect(down.error).toBeUndefined()
     expect((await db.introspection.getTables()).map((t) => t.name)).not.toContain('acl_roles')
+  })
+
+  it('upgrades a 1.1 database with rbacExpiryMigration (up / down), storing unix ms', async () => {
+    const db = await freshDb({ tables: false })
+    const migrations = { '0001_rbac': rbacMigration(), '0002_rbac_expiry': rbacExpiryMigration() }
+    const migrator = new Migrator({ db, provider: { getMigrations: async () => migrations } })
+    expect((await migrator.migrateToLatest()).error).toBeUndefined()
+
+    const adapter = kyselyAdapter(db, { expiry: true })
+    const r = await adapter.createRole({ name: 'r', guardName: 'web', teamId: null })
+    await adapter.attachSubjectRoles({ type: 'user', id: 1 }, [r.id], null, { expiresAt: new Date(1_900_000_000_123) })
+    const row = await db.selectFrom('model_has_roles').selectAll().executeTakeFirstOrThrow()
+    expect((row as unknown as { expires_at: number }).expires_at).toBe(1_900_000_000_123)
+
+    expect((await migrator.migrateDown()).error).toBeUndefined()
+    const columns = (await db.introspection.getTables()).find((t) => t.name === 'model_has_roles')!.columns
+    expect(columns.map((c) => c.name)).not.toContain('expires_at')
+    // The 1.1 adapter (no expiry) still works on the downgraded table.
+    expect(await kyselyAdapter(db).getSubjectRoleIds({ type: 'user', id: 1 }, null)).toEqual([r.id])
   })
 
   it('accepts an explicit dialect', async () => {

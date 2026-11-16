@@ -2,7 +2,15 @@ import { createRbac } from '@anievo-id/rbac-evolution'
 import { runAdapterTests } from '@anievo-id/rbac-evolution/testing'
 import { type Kysely, sql } from 'kysely'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { type RbacDialect, createRbacTables, dropRbacTables, kyselyAdapter, tableNames } from '../src'
+import {
+  type RbacDialect,
+  addRbacExpiryColumns,
+  createRbacTables,
+  dropRbacExpiryColumns,
+  dropRbacTables,
+  kyselyAdapter,
+  tableNames,
+} from '../src'
 
 /** Deletes every row (links first). Portable across dialects, unlike TRUNCATE. */
 export async function clearTables(db: Kysely<any>, prefix = ''): Promise<void> {
@@ -132,6 +140,74 @@ export function runSharedDatabaseSuite(
         expect(row.created_at).not.toBeNull()
         expect(row.updated_at).not.toBeNull()
       }
+    })
+  })
+
+  runSharedExpirySuite(name, connect, `${prefix}exp_`)
+}
+
+/** Columns of a table, by name. */
+const columnsOf = async (db: Kysely<any>, table: string): Promise<string[]> =>
+  ((await db.introspection.getTables()).find((t) => t.name === table)?.columns ?? []).map((c) => c.name)
+
+/**
+ * Expiry (1.2) on the same server: 1.1 tables upgraded with `addRbacExpiryColumns`, then the conformance
+ * suite with `{ expiry: true }` (its expiry tests run) and the migration's `down`.
+ */
+function runSharedExpirySuite(name: string, connect: () => Kysely<any>, prefix: string): void {
+  describe(`${name} (expiry)`, () => {
+    let db: Kysely<any>
+    const n = tableNames({ prefix })
+
+    beforeAll(async () => {
+      db = connect()
+      await dropRbacTables(db, { prefix })
+      await createRbacTables(db, { prefix })
+      expect(await columnsOf(db, n.modelHasRoles)).not.toContain('expires_at')
+      // The upgrade path of a 1.1 database; twice, to show it is idempotent.
+      await addRbacExpiryColumns(db, { prefix })
+      await addRbacExpiryColumns(db, { prefix })
+    })
+
+    afterAll(async () => {
+      if (db === undefined) return
+      await dropRbacTables(db, { prefix })
+      await db.destroy()
+    })
+
+    runAdapterTests(`${name} (expiry)`, async () => {
+      await clearTables(db, prefix)
+      return kyselyAdapter(db, { prefix, expiry: true })
+    })
+
+    it('stores expires_at with millisecond precision, and NULL for permanent links', async () => {
+      await clearTables(db, prefix)
+      const adapter = kyselyAdapter(db, { prefix, expiry: true })
+      const r = await adapter.createRole({ name: 'r', guardName: 'web', teamId: null })
+      const at = new Date('2030-01-01T00:00:00.123Z')
+      await adapter.attachSubjectRoles({ type: 'user', id: 1 }, [r.id], null, { expiresAt: at })
+      await adapter.attachSubjectRoles({ type: 'user', id: 2 }, [r.id], null)
+      const links = await adapter.getSubjectRoleLinks({ type: 'user', id: 1 }, null)
+      expect(links.map((l) => l.expiresAt?.getTime())).toEqual([at.getTime()])
+      expect((await adapter.getSubjectRoleLinks({ type: 'user', id: 2 }, null))[0]!.expiresAt).toBeNull()
+      // Without `{ expiry: true }` on the upgraded tables, nothing about the column shows.
+      expect(await kyselyAdapter(db, { prefix }).getSubjectRoleLinks({ type: 'user', id: 1 }, null)).toEqual([
+        { subject: { type: 'user', id: '1' }, roleId: r.id, teamId: null },
+      ])
+    })
+
+    it('createRbacTables({ expiry: true }) creates the column, and the migration down removes it', async () => {
+      const fresh = `${prefix}new_`
+      await dropRbacTables(db, { prefix: fresh })
+      await createRbacTables(db, { prefix: fresh, expiry: true })
+      const t = tableNames({ prefix: fresh })
+      expect(await columnsOf(db, t.modelHasRoles)).toContain('expires_at')
+      expect(await columnsOf(db, t.modelHasPermissions)).toContain('expires_at')
+      await dropRbacExpiryColumns(db, { prefix: fresh })
+      await dropRbacExpiryColumns(db, { prefix: fresh })
+      expect(await columnsOf(db, t.modelHasRoles)).not.toContain('expires_at')
+      expect(await columnsOf(db, t.modelHasPermissions)).not.toContain('expires_at')
+      await dropRbacTables(db, { prefix: fresh })
     })
   })
 }

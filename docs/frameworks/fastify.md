@@ -339,6 +339,37 @@ app.get('/api/articles', { preHandler: requirePermission('articles.edit', { guar
 app.get('/api/reports', { preHandler: canAny('reports.view', 'reports.export', { guard: 'api' }) }, handler)
 ```
 
+### Names per guard
+
+With [typed names per guard](/basic-usage/typed-names#names-per-guard), tell `createGuards()` the guard of the
+requests it guards, the one the plugin was given. The names of each guard then follow it, and a route's
+`{ guard }` option takes the names of that guard:
+
+```ts
+import { createGuards } from '@anievo-id/rbac-evolution-fastify'
+
+type AppRbac = {
+  guards: {
+    web: { roles: 'admin' | 'editor'; permissions: 'articles.edit' | 'api-keys.manage' }
+    api: { roles: 'read-only' | 'full-access'; permissions: 'orders.read' | 'orders.write' }
+  }
+  defaultGuard: 'web'
+}
+
+const web = createGuards<AppRbac>() // routes of a plugin without `guard`: the default guard
+const api = createGuards<AppRbac, 'api'>() // routes of the plugin registered with `guard: 'api'`
+
+app.get('/settings/keys', { preHandler: web.requirePermission('api-keys.manage') }, handler)
+app.get('/api/orders', { preHandler: api.requirePermission('orders.read') }, handler)
+app.get('/api/keys', { preHandler: api.requirePermission('api-keys.manage') }, handler) // type error: a `web` permission
+app.get('/admin/orders', { preHandler: web.requirePermission('orders.read', { guard: 'api' }) }, handler)
+```
+
+The second type argument is a type only: at runtime the plugin's `guard` decides, as before. A `guard` that is a
+`string` variable accepts the names of every guard. Type a handler of the `api` scope as
+`RbacRequest<typeof rbac, FastifyRequest, 'api'>`. `RbacRegister` types the global `request.rbac` with the default
+guard's names.
+
 See [Multiple guards](/basic-usage/multiple-guards).
 
 Full API: [reference](/api/fastify/)

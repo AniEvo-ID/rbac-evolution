@@ -1,5 +1,8 @@
 import {
+  type DefaultGuardName,
   type DefaultRbacTypes,
+  type GuardName,
+  type GuardRequirementArgs,
   type PermissionName,
   permissionRequirement,
   type Rbac,
@@ -31,10 +34,13 @@ export interface GuardContext {
 
 /**
  * The context the handlers of `createGuards<T>()` get: Hono's `Context` for an untyped `T` (any name), or a
- * `Context<RbacEnv<T>>` whose `c.var.rbac` has the names of `T`.
+ * `Context<RbacEnv<T>>` whose `c.var.rbac` has the names of `T` (of guard `G` with per-guard names: the request's
+ * guard).
  */
-export type GuardHandlerContext<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes> =
-  DefaultRbacTypes extends TypesOf<T> ? Context : Context<RbacEnv<T>>
+export type GuardHandlerContext<
+  T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes,
+  G extends string = DefaultGuardName<TypesOf<T>>,
+> = DefaultRbacTypes extends TypesOf<T> ? Context : Context<RbacEnv<T, G>>
 
 /**
  * Returns the response to send (or throws, e.g. an `HTTPException`).
@@ -59,7 +65,8 @@ export interface GuardHandlers<C = Context> {
  * The options every guard takes: the handlers plus `guard`.
  *
  * `guard` is per guard only (like spatie's `role:admin,api`), not a `createGuards()` default:
- * the defaults are about handlers, and the request's guard is set on the middleware.
+ * the defaults are about handlers, and the request's guard is set on the middleware. With per-guard names, tell
+ * the types which guard the requests have with `createGuards<AppRbac, 'api'>()`.
  */
 export interface RouteGuardOptions<C = Context> extends GuardHandlers<C> {
   /**
@@ -144,7 +151,6 @@ export type Guard<N extends string, O, E extends Env = RbacEnv> = <const A exten
   ...args: A & RequirementArgs<A, N, O>
 ) => MiddlewareHandler<RbacEnv> & MiddlewareHandler<E>
 
-/** The guards returned by `createGuards<T>()`, with names narrowed by `T` (see `RbacTypeConfig`). */
 /**
  * The guards returned by `createGuards<T>()`, with names narrowed by `T` (see `RbacTypeConfig`). Their middleware
  * env is `RbacEnv<T>`, so a typed app (`new Hono<RbacEnv<T>>()`) keeps a typed `c.var.rbac` after them.
@@ -158,15 +164,53 @@ export interface Guards<T extends RbacTypeConfig = DefaultRbacTypes> {
 }
 
 /**
+ * A guard of `createGuards<T, G>()` when `T` has per-guard names (`RbacTypeConfig['guards']`): like
+ * {@link Guard}, but the names are those of the guard the call checks in, its `{ guard }` option or else `G`
+ * (the guard of the request). `requirePermission('orders.read', { guard: 'api' })` takes the `api` names.
+ */
+export type ScopedGuard<T extends RbacTypeConfig, G extends string, K extends GuardKind, O> = <
+  const A extends readonly (GuardNames | O)[],
+>(
+  ...args: A & GuardRequirementArgs<A, T, K, G, O>
+) => MiddlewareHandler<RbacEnv> & MiddlewareHandler<RbacEnv<T, G>>
+
+/**
+ * The guards returned by `createGuards<T, G>()` when `T` has per-guard names: names follow the guard each call
+ * checks in (see {@link ScopedGuard}), and the handlers get a `c` whose `c.var.rbac` is in guard `G`.
+ */
+export interface ScopedGuards<T extends RbacTypeConfig, G extends string = DefaultGuardName<T>> {
+  requirePermission: ScopedGuard<T, G, 'permission', PermissionGuardOptions<GuardHandlerContext<T, G>>>
+  requireRole: ScopedGuard<T, G, 'role', RoleGuardOptions<GuardHandlerContext<T, G>>>
+  requireRoleOrPermission: ScopedGuard<T, G, 'role_or_permission', RoleOrPermissionGuardOptions<GuardHandlerContext<T, G>>>
+  canAny: ScopedGuard<T, G, 'permission', RouteGuardOptions<GuardHandlerContext<T, G>>>
+  canAll: ScopedGuard<T, G, 'permission', RouteGuardOptions<GuardHandlerContext<T, G>>>
+}
+
+/**
+ * What `createGuards<T, G>()` returns: {@link Guards} for a config without per-guard names (as in 1.1), and
+ * {@link ScopedGuards} for one with `guards`.
+ */
+export type GuardsFor<T extends RbacTypeConfig = DefaultRbacTypes, G extends string = DefaultGuardName<T>> = T extends {
+  guards: object
+}
+  ? ScopedGuards<T, G>
+  : Guards<T>
+
+/**
  * Builds the guards with shared defaults (e.g. a custom `onForbidden` that renders an HTML page).
  *
  * Pass the same type argument as `createRbac<AppTypes>()` (or `typeof rbac`) to check names at compile time:
  * `const { requirePermission } = createGuards<AppTypes>()`. The handlers (`defaults` and per-guard options)
  * then get a `c` whose `c.var.rbac` has the same names.
+ *
+ * With per-guard names (`RbacTypeConfig['guards']`), `G` is the guard of the requests these guards run on (the
+ * middleware's `guard`; default: the default guard): `createGuards<AppRbac, 'api'>()`. Names are checked in that
+ * guard, or in a route's `{ guard }`. It is a type only; the middleware's `guard` still decides at runtime.
  */
-export function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes>(
-  defaults: GuardHandlers<GuardHandlerContext<TypesOf<T>>> = {},
-): Guards<TypesOf<T>> {
+export function createGuards<
+  T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes,
+  G extends GuardName<TypesOf<T>> = DefaultGuardName<TypesOf<T>> & GuardName<TypesOf<T>>,
+>(defaults: GuardHandlers<GuardHandlerContext<TypesOf<T>, G>> = {}): GuardsFor<TypesOf<T>, G> {
   // The typed handlers only narrow `c.var.rbac`; the implementation below works on any context.
   const shared = defaults as unknown as GuardHandlers
   /**
@@ -226,7 +270,7 @@ export function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = D
 
   // The untyped functions above take any spread of names (`canAny` passes `...names` on); the typed signature
   // is only the public face, so a cast is enough. No runtime change.
-  return { requirePermission, requireRole, requireRoleOrPermission, canAny, canAll } as unknown as Guards<TypesOf<T>>
+  return { requirePermission, requireRole, requireRoleOrPermission, canAny, canAll } as unknown as GuardsFor<TypesOf<T>, G>
 }
 
 const defaultGuards: Guards = createGuards()
