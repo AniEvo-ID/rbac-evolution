@@ -1,5 +1,12 @@
 # @anievo-id/rbac-evolution-kysely
 
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies [a69ebb9]
+  - @anievo-id/rbac-evolution@1.0.0
+
 ## 1.0.0-rc.0
 
 ### Patch Changes
