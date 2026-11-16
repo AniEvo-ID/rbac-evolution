@@ -46,6 +46,8 @@ The [Prisma](/adapters/prisma) and [Drizzle](/adapters/drizzle) adapters use the
 | `Role::create([... 'guard_name' => 'api'])` | `rbac.createRole('writer', { guard: 'api' })` |
 | `Permission::findByName('edit articles')` | `rbac.findPermissionOrFail('edit articles')` (or `findPermission`, which returns `null`) |
 | `Role::findByName('writer')` | `rbac.findRoleOrFail('writer')` (or `findRole`) |
+| `Permission::findById($id)` / `Role::findById($id)` | `rbac.findPermissionById(id)` / `rbac.findRoleById(id)` (both return `null` when missing) |
+| `$permission->roles` | `rbac.rolesWithPermission('edit articles')` |
 | `Permission::findOrCreate(...)` / `Role::findOrCreate(...)` | `rbac.findOrCreatePermission(...)` / `rbac.findOrCreateRole(...)` |
 | `Role::all()` / `Permission::all()` | `rbac.getRoles()` / `rbac.getPermissions()` |
 | `$role->delete()` | `rbac.deleteRole('writer')` |
@@ -68,6 +70,9 @@ The [Prisma](/adapters/prisma) and [Drizzle](/adapters/drizzle) adapters use the
 | `$user->syncPermissions(...)` | `rbac.for(user).syncPermissions(...)` |
 | `$user->hasPermissionTo(...)` | `rbac.for(user).hasPermissionTo(...)` |
 | `$user->hasDirectPermission(...)` | `rbac.for(user).hasDirectPermission(...)` |
+| `$user->hasAnyDirectPermission(...)` / `hasAllDirectPermissions(...)` | Same names on `rbac.for(user)` |
+| `$user->checkPermissionTo(...)` | `rbac.for(user).checkPermissionTo(...)` (returns `false` instead of throwing) |
+| `$user->hasRole('admin', 'api')` (guard argument) | `rbac.for(user).withScope({ guard: 'api' }).hasRole('admin')` |
 | `$user->hasAnyPermission(...)` / `hasAllPermissions(...)` | Same names on `rbac.for(user)` |
 | `$user->can(...)` / `$user->cannot(...)` | `rbac.for(user).can(...)` / `.cannot(...)` |
 | `$user->canAny([...])` | `rbac.for(user).canAny([...])` (plus `canAll`) |
@@ -79,6 +84,8 @@ The [Prisma](/adapters/prisma) and [Drizzle](/adapters/drizzle) adapters use the
 | `Role::syncModels([...])` | `rbac.role('writer').syncSubjects('user', [...ids])` |
 | `User::role('writer')->get()` | `rbac.subjectsWithRole('user', 'writer')` (returns ids) |
 | `User::permission('edit articles')->get()` | `rbac.subjectsWithPermission('user', 'edit articles')` (returns ids) |
+| `User::withoutRole('writer')->get()` | Query your users with `id NOT IN (await rbac.subjectsWithRole('user', 'writer'))` |
+| `User::withoutPermission(...)->get()` | Same, with `subjectsWithPermission` |
 
 ## Blade directives
 
@@ -90,7 +97,7 @@ The [Prisma](/adapters/prisma) and [Drizzle](/adapters/drizzle) adapters use the
 | `@role('admin')` | `<HasRole role="admin">` | `v-role="'admin'"` or `<HasRole role="admin">` |
 | `@hasanyrole('admin\|editor')` | `<HasRole anyOf={['admin', 'editor']}>` | `v-role="'admin\|editor'"` |
 | `@hasallroles('writer\|editor')` | `<HasRole allOf={['writer', 'editor']}>` | `v-role.all="['writer', 'editor']"` |
-| `@unlessrole('banned')` | — | `v-role.not="'banned'"` |
+| `@unlessrole('banned')` | `<UnlessRole role="banned">` | `v-role.not="'banned'"` |
 
 Both packages work from a `snapshot()` sent by the server. See [React](/frameworks/react) and [Vue](/frameworks/vue).
 
@@ -101,6 +108,7 @@ Both packages work from a `snapshot()` sent by the server. See [React](/framewor
 | `role:admin` | `requireRole('admin')` | `requireRole('admin')` or a middleware rule `{ role: 'admin' }` |
 | `permission:edit articles` | `requirePermission('edit articles')` | `requirePermission('edit articles')` or `{ permission: '...' }` |
 | `role_or_permission:admin\|edit articles` | `requireRoleOrPermission('admin\|edit articles')` | `{ roleOrPermission: ['admin', 'edit articles'] }` |
+| `role:admin,api` / `permission:edit articles,api` (another guard) | `requireRole('admin', { guard: 'api' })` | `requireRole('admin', { guard: 'api' })` or `withRbac(handler, { role: 'admin', guard: 'api' })` |
 
 See [Express](/frameworks/express) and [Next.js](/frameworks/nextjs).
 

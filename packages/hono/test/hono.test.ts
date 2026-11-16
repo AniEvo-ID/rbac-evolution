@@ -304,3 +304,53 @@ describe('canAny / canAll (spatie v8.5)', () => {
     expect(res.status).toBe(status)
   })
 })
+
+/** User 10 has `admin` and `edit articles` only in guard `api` (spatie's `role:admin,api`). */
+async function seedApiGuard(rbac: Rbac): Promise<void> {
+  await rbac.createRole('admin')
+  await rbac.createRole('admin', { guard: 'api' })
+  await rbac.createPermission('edit articles', { guard: 'api' })
+  await rbac.for({ type: 'user', id: 10 }, { guard: 'api' }).assignRole('admin')
+  await rbac.for({ type: 'user', id: 10 }, { guard: 'api' }).givePermissionTo('edit articles')
+}
+
+const GUARD_CASES: [string, number | null, number][] = [
+  ['/api/role', 10, 200],
+  ['/api/role', null, 401],
+  ['/web/role', 10, 403],
+  ['/web/role', null, 401],
+  ['/api/permission', 10, 200],
+  ['/web/permission', 10, 403],
+  ['/api/role-or-permission', 10, 200],
+  ['/api/can-any', 10, 200],
+  ['/api/can-all', 10, 200],
+  ['/api/custom', 10, 200],
+]
+
+describe('per-route guard option', () => {
+  const app = new Hono<RbacEnv>()
+  beforeAll(async () => {
+    const rbac = createRbac({ adapter: new MemoryAdapter() })
+    await seedApiGuard(rbac)
+    app.use(rbacMiddleware({ rbac, getSubject: async (c) => userFrom(c) }))
+    const guards = createGuards({ exposeRequirements: true })
+    app.get('/api/role', requireRole('admin', { guard: 'api' }), (c) => c.json({ guard: c.var.rbac?.guardName }))
+    app.get('/web/role', requireRole('admin'), ok)
+    app.get('/api/permission', requirePermission('edit articles', { guard: 'api' }), ok)
+    app.get('/web/permission', requirePermission('edit articles'), ok)
+    app.get('/api/role-or-permission', requireRoleOrPermission('admin|edit articles', { guard: 'api' }), ok)
+    app.get('/api/can-any', canAny('edit articles', 'publish articles', { guard: 'api' }), ok)
+    app.get('/api/can-all', canAll('edit articles', { guard: 'api' }), ok)
+    app.get('/api/custom', guards.requireRole('admin', { guard: 'api' }), ok)
+  })
+
+  it.each(GUARD_CASES)('%s as user %s → %i', async (path, user, status) => {
+    const res = await app.request(path, user ? { headers: { 'x-user': String(user) } } : {})
+    expect(res.status).toBe(status)
+  })
+
+  it('leaves `c.var.rbac` in the request guard', async () => {
+    const res = await app.request('/api/role', { headers: { 'x-user': '10' } })
+    expect(await res.json()).toEqual({ guard: 'web' })
+  })
+})

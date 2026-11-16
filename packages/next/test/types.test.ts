@@ -205,6 +205,23 @@ describe('server components & pages: require*()', () => {
     }
   })
 
+  it('per-call guard option: `{ guard: string }` on every require*(), typed names included', () => {
+    expectTypeOf<RequireOptions['guard']>().toEqualTypeOf<string | undefined>()
+    void async function neverCalled() {
+      await nextRbac.requireRole('admin', { guard: 'api' })
+      await nextRbac.requirePermission('articles.edit', { guard: 'api', all: true })
+      await nextRbac.requireRoleOrPermission('admin|articles.edit', { guard: 'api' })
+      await typedRbac.requireRole('admin', { guard: 'api' })
+      await typedRbac.requirePermission(['articles.edit'], { guard: undefined })
+      // @ts-expect-error -- `guard` is a string
+      await nextRbac.requireRole('admin', { guard: 1 })
+      // @ts-expect-error -- `guard` is a string
+      await typedRbac.requirePermission('articles.edit', { guard: 1 })
+      // @ts-expect-error -- `guard` is a string
+      await nextRbac.requireRoleOrPermission('admin', { guard: 1 })
+    }
+  })
+
   it('non-throwing checks return booleans, snapshots and an authorize() union', () => {
     expectTypeOf(nextRbac.can).returns.toEqualTypeOf<Promise<boolean>>()
     expectTypeOf(nextRbac.canAny).parameter(0).toEqualTypeOf<string | readonly string[]>()

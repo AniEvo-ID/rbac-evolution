@@ -33,6 +33,7 @@ import {
   requireRoleOrPermission,
   type RoleGuardOptions,
   type RoleOrPermissionGuardOptions,
+  type RouteGuardOptions,
 } from '../src'
 
 const rbac = createRbac({ adapter: new MemoryAdapter() })
@@ -201,15 +202,23 @@ describe('fastify types: hooks & failure details', () => {
       onUnauthenticated?: GuardHandler
       onForbidden?: GuardHandler
       exposeRequirements?: boolean
+      guard?: string
       any?: boolean
     }>()
     expectTypeOf<RoleGuardOptions>().toEqualTypeOf<{
       onUnauthenticated?: GuardHandler
       onForbidden?: GuardHandler
       exposeRequirements?: boolean
+      guard?: string
       all?: boolean
     }>()
-    expectTypeOf<RoleOrPermissionGuardOptions>().toEqualTypeOf<GuardHandlers>()
+    expectTypeOf<RouteGuardOptions>().toEqualTypeOf<{
+      onUnauthenticated?: GuardHandler
+      onForbidden?: GuardHandler
+      exposeRequirements?: boolean
+      guard?: string
+    }>()
+    expectTypeOf<RoleOrPermissionGuardOptions>().toEqualTypeOf<RouteGuardOptions>()
   })
 
   it('infers hook arguments contextually (send a reply, return it, or throw)', () => {
@@ -254,8 +263,8 @@ describe('fastify types: typed names (createGuards<T>())', () => {
     expectTypeOf(typed.requireRoleOrPermission).toEqualTypeOf<
       Guard<AppPermission | AppRole, RoleOrPermissionGuardOptions>
     >()
-    expectTypeOf(typed.canAny).toEqualTypeOf<Guard<AppPermission, GuardHandlers>>()
-    expectTypeOf(typed.canAll).toEqualTypeOf<Guard<AppPermission, GuardHandlers>>()
+    expectTypeOf(typed.canAny).toEqualTypeOf<Guard<AppPermission, RouteGuardOptions>>()
+    expectTypeOf(typed.canAll).toEqualTypeOf<Guard<AppPermission, RouteGuardOptions>>()
     // The defaults (and `createGuards()`) accept any string.
     expectTypeOf(createGuards()).toEqualTypeOf<Guards>()
     expectTypeOf(requirePermission).toEqualTypeOf<Guard<string, PermissionGuardOptions>>()
@@ -344,5 +353,30 @@ describe('fastify types: misc exports', () => {
     expectTypeOf<RbacMiddlewareMissingError>().toMatchTypeOf<Error>()
     expectTypeOf<RbacMiddlewareMissingError['code']>().toEqualTypeOf<'RBAC_MIDDLEWARE_MISSING'>()
     expectTypeOf<RbacMiddlewareMissingError['statusCode']>().toEqualTypeOf<500>()
+  })
+})
+
+describe('fastify types: per-route guard option', () => {
+  it('every guard takes `{ guard: string }`, typed names included; a non-string guard is rejected', () => {
+    function check() {
+      const typed = createGuards<AppTypes>()
+      requirePermission('edit articles', { guard: 'api' })
+      requireRole('admin', { guard: 'api', all: true })
+      requireRoleOrPermission('admin|edit articles', { guard: 'api' })
+      canAny('a', 'b', { guard: 'api' })
+      canAll(['a'], { guard: undefined })
+      typed.requireRole('admin', { guard: 'api' })
+      typed.canAll('edit articles', 'publish articles', { guard: 'api' })
+      // @ts-expect-error -- `guard` is a string
+      requireRole('admin', { guard: 1 })
+      // @ts-expect-error -- `guard` is a string
+      canAny('a', { guard: 1 })
+      // @ts-expect-error -- `guard` is a string
+      typed.requirePermission('edit articles', { guard: 1 })
+      // @ts-expect-error -- `guard` is per guard, not a `createGuards()` default
+      createGuards({ guard: 'api' })
+    }
+    expectTypeOf(check).toBeFunction()
+    expectTypeOf<RouteGuardOptions['guard']>().toEqualTypeOf<string | undefined>()
   })
 })

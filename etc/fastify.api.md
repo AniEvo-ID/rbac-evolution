@@ -4,7 +4,7 @@
 
 ## `@anievo-id/rbac-evolution-fastify`
 
-21 exports.
+22 exports.
 
 ```ts
 // Guard: type
@@ -40,12 +40,12 @@ interface Guards<T extends RbacTypeConfig = DefaultRbacTypes> {
     requirePermission: Guard<PermissionName<T>, PermissionGuardOptions>;
     requireRole: Guard<RoleName<T>, RoleGuardOptions>;
     requireRoleOrPermission: Guard<PermissionName<T> | RoleName<T>, RoleOrPermissionGuardOptions>;
-    canAny: Guard<PermissionName<T>, GuardHandlers>;
-    canAll: Guard<PermissionName<T>, GuardHandlers>;
+    canAny: Guard<PermissionName<T>, RouteGuardOptions>;
+    canAll: Guard<PermissionName<T>, RouteGuardOptions>;
 }
 
 // PermissionGuardOptions: interface
-interface PermissionGuardOptions extends GuardHandlers {
+interface PermissionGuardOptions extends RouteGuardOptions {
     any?: boolean | undefined;
 }
 
@@ -69,18 +69,23 @@ interface RbacPluginOptions {
 }
 
 // RoleGuardOptions: interface
-interface RoleGuardOptions extends GuardHandlers {
+interface RoleGuardOptions extends RouteGuardOptions {
     all?: boolean | undefined;
 }
 
 // RoleOrPermissionGuardOptions: type
-type RoleOrPermissionGuardOptions = GuardHandlers;
+type RoleOrPermissionGuardOptions = RouteGuardOptions;
+
+// RouteGuardOptions: interface
+interface RouteGuardOptions extends GuardHandlers {
+    guard?: string | undefined;
+}
 
 // canAll: const
-declare const canAll: Guard<string, GuardHandlers>;
+declare const canAll: Guard<string, RouteGuardOptions>;
 
 // canAny: const
-declare const canAny: Guard<string, GuardHandlers>;
+declare const canAny: Guard<string, RouteGuardOptions>;
 
 // createGuards: function
 declare function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes>(defaults?: GuardHandlers): Guards<TypesOf<T>>;
@@ -95,7 +100,7 @@ declare const requirePermission: Guard<string, PermissionGuardOptions>;
 declare const requireRole: Guard<string, RoleGuardOptions>;
 
 // requireRoleOrPermission: const
-declare const requireRoleOrPermission: Guard<string, GuardHandlers>;
+declare const requireRoleOrPermission: Guard<string, RouteGuardOptions>;
 ```
 
 Unexported declarations referenced by the API:

@@ -357,3 +357,109 @@ describe('CanAny / CanAll (spatie v8.5)', () => {
     ])
   })
 })
+
+describe('per-route guard option', () => {
+  @Controller('api')
+  class ApiController {
+    @Get('role')
+    @RequireRoles('admin', { guard: 'api' })
+    role(@CurrentRbac() rbac: SubjectRbac | null) {
+      return { guard: rbac?.guardName }
+    }
+
+    @Get('web-role')
+    @RequireRoles('admin')
+    webRole() {
+      return { ok: true }
+    }
+
+    @Get('permission')
+    @RequirePermissions('edit articles', { guard: 'api' })
+    permission() {
+      return { ok: true }
+    }
+
+    @Get('web-permission')
+    @RequirePermissions('edit articles')
+    webPermission() {
+      return { ok: true }
+    }
+
+    @Get('role-or-permission')
+    @RequireRoleOrPermission('admin|edit articles', { guard: 'api' })
+    roleOrPermission() {
+      return { ok: true }
+    }
+
+    @Get('can-any')
+    @CanAny('edit articles', 'publish articles', { guard: 'api' })
+    canAny() {
+      return { ok: true }
+    }
+
+    @Get('can-all')
+    @CanAll('edit articles', { guard: 'api' })
+    canAll() {
+      return { ok: true }
+    }
+
+    @Get('stacked')
+    @RequireRoles('admin', { guard: 'api' })
+    @RequireRoles('admin')
+    stacked() {
+      return { ok: true }
+    }
+  }
+
+  let app: INestApplication
+  let url: string
+
+  beforeAll(async () => {
+    const rbac = createRbac({ adapter: new MemoryAdapter() })
+    // User 10 has `admin` and `edit articles` only in guard `api` (spatie's `role:admin,api`).
+    await rbac.createRole('admin')
+    await rbac.createRole('admin', { guard: 'api' })
+    await rbac.createPermission('edit articles', { guard: 'api' })
+    await rbac.for({ type: 'user', id: 10 }, { guard: 'api' }).assignRole('admin')
+    await rbac.for({ type: 'user', id: 10 }, { guard: 'api' }).givePermissionTo('edit articles')
+
+    @Module({ imports: [RbacModule.forRoot({ rbac, getSubject })], controllers: [ApiController] })
+    class AppModule {}
+
+    ;({ app, url } = await start(AppModule))
+  })
+
+  afterAll(async () => {
+    await app.close()
+  })
+
+  it.each([
+    ['/api/role', 10, 200],
+    ['/api/role', undefined, 401],
+    ['/api/web-role', 10, 403],
+    ['/api/web-role', undefined, 401],
+    ['/api/permission', 10, 200],
+    ['/api/web-permission', 10, 403],
+    ['/api/role-or-permission', 10, 200],
+    ['/api/can-any', 10, 200],
+    ['/api/can-all', 10, 200],
+    ['/api/stacked', 10, 403],
+  ] as const)('%s as user %s → %i', async (path, user, status) => {
+    expect((await get(url, path, user)).status).toBe(status)
+  })
+
+  it('leaves the injected SubjectRbac in the request guard', async () => {
+    expect(await get(url, '/api/role', 10)).toEqual({ status: 200, body: { guard: 'web' } })
+  })
+
+  it('stores the guard in the metadata only when given', () => {
+    const proto = ApiController.prototype as unknown as Record<string, object>
+    expect(Reflect.getMetadata(RBAC_REQUIREMENTS, proto.role!)).toEqual([
+      { kind: 'role', requirements: [['admin']], guard: 'api' },
+    ])
+    expect(Reflect.getMetadata(RBAC_REQUIREMENTS, proto.webRole!)).toEqual([{ kind: 'role', requirements: [['admin']] }])
+    expect(Reflect.getMetadata(RBAC_REQUIREMENTS, proto.canAll!)).toEqual([
+      { kind: 'permission', requirements: [['edit articles']], guard: 'api' },
+    ])
+  })
+})

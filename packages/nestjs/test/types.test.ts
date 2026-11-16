@@ -32,6 +32,7 @@ import {
   type RbacModuleAsyncConfig,
   type RbacModuleConfig,
   type RbacDecorator,
+  type RbacDecoratorOptions,
   type RbacDecorators,
   type RbacModuleOptions,
   type RbacRequirement,
@@ -41,6 +42,8 @@ import {
   RequireRoleOrPermission,
   RequireRoles,
   type RoleRequirementOptions,
+  type RequirePermissionsOptions,
+  type RequireRolesOptions,
 } from '../src'
 
 const rbac = createRbac({ adapter: new MemoryAdapter() })
@@ -210,12 +213,12 @@ describe('nestjs types: decorators', () => {
       RequirePermissions('edit articles', { all: true })
       // @ts-expect-error -- `any` is a permission option
       RequireRoles('admin', { any: true })
-      // @ts-expect-error -- role-or-permission takes no options
+      // @ts-expect-error -- role-or-permission takes only `{ guard }`
       RequireRoleOrPermission('admin', { any: true })
-      // @ts-expect-error -- CanAny takes no options
+      // @ts-expect-error -- CanAny takes only `{ guard }`
       CanAny('a', { any: false })
-      // @ts-expect-error -- CanAll takes no options
-      CanAll('a', {})
+      // @ts-expect-error -- CanAll takes only `{ guard }`
+      CanAll('a', { all: true })
       // @ts-expect-error -- arrays of non-strings
       RequireRoles([1, 2])
       // @ts-expect-error -- options are booleans
@@ -326,5 +329,43 @@ describe('nestjs types: guard & context', () => {
     expectTypeOf<typeof RBAC_REQUIREMENTS>().toEqualTypeOf<'rbac-evolution:requirements'>()
     expectTypeOf<RbacGuardMissingError>().toMatchTypeOf<Error>()
     expectTypeOf<RbacGuardMissingError['code']>().toEqualTypeOf<'RBAC_GUARD_MISSING'>()
+  })
+})
+
+describe('nestjs types: per-route guard option', () => {
+  type AppTypes = { permissions: 'edit articles' | 'delete articles'; roles: 'admin' | 'writer' }
+
+  it('types the options', () => {
+    expectTypeOf<RbacDecoratorOptions>().toEqualTypeOf<{ guard?: string | undefined }>()
+    expectTypeOf<RequirePermissionsOptions>().toEqualTypeOf<{ any?: boolean | undefined; guard?: string | undefined }>()
+    expectTypeOf<RequireRolesOptions>().toEqualTypeOf<{ all?: boolean | undefined; guard?: string | undefined }>()
+  })
+
+  it('every decorator takes a trailing `{ guard: string }`, typed names included; a non-string guard is rejected', () => {
+    const typed = createRbacDecorators<AppTypes>()
+    function check() {
+      RequirePermissions('edit articles', { guard: 'api' })
+      RequirePermissions('a', 'b', { any: true, guard: 'api' })
+      RequireRoles('admin', { guard: 'api' })
+      RequireRoles('admin', 'writer', { all: true, guard: undefined })
+      RequireRoleOrPermission('admin|edit articles', { guard: 'api' })
+      CanAny('a', 'b', { guard: 'api' })
+      CanAll(['a'], { guard: 'api' })
+      typed.RequireRoles('admin', { guard: 'api' })
+      typed.CanAll('edit articles', { guard: 'api' })
+      // @ts-expect-error -- `guard` is a string
+      RequireRoles('admin', { guard: 1 })
+      // @ts-expect-error -- `guard` is a string
+      RequirePermissions('a', { guard: 1 })
+      // @ts-expect-error -- `guard` is a string
+      CanAny('a', { guard: 1 })
+      // @ts-expect-error -- `guard` is a string
+      typed.RequireRoleOrPermission('admin', { guard: 1 })
+      // @ts-expect-error -- typed names are still checked with options
+      typed.RequireRoles('admn', { guard: 'api' })
+      // @ts-expect-error -- options must be the last argument
+      CanAll({ guard: 'api' }, 'a')
+    }
+    expectTypeOf(check).toBeFunction()
   })
 })

@@ -17,7 +17,14 @@ export {
   RequireRoleOrPermission,
   RequireRoles,
 } from './decorators'
-export type { RbacDecorator, RbacDecorators } from './decorators'
+export type {
+  RbacDecorator,
+  RbacDecoratorOptions,
+  RbacDecorators,
+  RequirePermissionsOptions,
+  RequireRolesOptions,
+  StoredRbacRequirement,
+} from './decorators'
 export { getRbac, RbacGuardMissingError } from './context'
 export { RBAC, RBAC_MODULE_OPTIONS, RBAC_REQUIREMENTS } from './tokens'
 

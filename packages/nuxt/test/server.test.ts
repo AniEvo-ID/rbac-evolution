@@ -204,3 +204,53 @@ describe('createRbacServer with h3', () => {
     expect(await get(2)).toEqual({ status: 200, body: { ok: true, sameSubject: true } })
   })
 })
+
+describe('createRbacServer: per-route guard option', () => {
+  let rbac: Rbac
+
+  beforeAll(async () => {
+    rbac = await seededRbac()
+    // User 10 has `admin` and `edit articles` only in guard `api` (spatie's `role:admin,api`).
+    await rbac.createRole('admin', { guard: 'api' })
+    await rbac.createPermission('edit articles', { guard: 'api' })
+    await rbac.for({ type: 'user', id: 10 }, { guard: 'api' }).assignRole('admin')
+    await rbac.for({ type: 'user', id: 10 }, { guard: 'api' }).givePermissionTo('edit articles')
+  })
+
+  const helpers = () =>
+    createRbacServer<ReturnType<typeof fakeEvent>>({
+      rbac,
+      getSubject: (event) => (event.user === undefined ? null : { type: 'user', id: event.user }),
+    })
+  const statusOf = (promise: Promise<unknown>) =>
+    promise.then(
+      () => 200,
+      (e: unknown) => (e instanceof RbacHttpError ? e.statusCode : e),
+    )
+
+  it('requireRole(..., { guard }) checks in that guard; without it, the default guard', async () => {
+    const server = helpers()
+    expect(await statusOf(server.requireRole(fakeEvent(10), 'admin', { guard: 'api' }))).toBe(200)
+    expect(await statusOf(server.requireRole(fakeEvent(10), 'admin'))).toBe(403)
+    expect(await statusOf(server.requireRole(fakeEvent(), 'admin', { guard: 'api' }))).toBe(401)
+  })
+
+  it('every helper takes { guard }', async () => {
+    const server = helpers()
+    const event = fakeEvent(10)
+    expect(await statusOf(server.requirePermission(event, 'edit articles', { guard: 'api' }))).toBe(200)
+    expect(await statusOf(server.requirePermission(event, 'edit articles'))).toBe(403)
+    expect(await statusOf(server.requireRoleOrPermission(event, 'admin|edit articles', { guard: 'api' }))).toBe(200)
+    expect(await statusOf(server.requireRoleOrPermission(event, 'admin|edit articles'))).toBe(403)
+    expect(await statusOf(server.canAny(event, 'edit articles', 'publish articles', { guard: 'api' }))).toBe(200)
+    expect(await statusOf(server.canAll(event, 'edit articles', { guard: 'api' }))).toBe(200)
+    expect(await statusOf(server.canAll(event, 'edit articles'))).toBe(403)
+  })
+
+  it('returns the subject in the checked guard and keeps event.context.rbac in the default guard', async () => {
+    const event = fakeEvent(10)
+    const subject = await helpers().requireRole(event, 'admin', { guard: 'api' })
+    expect(subject.guardName).toBe('api')
+    expect((event.context['rbac'] as { guardName: string }).guardName).toBe('web')
+  })
+})

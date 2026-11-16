@@ -310,6 +310,19 @@ await can('invoices.view', { team: params.teamId })
 Remember that `getSnapshot()` is scoped too: the client sees the snapshot of the default (or given) guard and team.
 See [Teams](/basic-usage/teams) and [Multiple guards](/basic-usage/multiple-guards).
 
+### Another guard per route
+
+This is the equivalent of spatie's `role:admin,api` / `permission:edit articles,api`: pass `{ guard }` to a
+`require*()` helper (or to `withRbac`, `withPermission`, `withRole`) and that one check runs in that guard. A guest
+is still a guest whatever the guard.
+
+```ts
+await requireRole('admin', { guard: 'api' }) // role:admin,api
+await requirePermission('articles.edit', { guard: 'api' }) // permission:articles.edit,api
+
+export const GET = withRbac(handler, { role: 'admin', guard: 'api' }) // route handler: 401 / 403
+```
+
 ## Middleware
 
 Import `createRbacMiddleware` from the **`/middleware`** entry point. It does not import `next/navigation`, so it

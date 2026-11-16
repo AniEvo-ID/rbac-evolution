@@ -229,4 +229,35 @@ describe('createNextRbac', () => {
       ).toBe(200)
     })
   })
+
+  describe('per-call guard option (spatie `role:admin,api`)', () => {
+    async function apiAdmin() {
+      const rbac = await setup()
+      // Client 10 has `admin` and `articles.edit` only in guard `api`.
+      await rbac.createRole('admin', { guard: 'api' })
+      await rbac.for({ type: 'client', id: 10 }, { guard: 'api' }).assignRole('admin')
+      await rbac.for({ type: 'client', id: 10 }, { guard: 'api' }).givePermissionTo('articles.edit')
+      return createNextRbac({ rbac, getSubject: () => current })
+    }
+
+    it('requireRole / requirePermission / requireRoleOrPermission check in `{ guard }`', async () => {
+      const nextRbac = await apiAdmin()
+      current = { type: 'client', id: 10 }
+      await expect(nextRbac.requireRole('admin', { guard: 'api' })).resolves.toEqual(current)
+      await expect(nextRbac.requireRole('admin')).rejects.toBeInstanceOf(NotFoundSignal)
+      await expect(nextRbac.requirePermission('articles.edit', { guard: 'api' })).resolves.toEqual(current)
+      await expect(nextRbac.requirePermission('articles.edit')).rejects.toBeInstanceOf(NotFoundSignal)
+      await expect(nextRbac.requireRoleOrPermission(['admin', 'articles.edit'], { guard: 'api' })).resolves.toEqual(
+        current,
+      )
+      await expect(nextRbac.requireRoleOrPermission(['admin', 'articles.edit'])).rejects.toBeInstanceOf(NotFoundSignal)
+    })
+
+    it('a guest is still unauthenticated whatever the guard', async () => {
+      const nextRbac = await apiAdmin()
+      await expect(nextRbac.requireRole('admin', { guard: 'api', loginUrl: '/login' })).rejects.toMatchObject({
+        url: '/login',
+      })
+    })
+  })
 })
