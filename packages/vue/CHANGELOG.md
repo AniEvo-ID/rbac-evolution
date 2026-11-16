@@ -1,5 +1,14 @@
 # @anievo-id/rbac-evolution-vue
 
+## 0.9.0
+
+### Patch Changes
+
+- 990af7c: The npm README now follows the same short structure: install, example, link to the docs.
+- Updated dependencies [990af7c]
+- Updated dependencies [990af7c]
+  - @anievo-id/rbac-evolution@0.9.0
+
 ## 0.8.0
 
 ### Patch Changes
