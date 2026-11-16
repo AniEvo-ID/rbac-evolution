@@ -164,6 +164,9 @@ jobs:
           - name: drizzle-orm 0.45
             pkg: '@anievo-id/rbac-evolution-drizzle'
             deps: drizzle-orm@0.45
+          - name: mongoose 8.0
+            pkg: '@anievo-id/rbac-evolution-mongoose'
+            deps: mongoose@8.0.0
           - name: kysely 0.28.0
             pkg: '@anievo-id/rbac-evolution-kysely'
             deps: kysely@0.28.0

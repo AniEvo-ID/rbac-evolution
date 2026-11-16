@@ -129,11 +129,11 @@ describe('mongoose: types', () => {
       'role',
       'roleHasPermission',
     ])
-    expectTypeOf(schemas.permission).toMatchTypeOf<Schema<PermissionDoc>>()
-    expectTypeOf(schemas.role).toMatchTypeOf<Schema<RoleDoc>>()
-    expectTypeOf(schemas.roleHasPermission).toMatchTypeOf<Schema<RoleHasPermissionDoc>>()
-    expectTypeOf(schemas.modelHasRole).toMatchTypeOf<Schema<ModelHasRoleDoc>>()
-    expectTypeOf(schemas.modelHasPermission).toMatchTypeOf<Schema<ModelHasPermissionDoc>>()
+    expectTypeOf(schemas.permission).toEqualTypeOf<Schema<PermissionDoc>>()
+    expectTypeOf(schemas.role).toEqualTypeOf<Schema<RoleDoc>>()
+    expectTypeOf(schemas.roleHasPermission).toEqualTypeOf<Schema<RoleHasPermissionDoc>>()
+    expectTypeOf(schemas.modelHasRole).toEqualTypeOf<Schema<ModelHasRoleDoc>>()
+    expectTypeOf(schemas.modelHasPermission).toEqualTypeOf<Schema<ModelHasPermissionDoc>>()
   })
 
   it('MongooseRbacAdapter rejects incomplete model sets', () => {
