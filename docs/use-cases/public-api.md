@@ -262,8 +262,8 @@ That's why only `requireScope` sets `exposeRequirements: true`. See [Security](/
 
 ### Revoking a key
 
-Mark the key as revoked, so `findActiveBySecret()` stops finding it. Then remove its roles and scopes, so no stale
-rows are left behind:
+Mark the key as revoked, so `findActiveBySecret()` stops finding it. Then remove its roles and scopes in one call,
+so no stale rows are left behind:
 
 ```ts
 // in src/dashboard.ts
@@ -272,9 +272,7 @@ dashboard.delete('/keys/:id', requirePermission('api-keys.manage'), async (c) =>
   if (!key || key.accountId !== c.var.user!.accountId) return c.json({ error: 'Not found' }, 404)
 
   await db.apiKeys.update(key.id, { revokedAt: new Date() })
-  const access = rbac.for({ type: 'api_key', id: key.id }, { guard: 'api' })
-  await access.syncRoles([])
-  await access.syncPermissions([])
+  await rbac.for({ type: 'api_key', id: key.id }, { guard: 'api' }).revokeAll()
   return c.body(null, 204)
 })
 ```

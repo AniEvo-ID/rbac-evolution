@@ -137,9 +137,7 @@ export class StaffService {
 
   /** Last day: no roles, no direct permissions. */
   async offboard(userId: number) {
-    const staff = this.rbac.for({ type: 'user', id: userId })
-    await staff.syncRoles([])
-    await staff.syncPermissions([])
+    await this.rbac.for({ type: 'user', id: userId }).revokeAll()
   }
 }
 ```

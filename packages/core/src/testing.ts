@@ -12,9 +12,9 @@
  * ```
  */
 import { beforeEach, describe, expect, it } from 'vitest'
-import type { RbacAdapter } from './adapter'
+import type { RbacAdapter, SubjectLinks } from './adapter'
 import { createRbac } from './rbac'
-import type { Id } from './types'
+import type { Id, TeamId } from './types'
 
 export interface AdapterTestOptions {
   /** Whether the adapter's team columns are exercised (default: true). */
@@ -22,6 +22,25 @@ export interface AdapterTestOptions {
 }
 
 const s = (ids: readonly Id[]): string[] => ids.map(String).sort()
+
+const ACCENTS: Record<string, string> = { a: 'à', e: 'é', i: 'í', o: 'ó', u: 'ú' }
+/** Other case, a trailing space, and an accent on the first vowel: `admin` → `ADMIN`, `admin `, `àdmin`. */
+const lookalikes = (value: string): string[] => [
+  value.toUpperCase(),
+  `${value} `,
+  value.replace(/[aeiou]/, (vowel) => ACCENTS[vowel]!),
+]
+
+const team = (teamId: TeamId): string | null => (teamId === null ? null : String(teamId))
+/** One `type:id:target@team` string per link, sorted: compares links whatever id types the adapter returns. */
+const rows = (links: SubjectLinks): { roles: string[]; permissions: string[] } => ({
+  roles: links.roles.map((l) => `${l.subject.type}:${String(l.subject.id)}:${String(l.roleId)}@${team(l.teamId)}`).sort(),
+  permissions: links.permissions
+    .map((l) => `${l.subject.type}:${String(l.subject.id)}:${String(l.permissionId)}@${team(l.teamId)}`)
+    .sort(),
+})
+const row = (subject: { type: string; id: Id }, target: { id: Id }, teamId: TeamId): string =>
+  `${subject.type}:${String(subject.id)}:${String(target.id)}@${team(teamId)}`
 
 /**
  * Registers a full `describe` block that checks an adapter honours the `RbacAdapter` contract.
@@ -256,14 +275,6 @@ export function runAdapterTests(
     // accents, SQL Server's usually ignores case, and older PAD SPACE collations ignore trailing spaces.
     // An adapter must still match exactly, or a subject `ADMIN` could get the roles of `admin`.
     describe('exact matching', () => {
-      const ACCENTS: Record<string, string> = { a: 'à', e: 'é', i: 'í', o: 'ó', u: 'ú' }
-      /** Other case, a trailing space, and an accent on the first vowel: `admin` → `ADMIN`, `admin `, `àdmin`. */
-      const lookalikes = (value: string): string[] => [
-        value.toUpperCase(),
-        `${value} `,
-        value.replace(/[aeiou]/, (vowel) => ACCENTS[vowel]!),
-      ]
-
       it('never returns a role or permission for a lookalike name or guard', async () => {
         const permission = await adapter.createPermission({ name: 'edit', guardName: 'web' })
         const role = await adapter.createRole({ name: 'admin', guardName: 'web', teamId: null })
@@ -352,6 +363,117 @@ export function runAdapterTests(
       })
     })
 
+    // Optional methods: an adapter without one skips its tests (the engine falls back or throws a clear error).
+    describe('bulk links (optional methods)', () => {
+      it('getSubjectLinks: every link of the subject, in every team', async (ctx) => {
+        if (!adapter.getSubjectLinks) return ctx.skip()
+        const r1 = await adapter.createRole({ name: 'r1', guardName: 'web', teamId: null })
+        const r2 = await adapter.createRole({ name: 'r2', guardName: 'api', teamId: null })
+        const p = await adapter.createPermission({ name: 'p', guardName: 'web' })
+        await adapter.attachSubjectRoles(alice, [r1.id, r2.id], null)
+        await adapter.attachSubjectPermissions(alice, [p.id], null)
+        if (teams) {
+          await adapter.attachSubjectRoles(alice, [r1.id], 7)
+          await adapter.attachSubjectPermissions(alice, [p.id], 'acme')
+        }
+        await adapter.attachSubjectRoles(bob, [r1.id], null)
+        await adapter.attachSubjectRoles(robot, [r2.id], null)
+
+        expect(rows(await adapter.getSubjectLinks(alice))).toEqual({
+          roles: [row(alice, r1, null), row(alice, r2, null), ...(teams ? [row(alice, r1, 7)] : [])].sort(),
+          permissions: [row(alice, p, null), ...(teams ? [row(alice, p, 'acme')] : [])].sort(),
+        })
+        expect(rows(await adapter.getSubjectLinks(robot))).toEqual({ roles: [row(robot, r2, null)], permissions: [] })
+        expect(await adapter.getSubjectLinks(carol)).toEqual({ roles: [], permissions: [] })
+      })
+
+      it('getSubjectLinks: never returns the links of a lookalike subject id or type', async (ctx) => {
+        if (!adapter.getSubjectLinks) return ctx.skip()
+        const admin = { type: 'user', id: 'admin' }
+        const others = [...lookalikes('admin').map((id) => ({ type: 'user', id })), { type: 'USER', id: 'admin' }]
+        const mine = await adapter.createRole({ name: 'mine', guardName: 'web', teamId: null })
+        const p = await adapter.createPermission({ name: 'p', guardName: 'web' })
+        await adapter.attachSubjectRoles(admin, [mine.id], null)
+        // Each lookalike holds another role, so no primary key (whatever its collation) rejects the link.
+        for (const [i, other] of others.entries()) {
+          const r = await adapter.createRole({ name: `other ${i}`, guardName: 'web', teamId: null })
+          await adapter.attachSubjectRoles(other, [r.id], null)
+          await adapter.attachSubjectPermissions(other, [p.id], null)
+        }
+
+        expect(rows(await adapter.getSubjectLinks(admin))).toEqual({ roles: [row(admin, mine, null)], permissions: [] })
+      })
+
+      if (teams) {
+        /** Links in team `acme`, in another team, in the global scope, and in lookalike teams (`ACME`, `acme `, ...). */
+        const seedTeams = async () => {
+          const owner = await adapter.createRole({ name: 'owner', guardName: 'web', teamId: 'acme' })
+          const member = await adapter.createRole({ name: 'member', guardName: 'web', teamId: null })
+          const p = await adapter.createPermission({ name: 'p', guardName: 'web' })
+          await adapter.attachSubjectRoles(alice, [owner.id, member.id], 'acme')
+          await adapter.attachSubjectPermissions(alice, [p.id], 'acme')
+          await adapter.attachSubjectRoles(robot, [member.id], 'acme')
+          await adapter.attachSubjectRoles(bob, [member.id], null)
+          await adapter.attachSubjectRoles(bob, [member.id], 'beta')
+          await adapter.attachSubjectPermissions(bob, [p.id], 'beta')
+          // One subject per lookalike team, so no primary key (whatever its collation) rejects the link.
+          const strangers = lookalikes('acme').map((teamId, i) => ({ subject: { type: 'user', id: 100 + i }, teamId }))
+          for (const { subject, teamId } of strangers) {
+            await adapter.attachSubjectRoles(subject, [member.id], teamId)
+            await adapter.attachSubjectPermissions(subject, [p.id], teamId)
+          }
+          return { owner, member, p, strangers }
+        }
+
+        it('getTeamLinks: every link held in exactly that team, by any subject', async (ctx) => {
+          if (!adapter.getTeamLinks) return ctx.skip()
+          const { owner, member, p } = await seedTeams()
+
+          expect(rows(await adapter.getTeamLinks('acme'))).toEqual({
+            roles: [row(alice, owner, 'acme'), row(alice, member, 'acme'), row(robot, member, 'acme')].sort(),
+            permissions: [row(alice, p, 'acme')],
+          })
+          expect(rows(await adapter.getTeamLinks('beta'))).toEqual({
+            roles: [row(bob, member, 'beta')],
+            permissions: [row(bob, p, 'beta')],
+          })
+          expect(await adapter.getTeamLinks('nobody')).toEqual({ roles: [], permissions: [] })
+        })
+
+        it('detachTeamLinks: removes the links of exactly that team, and keeps its roles', async (ctx) => {
+          if (!adapter.detachTeamLinks) return ctx.skip()
+          const { member, p, strangers } = await seedTeams()
+
+          await adapter.detachTeamLinks('acme')
+
+          expect(await adapter.getSubjectRoleIds(alice, 'acme')).toEqual([])
+          expect(await adapter.getSubjectPermissionIds(alice, 'acme')).toEqual([])
+          expect(await adapter.getSubjectRoleIds(robot, 'acme')).toEqual([])
+          expect(s(await adapter.getSubjectRoleIds(bob, null))).toEqual(s([member.id]))
+          expect(s(await adapter.getSubjectRoleIds(bob, 'beta'))).toEqual(s([member.id]))
+          expect(s(await adapter.getSubjectPermissionIds(bob, 'beta'))).toEqual(s([p.id]))
+          for (const { subject, teamId } of strangers) {
+            expect(s(await adapter.getSubjectRoleIds(subject, teamId)), teamId).toEqual(s([member.id]))
+            expect(s(await adapter.getSubjectPermissionIds(subject, teamId)), teamId).toEqual(s([p.id]))
+          }
+          expect(await adapter.findRoles({ teamIds: ['acme'] })).toHaveLength(1)
+
+          await adapter.detachTeamLinks('nobody') // no links: a no-op
+          expect(s(await adapter.getSubjectRoleIds(bob, 'beta'))).toEqual(s([member.id]))
+        })
+
+        // Adapters commonly store the global team as `''`: a team id `''` must never reach the global links.
+        it("getTeamLinks / detachTeamLinks never touch the global scope, even for ''", async (ctx) => {
+          if (!adapter.getTeamLinks || !adapter.detachTeamLinks) return ctx.skip()
+          const { member } = await seedTeams()
+
+          expect(await adapter.getTeamLinks('')).toEqual({ roles: [], permissions: [] })
+          await adapter.detachTeamLinks('')
+          expect(s(await adapter.getSubjectRoleIds(bob, null))).toEqual(s([member.id]))
+        })
+      }
+    })
+
     describe('engine integration', () => {
       it('runs a full flow through createRbac', async () => {
         const rbac = createRbac({ adapter, teams, cache: false })
@@ -366,6 +488,60 @@ export function runAdapterTests(
         expect(await user.can('edit articles')).toBe(true)
         expect(await rbac.for(bob).can('edit articles')).toBe(false)
       })
+
+      it('revokeAll() removes the roles and direct permissions of the guard, then of every guard', async () => {
+        const rbac = createRbac({ adapter, teams, cache: false })
+        await rbac.createPermission('edit')
+        await rbac.createPermission('call', { guard: 'api' })
+        await rbac.createRole('writer')
+        await rbac.createRole('bot', { guard: 'api' })
+        const web = rbac.for(alice)
+        const api = rbac.for(alice, { guard: 'api' })
+        await web.assignRole('writer')
+        await web.givePermissionTo('edit')
+        await api.assignRole('bot')
+        await api.givePermissionTo('call')
+        await rbac.for(bob).assignRole('writer')
+
+        await web.revokeAll()
+        expect(await web.getRoleNames()).toEqual([])
+        expect(await web.getDirectPermissions()).toEqual([])
+        expect(await api.getRoleNames()).toEqual(['bot'])
+        expect(await rbac.for(bob).getRoleNames()).toEqual(['writer'])
+
+        await web.revokeAll({ allGuards: true })
+        expect(await api.getRoleNames()).toEqual([])
+        expect(await api.getDirectPermissions()).toEqual([])
+        expect(await rbac.for(bob).getRoleNames()).toEqual(['writer'])
+      })
+
+      if (teams) {
+        it('teams(), deleteTeam() and revokeAll({ allTeams: true })', async (ctx) => {
+          if (!adapter.getSubjectLinks || !adapter.getTeamLinks) return ctx.skip()
+          const rbac = createRbac({ adapter, teams: true, cache: false })
+          await rbac.createPermission('edit')
+          await rbac.createRole('member')
+          await rbac.createRole('owner', { team: 'acme' })
+          await rbac.for(alice, { team: 'acme' }).assignRole('owner', 'member')
+          await rbac.for(alice, { team: 'beta' }).givePermissionTo('edit')
+          await rbac.for(alice).assignRole('member')
+          await rbac.for(bob, { team: 'acme' }).assignRole('member')
+
+          expect(s(await rbac.for(alice).teams())).toEqual(['acme', 'beta'])
+          expect(s(await rbac.for(bob).teams())).toEqual(['acme'])
+
+          await rbac.deleteTeam('acme')
+          expect(s(await rbac.for(alice).teams())).toEqual(['beta'])
+          expect(await rbac.for(bob).teams()).toEqual([])
+          expect(await rbac.findRole('owner', { team: 'acme' })).toBeNull()
+          expect(await rbac.findRole('member')).not.toBeNull()
+          expect(await rbac.for(alice).getRoleNames()).toEqual(['member'])
+
+          await rbac.for(alice).revokeAll({ allTeams: true })
+          expect(await rbac.for(alice).teams()).toEqual([])
+          expect(await rbac.for(alice).getRoleNames()).toEqual([])
+        })
+      }
     })
   })
 }

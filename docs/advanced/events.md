@@ -25,11 +25,11 @@ Listeners may be sync or async. Each one receives a payload typed for its event.
 | Event | Fired by | Payload (besides `event`) |
 | --- | --- | --- |
 | `role.attached` | `assignRole`, `syncRoles` | `subject`, `roles`, `guardName`, `teamId` |
-| `role.detached` | `removeRole`, `syncRoles` | `subject`, `roles`, `guardName`, `teamId` |
+| `role.detached` | `removeRole`, `syncRoles`, `revokeAll`, `deleteTeam` | `subject`, `roles`, `guardName`, `teamId` |
 | `permission.attached` | `givePermissionTo`, `syncPermissions` on a **subject** or a **role** | `target` + `subject` or `role`, `permissions`, `guardName`, `teamId` |
-| `permission.detached` | `revokePermissionTo`, `syncPermissions` on a **subject** or a **role** | `target` + `subject` or `role`, `permissions`, `guardName`, `teamId` |
+| `permission.detached` | `revokePermissionTo`, `syncPermissions` on a **subject** or a **role**; `revokeAll`, `deleteTeam` (subjects) | `target` + `subject` or `role`, `permissions`, `guardName`, `teamId` |
 | `role.created` | `createRole`, `findOrCreateRole` (when it creates) | `role`, `teamId` |
-| `role.deleted` | `deleteRole` | `role`, `teamId` |
+| `role.deleted` | `deleteRole`; `deleteTeam` for the team's roles | `role`, `teamId` |
 | `permission.created` | `createPermission`, `findOrCreatePermission` (when it creates) | `permission` |
 | `permission.deleted` | `deletePermission` | `permission` |
 
@@ -167,6 +167,8 @@ Don't use a throwing listener to block a change. By the time it runs, the change
 - An event with an empty list is never emitted.
 - `syncRoles` / `syncPermissions` emit `*.detached` for what was removed **first**, then `*.attached` for what was added. Items present before and after are not reported.
 - Deleting a role or permission emits only `role.deleted` / `permission.deleted`. There is no `detached` event for every subject or role that had it.
+- `revokeAll()` emits one `role.detached` and one `permission.detached` per team and guard it removed something from (`roles` / `permissions` hold one guard each), like `syncRoles([])` and `syncPermissions([])` would.
+- `deleteTeam()` emits the same per subject that held something in the team (one event per guard), then `role.deleted` for each role scoped to the team. Every event is emitted after all the writes. A big team means many events: they carry each member, so an audit log or a cache broadcast sees the removal like any other.
 - `findOrCreateRole` / `findOrCreatePermission` emit `*.created` only when they actually create a row.
 
 ::: info Cost

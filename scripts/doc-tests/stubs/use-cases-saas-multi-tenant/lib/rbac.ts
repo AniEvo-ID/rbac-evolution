@@ -30,6 +30,6 @@ export const { getSnapshot, can, hasRole, requirePermission, withPermission } = 
     const session = await auth()
     return session?.user?.id ? { type: 'user', id: session.user.id } : null
   },
-  team: currentOrgId, // every check runs in the current organization
+  team: () => currentOrgId(), // every check runs in the current organization (a function: lib/org imports this file)
   loginUrl: '/login',
 })

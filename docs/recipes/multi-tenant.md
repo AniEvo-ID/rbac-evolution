@@ -107,11 +107,14 @@ await rbac.subjectsWithRole('user', 'admin', { team: teamId }) // ids of the tea
 await rbac.for({ type: 'user', id: userId }, { team: teamId }).snapshot() // for the UI
 ```
 
-When a user leaves a team, remove their roles there as well as the membership row:
+When a user leaves a team, remove their roles and direct permissions there as well as the membership row:
 
 ```ts
-await rbac.for({ type: 'user', id: userId }, { team: teamId }).syncRoles([])
+await rbac.for({ type: 'user', id: userId }, { team: teamId }).revokeAll()
 ```
+
+`rbac.for(user).teams()` lists the teams where a user has a role or a direct permission, and
+`rbac.deleteTeam(teamId)` removes a whole team. See [Teams](/basic-usage/teams#deleting-a-team).
 
 ## In Next.js
 

@@ -392,7 +392,7 @@ async function removesLastAdmin(userId: number, newRoles: readonly string[]): Pr
 
 ### Authors who leave
 
-When a writer leaves, remove their roles with `syncRoles([])`. Their posts stay, and editors can still edit them,
+When a writer leaves, remove their roles (and any direct permission) with `revokeAll()`. Their posts stay, and editors can still edit them,
 because `posts.edit` doesn't depend on the author.
 
 ::: tip Wildcards

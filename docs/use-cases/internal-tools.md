@@ -325,10 +325,11 @@ When someone leaves, the SSO sync gives them no roles at their next login. They 
 remove everything when HR's webhook arrives:
 
 ```ts
-const staff = rbac.for({ type: 'staff', id: staffId })
-await staff.syncRoles([])
-await staff.syncPermissions([]) // running temporary grants too
+await rbac.for({ type: 'staff', id: staffId }).revokeAll({ allGuards: true }) // running temporary grants too
 ```
+
+`revokeAll()` removes the roles and the direct permissions in one call. `allGuards` also covers any other guard the
+person had access to (an API token, a second panel).
 
 ### Who has temporary access right now?
 

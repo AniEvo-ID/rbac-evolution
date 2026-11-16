@@ -38,8 +38,9 @@ These codes are thrown as plain `RbacError` instances. Use `error.code` to tell 
 | `TEAM_DOES_NOT_MATCH` | A `Role` **object** from another team is used in a team scope. Global roles (`teamId: null`) are always allowed. |
 | `INVALID_NAME` | A role or permission name is empty or only whitespace. Names are trimmed before use. |
 | `INVALID_SYNC_DEFINITION` | The definition passed to [`rbac.sync()`](/advanced/seeding) is malformed (wrong shape, empty names, a role listed twice in one scope). Thrown before anything is written. |
+| `ADAPTER_METHOD_MISSING` | The call needs an [optional adapter method](/adapters/custom#optional-methods) that the adapter doesn't implement: `teams()` and `revokeAll({ allTeams: true })` need `getSubjectLinks()`, `deleteTeam()` needs `getTeamLinks()`. Thrown before anything is written. Every built-in adapter has them. |
 
-The `RbacErrorCode` type is the union of all nine codes.
+The `RbacErrorCode` type is the union of all ten codes. New codes can be added in a minor release, so give a `switch` on it a `default` branch.
 
 ## Where each error comes from
 
@@ -54,6 +55,9 @@ The `RbacErrorCode` type is the union of all nine codes.
 | `hasPermissionTo`, `hasDirectPermission` | `PermissionDoesNotExist` (only when `wildcard` is off), `GuardDoesNotMatch` |
 | `subjectsWithRole` / `subjectsWithPermission` | `RoleDoesNotExist` / `PermissionDoesNotExist`, `GuardDoesNotMatch` |
 | `rbac.for(...)`, `rbac.role(...)` with `team` | `TEAMS_NOT_ENABLED` (thrown synchronously) |
+| `revokeAll` | `ADAPTER_METHOD_MISSING` (only with `allTeams` and teams enabled) |
+| `teams` | `TEAMS_NOT_ENABLED`, `ADAPTER_METHOD_MISSING` |
+| `deleteTeam` | `TEAMS_NOT_ENABLED`, `ADAPTER_METHOD_MISSING`; a `TypeError` for `null` or `''` (the global scope) |
 | `can`, `cannot`, `canAny`, `canAll`, `hasAnyPermission`, `hasAllPermissions` | Never throw an `RbacError` (see below) |
 | `hasRole`, `hasAnyRole`, `hasAllRoles`, `hasExactRoles` | Never throw for unknown names. They return `false`. |
 

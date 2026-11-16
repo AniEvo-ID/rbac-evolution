@@ -51,6 +51,7 @@ The [Prisma](/adapters/prisma) and [Drizzle](/adapters/drizzle) adapters use the
 | `Permission::findOrCreate(...)` / `Role::findOrCreate(...)` | `rbac.findOrCreatePermission(...)` / `rbac.findOrCreateRole(...)` |
 | `Role::all()` / `Permission::all()` | `rbac.getRoles()` / `rbac.getPermissions()` |
 | `$role->delete()` | `rbac.deleteRole('writer')` |
+| Deleting a team (no helper in spatie: detach every member, delete the team's roles) | `rbac.deleteTeam(teamId)` |
 | `$role->givePermissionTo(...)` | `rbac.role('writer').givePermissionTo(...)` |
 | `$role->revokePermissionTo(...)` | `rbac.role('writer').revokePermissionTo(...)` |
 | `$role->syncPermissions(...)` | `rbac.role('writer').syncPermissions(...)` |
@@ -63,6 +64,9 @@ The [Prisma](/adapters/prisma) and [Drizzle](/adapters/drizzle) adapters use the
 | `$user->assignRole('writer')` | `rbac.for(user).assignRole('writer')` |
 | `$user->removeRole('writer')` | `rbac.for(user).removeRole('writer')` |
 | `$user->syncRoles([...])` | `rbac.for(user).syncRoles([...])` |
+| `$user->syncRoles([])` + `$user->syncPermissions([])` | `rbac.for(user).revokeAll()` |
+| Deleting the model (spatie detaches its roles and permissions in every team and guard) | `rbac.for(user).revokeAll({ allGuards: true, allTeams: true })` |
+| `$user->roles` grouped by `team_id` (no helper in spatie) | `rbac.for(user).teams()` (team ids) |
 | `$user->hasRole('writer')` | `rbac.for(user).hasRole('writer')` |
 | `$user->hasAnyRole(...)` / `hasAllRoles(...)` / `hasExactRoles(...)` | Same names on `rbac.for(user)` |
 | `$user->givePermissionTo(...)` | `rbac.for(user).givePermissionTo(...)` |

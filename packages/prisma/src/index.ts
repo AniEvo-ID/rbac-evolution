@@ -20,6 +20,7 @@ import type {
   Role,
   RolePermissionLink,
   Subject,
+  SubjectLinks,
   TeamId,
 } from '@anievo-id/rbac-evolution'
 
@@ -204,6 +205,24 @@ const sameSubject = (
   row.subjectType === where.subjectType &&
   (where.subjectId === undefined || row.subjectId === where.subjectId) &&
   row.teamId === where.teamId
+
+type LinkRow = { subjectType: string; subjectId: string; teamId: string }
+
+const toSubjectLinks = (
+  roles: readonly (LinkRow & { roleId: number })[],
+  permissions: readonly (LinkRow & { permissionId: number })[],
+): SubjectLinks => ({
+  roles: roles.map((r) => ({
+    subject: { type: r.subjectType, id: r.subjectId },
+    roleId: r.roleId,
+    teamId: teamFromKey(r.teamId),
+  })),
+  permissions: permissions.map((p) => ({
+    subject: { type: p.subjectType, id: p.subjectId },
+    permissionId: p.permissionId,
+    teamId: teamFromKey(p.teamId),
+  })),
+})
 
 // ------------------------------------------------------------------------------- adapter
 
@@ -438,6 +457,59 @@ export class PrismaAdapter implements RbacAdapter {
       where: { ...where, permissionId: { in: ids } },
     })
     return unique(rows.filter((r) => sameSubject(r, where)).map((r) => r.subjectId))
+  }
+
+  // ------------------------------------------------------------- bulk (optional)
+
+  async getSubjectLinks(subject: Subject): Promise<SubjectLinks> {
+    const where = { subjectType: subject.type, subjectId: subjectKey(subject) }
+    const exact = (row: { subjectType: string; subjectId: string }) =>
+      row.subjectType === where.subjectType && row.subjectId === where.subjectId
+    const roles = await this.#db.rbacModelHasRole.findMany({ where })
+    const permissions = await this.#db.rbacModelHasPermission.findMany({ where })
+    return toSubjectLinks(roles.filter(exact), permissions.filter(exact))
+  }
+
+  async getTeamLinks(teamId: Id): Promise<SubjectLinks> {
+    const team = teamKey(teamId)
+    if (team === GLOBAL_TEAM) return { roles: [], permissions: [] }
+    // Exact match, whatever the collation (see `sameSubject`).
+    const roles = await this.#db.rbacModelHasRole.findMany({ where: { teamId: team } })
+    const permissions = await this.#db.rbacModelHasPermission.findMany({ where: { teamId: team } })
+    return toSubjectLinks(
+      roles.filter((r) => r.teamId === team),
+      permissions.filter((p) => p.teamId === team),
+    )
+  }
+
+  async detachTeamLinks(teamId: Id): Promise<void> {
+    const team = teamKey(teamId)
+    if (team === GLOBAL_TEAM) return
+    // `teamId: 'acme'` alone would also delete the rows of a lookalike team (`ACME`, `acme `) under a
+    // collation that ignores case or trailing spaces. So the rows are read back exactly, and deleted per
+    // subject, restricted to the ids that subject holds in the team: exact, because the primary key stops
+    // a lookalike team from holding the same subject and id (same reasoning as `#heldIds`).
+    const { roles, permissions } = await this.getTeamLinks(teamId)
+    const bySubject = <L extends { subject: Subject }>(links: readonly L[], id: (link: L) => Id) => {
+      const out = new Map<string, { subjectType: string; subjectId: string; ids: number[] }>()
+      for (const link of links) {
+        const k = JSON.stringify([link.subject.type, String(link.subject.id)])
+        const entry = out.get(k) ?? { subjectType: link.subject.type, subjectId: String(link.subject.id), ids: [] }
+        entry.ids.push(...toIntIds([id(link)]))
+        out.set(k, entry)
+      }
+      return [...out.values()]
+    }
+    await this.#atomically([
+      ...bySubject(roles, (l) => l.roleId).map(({ subjectType, subjectId, ids }) =>
+        this.#db.rbacModelHasRole.deleteMany({ where: { subjectType, subjectId, teamId: team, roleId: { in: ids } } }),
+      ),
+      ...bySubject(permissions, (l) => l.permissionId).map(({ subjectType, subjectId, ids }) =>
+        this.#db.rbacModelHasPermission.deleteMany({
+          where: { subjectType, subjectId, teamId: team, permissionId: { in: ids } },
+        }),
+      ),
+    ])
   }
 
   // -------------------------------------------------------------------- helpers

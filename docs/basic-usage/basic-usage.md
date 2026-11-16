@@ -88,6 +88,8 @@ await rbac.deleteRole('writer')
 
 Deleting also removes the role or permission from every subject and role that had it. Deleting a name that doesn't exist throws `PermissionDoesNotExist` or `RoleDoesNotExist`.
 
+With [teams](/basic-usage/teams#deleting-a-team), `rbac.deleteTeam(teamId)` removes a whole team: every assignment in it and the roles created for it.
+
 ## Names or objects
 
 Every method that takes a role or permission accepts either the name or the object returned by `create*` / `find*`:
@@ -123,6 +125,8 @@ await rbac.for(user).assignRole(['writer', 'editor'])
 | `givePermissionTo(...permissions)` | Add direct permissions |
 | `revokePermissionTo(...permissions)` | Remove direct permissions |
 | `syncPermissions(...permissions)` | Replace all direct permissions |
+| `revokeAll(options?)` | Remove every role and direct permission (current guard and team, or wider with `allGuards` / `allTeams`). See [Teams](/basic-usage/teams#removing-a-member). |
+| `teams(options?)` | Ids of the teams where the subject has a role or direct permission. See [Teams](/basic-usage/teams#listing-a-subject-s-teams). |
 | `can(p)` / `cannot(p)` | Authorization check. Respects [`before` and super-admins](/basic-usage/super-admin). Never throws. |
 | `canAny(...p)` / `canAll(...p)` | `can()` for several permissions |
 | `hasPermissionTo(p)` | Data check, direct or via roles. Throws if `p` doesn't exist. |

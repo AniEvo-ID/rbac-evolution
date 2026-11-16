@@ -7,6 +7,7 @@ import type {
   Role,
   RolePermissionLink,
   Subject,
+  SubjectLinks,
   TeamId,
 } from '@anievo-id/rbac-evolution'
 import { type Model, Types } from 'mongoose'
@@ -272,6 +273,43 @@ export class MongooseRbacAdapter implements RbacAdapter {
       { $group: { _id: '$subjectId' } },
     ])
     return rows.map((r) => String(r._id))
+  }
+
+  // ------------------------------------------------------------- bulk (optional)
+
+  async getSubjectLinks(subject: Subject): Promise<SubjectLinks> {
+    return this.links({ subjectType: subject.type, subjectId: String(subject.id) })
+  }
+
+  async getTeamLinks(teamId: Id): Promise<SubjectLinks> {
+    const team = teamKey(teamId)
+    if (team === GLOBAL_TEAM) return { roles: [], permissions: [] }
+    return this.links({ teamId: team })
+  }
+
+  async detachTeamLinks(teamId: Id): Promise<void> {
+    const team = teamKey(teamId)
+    if (team === GLOBAL_TEAM) return
+    await this.init()
+    // String equality in MongoDB is exact (the collections have no collation), so the filter is enough.
+    await this.models.ModelHasRole.deleteMany({ teamId: team })
+    await this.models.ModelHasPermission.deleteMany({ teamId: team })
+  }
+
+  private async links(filter: Partial<SubjectLinkDoc>): Promise<SubjectLinks> {
+    await this.init()
+    const projection = { subjectType: 1, subjectId: 1, teamId: 1 }
+    const roles = await this.models.ModelHasRole.find(filter, { ...projection, roleId: 1 }).lean()
+    const permissions = await this.models.ModelHasPermission.find(filter, { ...projection, permissionId: 1 }).lean()
+    const subject = (d: SubjectLinkDoc): Subject => ({ type: d.subjectType, id: d.subjectId })
+    return {
+      roles: roles.map((d) => ({ subject: subject(d), roleId: d.roleId.toHexString(), teamId: teamFromKey(d.teamId) })),
+      permissions: permissions.map((d) => ({
+        subject: subject(d),
+        permissionId: d.permissionId.toHexString(),
+        teamId: teamFromKey(d.teamId),
+      })),
+    }
   }
 
   // -------------------------------------------------------------------- helpers

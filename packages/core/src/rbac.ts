@@ -18,6 +18,7 @@ import {
 } from './events'
 import { expandWildcardPermissions, type SubjectsWithPermissionOptions } from './query'
 import { type SyncDefinition, type SyncOptions, type SyncResult, syncDefinition } from './sync'
+import { deleteTeam, type RevokeAllOptions, revokeAll, subjectTeams, type SubjectTeamsOptions } from './bulk'
 import type {
   DefaultRbacTypes,
   Id,
@@ -180,8 +181,14 @@ export interface RbacInternals<T extends RbacTypeConfig = DefaultRbacTypes> {
   ): Promise<Permission>
 }
 
-/** Set by a static block of `Rbac`, the only place that can read its private fields. */
-let internalsOf!: <T extends RbacTypeConfig>(rbac: Rbac<T>) => RbacInternals<T>
+/**
+ * Filled by the `Rbac` constructor. A module-private WeakMap rather than a `static {}` block: a static block
+ * runs when the class is defined, which bundlers treat as a side effect, so they kept the whole engine in
+ * client bundles (React, Vue, Next.js middleware) that only import `wildcardImplies`.
+ */
+const INTERNALS = /* @__PURE__ */ new WeakMap<object, unknown>()
+const internalsOf = <T extends RbacTypeConfig>(rbac: Rbac<T>): RbacInternals<T> =>
+  INTERNALS.get(rbac) as RbacInternals<T>
 
 /**
  * The RBAC engine. Create one per app with {@link createRbac}.
@@ -212,10 +219,6 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   #generation = 0
   readonly #internals: RbacInternals<T>
 
-  static {
-    internalsOf = <U extends RbacTypeConfig>(rbac: Rbac<U>): RbacInternals<U> => rbac.#internals
-  }
-
   constructor(options: RbacOptions<T>) {
     this.adapter = options.adapter
     this.defaultGuard = options.defaultGuard ?? 'web'
@@ -241,6 +244,7 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
       wildcardPrefixCheck: this.#wildcardPrefixCheck,
       createPermission: (name, options, check) => this.#createPermission(name, options, check),
     }
+    INTERNALS.set(this, this.#internals)
   }
 
   /** Work with the roles & permissions of a subject (usually a user). */
@@ -491,6 +495,21 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     const viaRoles = roleIds.length > 0 ? await this.adapter.getSubjectIdsWithRoles(subjectType, roleIds, teamId) : []
     const direct = await this.adapter.getSubjectIdsWithPermissions(subjectType, permissionIds, teamId)
     return uniqueIds([...viaRoles, ...direct])
+  }
+
+  // ------------------------------------------------------------------------ teams
+
+  /**
+   * Deletes a team: every role and direct permission held in it (by any subject, in every guard), and every
+   * role scoped to it (`teamId`), with their permission links. Global roles and permissions stay.
+   * Emits `role.detached` / `permission.detached` per subject and guard, then `role.deleted` per team role.
+   * Clears the cache, so no member keeps cached access.
+   *
+   * Throws `TEAMS_NOT_ENABLED` without `teams: true`, and `ADAPTER_METHOD_MISSING` (before any write) when
+   * the adapter has no `getTeamLinks()`. Not atomic: a failure midway leaves the rest of the team in place.
+   */
+  async deleteTeam(teamId: Id): Promise<void> {
+    await deleteTeam(this, this.#internals, teamId)
   }
 
   // ------------------------------------------------------------------------ cache
@@ -903,6 +922,34 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     await this.emitPermissions('permission.detached', filterByIds(current, resolved.map((p) => p.id), false))
     await this.emitPermissions('permission.attached', filterByIds(resolved, current.map((p) => p.id), false))
     return this
+  }
+
+  // ---------------------------------------------------------------- everything
+
+  /**
+   * Removes every role and direct permission of the subject in the current guard and team
+   * (`syncRoles()` plus `syncPermissions()` with nothing). `allGuards` and `allTeams` widen it; both
+   * together remove the subject from everything, like spatie does when a model is deleted.
+   * Emits `role.detached` / `permission.detached` per team and guard, for what was actually removed.
+   *
+   * `allTeams` needs the optional adapter method `getSubjectLinks()` when teams are enabled, and throws
+   * `ADAPTER_METHOD_MISSING` without it.
+   */
+  async revokeAll(options: RevokeAllOptions = {}): Promise<this> {
+    await revokeAll(this.rbac, this.#core, this, options)
+    return this
+  }
+
+  /**
+   * Ids of the teams where the subject has a role or a direct permission in the current guard
+   * (every guard with `allGuards`). The global scope is not a team, so it is never listed.
+   * Ids come back as the adapter stores them (the SQL adapters return strings). Order is not specified.
+   *
+   * Throws `TEAMS_NOT_ENABLED` without `teams: true`, and `ADAPTER_METHOD_MISSING` when the adapter has no
+   * `getSubjectLinks()`.
+   */
+  async teams(options: SubjectTeamsOptions = {}): Promise<Id[]> {
+    return subjectTeams(this.rbac, this.#core, this, options)
   }
 
   // ------------------------------------------------------------------- queries

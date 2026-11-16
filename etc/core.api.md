@@ -4,7 +4,7 @@
 
 ## `@anievo-id/rbac-evolution`
 
-85 exports.
+90 exports.
 
 ```ts
 // ActorOptions: interface
@@ -106,6 +106,9 @@ declare class MemoryAdapter implements RbacAdapter {
     detachSubjectPermissions(subject: Subject, permissionIds: readonly Id[] | undefined, teamId: TeamId): Promise<void>;
     getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]>;
     getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]>;
+    getSubjectLinks(subject: Subject): Promise<SubjectLinks>;
+    getTeamLinks(teamId: Id): Promise<SubjectLinks>;
+    detachTeamLinks(teamId: Id): Promise<void>;
 }
 
 // MemoryCache: class
@@ -231,6 +234,7 @@ declare class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     sync(definition: SyncDefinition<T> | readonly SyncDefinition<T>[], options?: SyncOptions): Promise<SyncResult>;
     subjectsWithRole(subjectType: string, roles: Many<RoleInput<RoleName<T>>>, options?: ScopeOptions): Promise<Id[]>;
     subjectsWithPermission(subjectType: string, permissions: Many<PermissionInput<PermissionName<T>>>, options?: SubjectsWithPermissionOptions): Promise<Id[]>;
+    deleteTeam(teamId: Id): Promise<void>;
     forgetCachedPermissions(): Promise<void>;
 }
 
@@ -263,6 +267,9 @@ interface RbacAdapter {
     detachSubjectPermissions(subject: Subject, permissionIds: readonly Id[] | undefined, teamId: TeamId): Promise<void>;
     getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]>;
     getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]>;
+    getSubjectLinks?(subject: Subject): Promise<SubjectLinks>;
+    getTeamLinks?(teamId: Id): Promise<SubjectLinks>;
+    detachTeamLinks?(teamId: Id): Promise<void>;
 }
 
 // RbacError: class
@@ -272,7 +279,7 @@ declare class RbacError extends Error {
 }
 
 // RbacErrorCode: type
-type RbacErrorCode = 'PERMISSION_DOES_NOT_EXIST' | 'PERMISSION_ALREADY_EXISTS' | 'ROLE_DOES_NOT_EXIST' | 'ROLE_ALREADY_EXISTS' | 'GUARD_DOES_NOT_MATCH' | 'TEAM_DOES_NOT_MATCH' | 'TEAMS_NOT_ENABLED' | 'INVALID_NAME' | 'INVALID_WILDCARD_PERMISSION' | 'INVALID_SYNC_DEFINITION';
+type RbacErrorCode = 'PERMISSION_DOES_NOT_EXIST' | 'PERMISSION_ALREADY_EXISTS' | 'ROLE_DOES_NOT_EXIST' | 'ROLE_ALREADY_EXISTS' | 'GUARD_DOES_NOT_MATCH' | 'TEAM_DOES_NOT_MATCH' | 'TEAMS_NOT_ENABLED' | 'INVALID_NAME' | 'INVALID_WILDCARD_PERMISSION' | 'INVALID_SYNC_DEFINITION' | 'ADAPTER_METHOD_MISSING';
 
 // RbacEvent: type
 type RbacEvent = RbacEventMap[RbacEventName];
@@ -358,6 +365,12 @@ type RequirementKind = 'permission' | 'role' | 'role_or_permission';
 
 // RequirementNames: type
 type RequirementNames = string | readonly string[];
+
+// RevokeAllOptions: interface
+interface RevokeAllOptions {
+    allGuards?: boolean | undefined;
+    allTeams?: boolean | undefined;
+}
 
 // Role: interface
 interface Role {
@@ -459,6 +472,19 @@ interface Subject {
     id: Id;
 }
 
+// SubjectLinks: interface
+interface SubjectLinks {
+    roles: SubjectRoleLink[];
+    permissions: SubjectPermissionLink[];
+}
+
+// SubjectPermissionLink: interface
+interface SubjectPermissionLink {
+    subject: Subject;
+    permissionId: Id;
+    teamId: TeamId;
+}
+
 // SubjectRbac: class
 declare class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     readonly subject: Subject;
@@ -478,6 +504,8 @@ declare class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     givePermissionTo(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<this>;
     revokePermissionTo(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<this>;
     syncPermissions(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<this>;
+    revokeAll(options?: RevokeAllOptions): Promise<this>;
+    teams(options?: SubjectTeamsOptions): Promise<Id[]>;
     getDirectPermissions(): Promise<Permission[]>;
     getPermissionsViaRoles(): Promise<Permission[]>;
     getAllPermissions(): Promise<Permission[]>;
@@ -494,6 +522,18 @@ declare class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     hasAnyPermission(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<boolean>;
     hasAllPermissions(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<boolean>;
     snapshot(options?: SnapshotOptions<T>): Promise<RbacSnapshot>;
+}
+
+// SubjectRoleLink: interface
+interface SubjectRoleLink {
+    subject: Subject;
+    roleId: Id;
+    teamId: TeamId;
+}
+
+// SubjectTeamsOptions: interface
+interface SubjectTeamsOptions {
+    allGuards?: boolean | undefined;
 }
 
 // SubjectsWithPermissionOptions: interface
@@ -637,4 +677,4 @@ declare function runAdapterTests(name: string, factory: () => RbacAdapter | Prom
 
 Referenced from other entry points of this package (not re-exported here):
 
-- `@anievo-id/rbac-evolution`: `FindPermissionsQuery` (interface), `FindRolesQuery` (interface), `Id` (type), `Permission` (interface), `RbacAdapter` (interface), `Role` (interface), `RolePermissionLink` (interface), `Subject` (interface), `TeamId` (type)
+- `@anievo-id/rbac-evolution`: `FindPermissionsQuery` (interface), `FindRolesQuery` (interface), `Id` (type), `Permission` (interface), `RbacAdapter` (interface), `Role` (interface), `RolePermissionLink` (interface), `Subject` (interface), `SubjectLinks` (interface), `SubjectPermissionLink` (interface), `SubjectRoleLink` (interface), `TeamId` (type)

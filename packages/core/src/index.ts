@@ -8,6 +8,7 @@ import { version } from '../package.json'
 
 export { createRbac, Rbac, RoleRbac, SubjectRbac } from './rbac'
 export type { BeforeContext, BeforeHook, GuardOptions, RbacOptions, ScopeOptions } from './rbac'
+export type { RevokeAllOptions, SubjectTeamsOptions } from './bulk'
 export type {
   SyncDefinition,
   SyncOptions,
@@ -44,6 +45,9 @@ export type {
   FindRolesQuery,
   RbacAdapter,
   RolePermissionLink,
+  SubjectLinks,
+  SubjectPermissionLink,
+  SubjectRoleLink,
 } from './adapter'
 export { MemoryAdapter } from './adapters/memory'
 

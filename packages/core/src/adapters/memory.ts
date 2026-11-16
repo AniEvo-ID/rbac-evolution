@@ -1,4 +1,4 @@
-import type { FindPermissionsQuery, FindRolesQuery, RbacAdapter, RolePermissionLink } from '../adapter'
+import type { FindPermissionsQuery, FindRolesQuery, RbacAdapter, RolePermissionLink, SubjectLinks } from '../adapter'
 import type { Id, Permission, Role, Subject, TeamId } from '../types'
 
 interface SubjectLink {
@@ -133,7 +133,36 @@ export class MemoryAdapter implements RbacAdapter {
     return MemoryAdapter.reverse(this.subjectPermissions, subjectType, permissionIds, teamId)
   }
 
+  // ------------------------------------------------------------- bulk (optional)
+
+  async getSubjectLinks(subject: Subject): Promise<SubjectLinks> {
+    return MemoryAdapter.toLinks(
+      this.subjectRoles.filter((l) => isSubject(l, subject)),
+      this.subjectPermissions.filter((l) => isSubject(l, subject)),
+    )
+  }
+
+  async getTeamLinks(teamId: Id): Promise<SubjectLinks> {
+    return MemoryAdapter.toLinks(
+      this.subjectRoles.filter((l) => same(l.teamId, teamId)),
+      this.subjectPermissions.filter((l) => same(l.teamId, teamId)),
+    )
+  }
+
+  async detachTeamLinks(teamId: Id): Promise<void> {
+    this.subjectRoles = this.subjectRoles.filter((l) => !same(l.teamId, teamId))
+    this.subjectPermissions = this.subjectPermissions.filter((l) => !same(l.teamId, teamId))
+  }
+
   // -------------------------------------------------------------------- helpers
+
+  private static toLinks(roles: SubjectLink[], permissions: SubjectLink[]): SubjectLinks {
+    const subject = (l: SubjectLink): Subject => ({ type: l.subjectType, id: l.subjectId })
+    return {
+      roles: roles.map((l) => ({ subject: subject(l), roleId: l.targetId, teamId: l.teamId })),
+      permissions: permissions.map((l) => ({ subject: subject(l), permissionId: l.targetId, teamId: l.teamId })),
+    }
+  }
 
   private static getLinks(links: SubjectLink[], subject: Subject, teamId: TeamId): Id[] {
     return links.filter((l) => isSubject(l, subject) && same(l.teamId, teamId)).map((l) => l.targetId)

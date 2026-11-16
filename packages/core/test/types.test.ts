@@ -475,6 +475,7 @@ describe('type tests', () => {
             case 'INVALID_NAME':
             case 'INVALID_WILDCARD_PERMISSION':
             case 'INVALID_SYNC_DEFINITION':
+            case 'ADAPTER_METHOD_MISSING':
               return code
             default: {
               const never: never = code

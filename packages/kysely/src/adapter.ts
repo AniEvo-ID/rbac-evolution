@@ -7,6 +7,7 @@ import type {
   Role,
   RolePermissionLink,
   Subject,
+  SubjectLinks,
   TeamId,
 } from '@anievo-id/rbac-evolution'
 import { type Kysely, sql } from 'kysely'
@@ -166,6 +167,23 @@ const sameSubject = (row: SubjectRow, subjectType: string, subjectId: string | u
   String(row.subject_type) === subjectType &&
   (subjectId === undefined || String(row.subject_id) === subjectId) &&
   String(row.team_id) === team
+
+/** A link row read back exactly: its target (role or permission) id and its subject and team, as stored. */
+interface ExactLinkRow extends SubjectRow {
+  target: number
+}
+
+const toSubjectLinks = (roles: readonly ExactLinkRow[], permissions: readonly ExactLinkRow[]): SubjectLinks => {
+  const subject = (row: ExactLinkRow): Subject => ({ type: row.subject_type, id: row.subject_id })
+  return {
+    roles: roles.map((row) => ({ subject: subject(row), roleId: row.target, teamId: teamFromKey(row.team_id) })),
+    permissions: permissions.map((row) => ({
+      subject: subject(row),
+      permissionId: row.target,
+      teamId: teamFromKey(row.team_id),
+    })),
+  }
+}
 
 /**
  * Kysely implementation of `RbacAdapter` for PostgreSQL, MySQL / MariaDB, SQLite and SQL Server.
@@ -361,6 +379,79 @@ export class KyselyRbacAdapter implements RbacAdapter {
 
   getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
     return this.reverse('modelHasPermissions', subjectType, permissionIds, teamId)
+  }
+
+  // ------------------------------------------------------------- bulk (optional)
+
+  async getSubjectLinks(subject: Subject): Promise<SubjectLinks> {
+    const where = { subject_type: subject.type, subject_id: String(subject.id) }
+    return toSubjectLinks(
+      await this.linkRows(this.db, 'modelHasRoles', where),
+      await this.linkRows(this.db, 'modelHasPermissions', where),
+    )
+  }
+
+  async getTeamLinks(teamId: Id): Promise<SubjectLinks> {
+    const team = teamKey(teamId)
+    if (team === GLOBAL_TEAM) return { roles: [], permissions: [] }
+    return toSubjectLinks(
+      await this.linkRows(this.db, 'modelHasRoles', { team_id: team }),
+      await this.linkRows(this.db, 'modelHasPermissions', { team_id: team }),
+    )
+  }
+
+  async detachTeamLinks(teamId: Id): Promise<void> {
+    const team = teamKey(teamId)
+    if (team === GLOBAL_TEAM) return
+    // `team_id = 'acme'` alone would also delete the rows of a lookalike team (`ACME`, `acme `) under a
+    // collation that ignores case or trailing spaces. So the rows are read back exactly, and deleted per
+    // subject, restricted to the target ids that subject holds in the team: exact, because the primary key
+    // stops a lookalike team from holding the same subject and target (same reasoning as `detach`).
+    await this.atomically(async (db) => {
+      for (const table of ['modelHasRoles', 'modelHasPermissions'] as const) {
+        const bySubject = new Map<string, { type: string; id: string; targets: number[] }>()
+        for (const row of await this.linkRows(db, table, { team_id: team })) {
+          const k = JSON.stringify([row.subject_type, row.subject_id])
+          const entry = bySubject.get(k) ?? { type: row.subject_type, id: row.subject_id, targets: [] }
+          entry.targets.push(row.target)
+          bySubject.set(k, entry)
+        }
+        for (const { type, id, targets } of bySubject.values()) {
+          // At most 1000 ids per statement keeps SQL Server under its 2100-parameter limit.
+          for (let i = 0; i < targets.length; i += 1000) {
+            await db
+              .deleteFrom(this.tables[table])
+              .where('subject_type', '=', type)
+              .where('subject_id', '=', id)
+              .where('team_id', '=', team)
+              .where(TARGET[table], 'in', targets.slice(i, i + 1000))
+              .execute()
+          }
+        }
+      }
+    })
+  }
+
+  /** Link rows matching `where` (subject and/or team), compared exactly (see `sameSubject`). */
+  private async linkRows(
+    db: AnyDb,
+    table: SubjectTable,
+    where: { subject_type?: string; subject_id?: string; team_id?: string },
+  ): Promise<ExactLinkRow[]> {
+    const target = TARGET[table]
+    let q = db.selectFrom(this.tables[table]).select([target, 'subject_type', 'subject_id', 'team_id'])
+    for (const [column, value] of Object.entries(where)) q = q.where(column, '=', value)
+    const rows: (SubjectRow & Record<string, unknown>)[] = await q.execute()
+    return rows
+      .filter((row) =>
+        Object.entries(where).every(([column, value]) => String(row[column as keyof SubjectRow]) === value),
+      )
+      .map((row) => ({
+        target: Number(row[target]),
+        subject_type: String(row.subject_type),
+        subject_id: String(row.subject_id),
+        team_id: String(row.team_id),
+      }))
   }
 
   // -------------------------------------------------------------------- helpers
