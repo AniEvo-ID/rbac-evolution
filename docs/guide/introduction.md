@@ -8,8 +8,8 @@ await rbac.for(user).can('edit articles') // true / false
 
 It is a port of [spatie/laravel-permission](https://github.com/spatie/laravel-permission) to the JS ecosystem. If you have used that package in Laravel, the concepts and most method names will feel familiar. Huge thanks to [Spatie](https://spatie.be) for the original design.
 
-::: warning Status
-RBAC Evolution is at version **0.2.0** and in early development. The API may still change before 1.0.
+::: tip Status
+RBAC Evolution is stable (1.x). Breaking changes only happen in a new major version. See [Versioning](/guide/versioning).
 :::
 
 ## Why
@@ -18,8 +18,8 @@ Laravel developers have a de-facto standard for roles and permissions. In JavaSc
 
 RBAC Evolution keeps the logic in one framework-agnostic core and moves the rest into small packages:
 
-- an **adapter** decides where roles and permissions are stored (Prisma, Drizzle, memory, or your own),
-- an **integration** connects the engine to your framework (Next.js, Express, React, Vue).
+- an **adapter** decides where roles and permissions are stored (Prisma, Drizzle, Kysely, Mongoose, memory, or your own),
+- an **integration** connects the engine to your framework (Express, Fastify, Hono, NestJS, Next.js, Nuxt, React, Vue).
 
 You install only the pieces you use.
 
@@ -35,7 +35,7 @@ You install only the pieces you use.
 - Built-in caching with pluggable stores (Redis, KV, ...)
 - Events when roles or permissions are created, deleted, attached or detached
 - A [CLI](/basic-usage/cli) similar to `php artisan permission:*`
-- UI helpers for React and Vue, and route protection for Next.js and Express
+- UI helpers for React and Vue, and route protection for Express, Fastify, Hono, NestJS, Next.js and Nuxt
 
 ## Packages
 
@@ -43,11 +43,17 @@ You install only the pieces you use.
 | --- | --- |
 | `@anievo-id/rbac-evolution` | The core engine. Includes the in-memory adapter. |
 | `@anievo-id/rbac-evolution-prisma` | Storage adapter for Prisma |
-| `@anievo-id/rbac-evolution-drizzle` | Storage adapter for Drizzle (PostgreSQL and SQLite) |
+| `@anievo-id/rbac-evolution-drizzle` | Storage adapter for Drizzle (PostgreSQL, MySQL and SQLite) |
+| `@anievo-id/rbac-evolution-kysely` | Storage adapter for Kysely (PostgreSQL, MySQL, SQLite and SQL Server) |
+| `@anievo-id/rbac-evolution-mongoose` | Storage adapter for Mongoose (MongoDB) |
 | `@anievo-id/rbac-evolution-next` | Next.js server helpers, server action / route handler guards and middleware |
+| `@anievo-id/rbac-evolution-nuxt` | Nuxt module: SSR-hydrated permissions, auto-imported composables, route middleware and Nitro helpers |
 | `@anievo-id/rbac-evolution-react` | `<RbacProvider>`, `<Can>`, `<Cannot>`, `<HasRole>`, `useCan()` and other hooks |
 | `@anievo-id/rbac-evolution-vue` | `v-can` / `v-role` directives, `<Can>` / `<HasRole>` components and composables |
 | `@anievo-id/rbac-evolution-express` | Express middleware: `requirePermission`, `requireRole`, `requireRoleOrPermission` |
+| `@anievo-id/rbac-evolution-fastify` | Fastify plugin and `preHandler` guards |
+| `@anievo-id/rbac-evolution-hono` | Hono middleware (Node, Bun, Cloudflare Workers and other edge runtimes) |
+| `@anievo-id/rbac-evolution-nestjs` | NestJS module, guard and decorators |
 | `@anievo-id/rbac-evolution-cli` | Command-line tool to create roles, assign them and inspect the setup |
 
 ::: tip
