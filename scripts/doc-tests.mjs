@@ -52,7 +52,9 @@ const PAGES = [
   'docs/adapters/*.md',
   'docs/best-practices/*.md',
   'docs/recipes/*.md',
+  'docs/use-cases/*.md',
   'docs/guide/coming-from-laravel.md',
+  'docs/guide/how-it-works.md',
 ]
 
 /** Escapes every regular-expression metacharacter, backslash included. */
@@ -88,7 +90,12 @@ const FENCE_OPEN = /^(\s*)(`{3,}|~{3,})\s*([\w-]*)(.*)$/
 const EXPECT_ERROR = /\/\/.*\btype error\b/
 const LANGS = { ts: 'ts', typescript: 'ts', tsx: 'tsx' }
 /** Extra stub directories some pages share: the Next.js app modules (`@/lib/rbac`, `@/auth`, `@/lib/prisma`). */
-const STUB_SETS = { 'frameworks-nextjs': ['_next'], 'frameworks-react': ['_next'], 'recipes-authjs': ['_next'] }
+const STUB_SETS = {
+  'frameworks-nextjs': ['_next'],
+  'frameworks-react': ['_next'],
+  'recipes-authjs': ['_next'],
+  'use-cases-saas-multi-tenant': ['_next'],
+}
 
 /** Code blocks of a Markdown page: { lang, line (of the opening fence, 1-based), code, skip }. */
 function extract(markdown) {

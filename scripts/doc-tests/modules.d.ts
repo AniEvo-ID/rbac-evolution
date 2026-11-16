@@ -125,6 +125,8 @@ declare module '@prisma/client' {
     team: Delegate<AppRow>
     membership: Delegate<AppRow>
     auditLog: Delegate<AppRow>
+    invite: Delegate<AppRow>
+    project: Delegate<AppRow>
     $transaction<P extends Promise<unknown>[]>(queries: [...P]): Promise<{ [K in keyof P]: Awaited<P[K]> }>
     $transaction<R>(fn: (tx: Omit<PrismaClient, '$transaction' | '$connect' | '$disconnect'>) => Promise<R>): Promise<R>
     $connect(): Promise<void>

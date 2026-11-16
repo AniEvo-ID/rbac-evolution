@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "gsap": "^3.15.1",
+    "mermaid": "11.17.2",
     "typedoc": "0.28.20",
     "typedoc-plugin-markdown": "4.14.1",
     "typedoc-vitepress-theme": "1.1.4",
