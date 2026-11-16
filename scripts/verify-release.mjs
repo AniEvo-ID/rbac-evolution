@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // Checks that every published package is in sync between the repo, npm and GitHub:
 //   - npm has the version from package.json, with a provenance attestation
-//   - npm's `latest` dist-tag points at that version
+//   - npm's `latest` dist-tag points at that version (for a prerelease such as `1.0.0-rc.0`, the dist-tag named
+//     after it, `rc`, instead: `latest` stays on the last stable release)
 //   - the git tag `<name>@<version>` exists on origin
 //   - a GitHub Release exists for that tag (skipped when the `gh` CLI is not available)
 // Writes docs/public/reports/release.json and exits 1 on any mismatch.
@@ -29,10 +30,13 @@ async function npmVersion(name, version) {
   }
 }
 
-async function npmLatest(name) {
+async function npmDistTag(name, tag) {
   const res = await fetch(`https://registry.npmjs.org/-/package/${name}/dist-tags`)
-  return res.ok ? (await res.json()).latest : null
+  return res.ok ? ((await res.json())[tag] ?? null) : null
 }
+
+/** `latest` for a stable version, the prerelease id for a prerelease (`1.0.0-rc.0` → `rc`). */
+const distTagFor = (version) => /^\d+\.\d+\.\d+-([0-9A-Za-z-]+)/.exec(version)?.[1] ?? 'latest'
 
 const packages = readdirSync(join(root, 'packages'))
   .map((dir) => JSON.parse(readFileSync(join(root, 'packages', dir, 'package.json'), 'utf8')))
@@ -43,7 +47,8 @@ const rows = []
 for (const { name, version } of packages) {
   const tag = `${name}@${version}`
   const published = await npmVersion(name, version)
-  const latest = await npmLatest(name)
+  const distTag = distTagFor(version)
+  const latest = await npmDistTag(name, distTag)
   const tagExists = sh('git', ['ls-remote', '--exit-code', '--tags', 'origin', `refs/tags/${tag}`]).status === 0
   const release = hasGh ? sh('gh', ['release', 'view', tag, '--json', 'tagName']).status === 0 : null
   const row = {
@@ -51,6 +56,7 @@ for (const { name, version } of packages) {
     version,
     npm: Boolean(published),
     provenance: Boolean(published?.dist?.attestations),
+    distTag,
     latest,
     tag: tagExists,
     release,
