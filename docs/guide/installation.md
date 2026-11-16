@@ -78,7 +78,9 @@ All integrations are optional.
 | Next.js | `@anievo-id/rbac-evolution-next` | `next` 14+, `react` 18+ |
 | React | `@anievo-id/rbac-evolution-react` | `react` 18+ |
 | Vue | `@anievo-id/rbac-evolution-vue` | `vue` 3.3+ |
+| SvelteKit | `@anievo-id/rbac-evolution-sveltekit` | `@sveltejs/kit` 2+, `svelte` 5+ |
 | Express | `@anievo-id/rbac-evolution-express` | `express` 4+ |
+| tRPC | `@anievo-id/rbac-evolution-trpc` | `@trpc/server` 11+ |
 
 For example, a Next.js app using Prisma:
 

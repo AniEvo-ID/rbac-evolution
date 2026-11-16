@@ -35,12 +35,14 @@ flowchart LR
     hono["hono"]
     nestjs["nestjs"]
     next["next"]
+    trpc["trpc"]
   end
 
   subgraph ui["UI integrations"]
     react["react"]
     vue["vue"]
     nuxt["nuxt"]
+    sveltekit["sveltekit"]
   end
 
   cli["cli"]
@@ -54,10 +56,12 @@ flowchart LR
   hono --> core
   nestjs --> core
   next --> core
+  trpc --> core
   react --> core
   vue --> core
   nuxt --> core
   nuxt --> vue
+  sveltekit --> core
   cli --> core
 ```
 
@@ -74,12 +78,16 @@ Most packages also have a peer dependency on the library they plug into, so you 
 | `-hono` | `hono` 4+ | |
 | `-nestjs` | `@nestjs/common`, `@nestjs/core` 10 to 12, `reflect-metadata` | |
 | `-next` | `next` 14+, `react` 18+ | |
+| `-trpc` | `@trpc/server` 11+ | |
 | `-react` | `react` 18+ | |
 | `-vue` | `vue` 3.3+ | |
 | `-nuxt` | `nuxt` 3 or 4, `vue` 3.3+ | `-vue`, `@nuxt/kit` |
+| `-sveltekit` | `@sveltejs/kit` 2+, `svelte` 5+ | |
 | `-cli` | | `jiti` (loads `rbac.config.ts` without a build step) |
 
 The Nuxt module is listed with the UI packages, but it also has server helpers for Nitro routes. The Next.js package does not use the React package. They work well together, but you install them separately.
+
+The SvelteKit package is listed with the UI packages too: its main entry point has the Svelte components, and its `/server` entry point has the `handle` hook and the guards for loads, form actions and endpoints. It does not build on another UI package.
 
 ## How a permission check is decided
 
@@ -266,7 +274,9 @@ Some details:
 - With wildcards off, the engine also reads the cached list of the guard's permission names, the same way.
 - Every guard is wrapped in `asyncHandler()`, so an error (for example from the database) goes to `next(err)` on Express 4 and 5.
 
-The other integrations follow the same shape: resolve the subject once per request, scope it with `rbac.for()`, then check it in a guard. Fastify, Hono, NestJS and the Nuxt server helpers use the same `satisfiesRequirement()` from the core, so the checks are identical. Fastify, Hono, NestJS and Next.js send the same 401 and 403 JSON bodies. Nuxt's server helpers throw an error with status 401 or 403 and put the same fields in its `data`. See [Frameworks](/frameworks/express).
+The other integrations follow the same shape: resolve the subject once per request, scope it with `rbac.for()`, then check it in a guard. Fastify, Hono, NestJS, tRPC and the Nuxt and SvelteKit server helpers use the same `satisfiesRequirement()` from the core, so the checks are identical. Fastify, Hono, NestJS and Next.js send the same 401 and 403 JSON bodies. Nuxt's and SvelteKit's server helpers throw an error with status 401 or 403 and put the same fields in it, and tRPC throws a `TRPCError` (`UNAUTHORIZED` / `FORBIDDEN`) whose `cause` carries them. See [Frameworks](/frameworks/express).
+
+The tRPC middleware uses `satisfiesRequirement()` too. It throws a `TRPCError` (`UNAUTHORIZED` or `FORBIDDEN`) whose cause carries the same fields, and `rbacErrorFormatter` sends them to the client as `error.data.rbac`. See [tRPC](/frameworks/trpc).
 
 ## Data model
 

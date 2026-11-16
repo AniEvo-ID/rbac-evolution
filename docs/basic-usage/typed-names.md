@@ -110,6 +110,7 @@ check inside a handler is typed like a call on the engine:
 | Hono | `RbacVariables<typeof rbac>` / `RbacEnv<typeof rbac>` in the app's env; `rbacMiddleware({ rbac })` infers them. |
 | NestJS | `@CurrentRbac() access: SubjectRbac<AppRbac>`, or `getRbac<AppRbac>(context)`. |
 | Next.js, Nuxt | Inferred from `rbac`: the helpers return a `SubjectRbac<AppRbac>`. |
+| SvelteKit | `interface Locals extends RbacLocals<AppRbac>` in `src/app.d.ts`; `createGuards<AppRbac>()` guards return a `SubjectRbac<AppRbac>`. |
 
 The options of every integration (`RbacMiddlewareOptions`, `RbacPluginOptions`, `RbacModuleOptions`, ...) are
 generic over the engine and infer `T` from `rbac`. Express and Fastify type the request globally, through module
@@ -274,6 +275,7 @@ The guards of every integration check names in the guard they run in: the reques
 | NestJS | `createRbacDecorators<AppRbac, 'api'>()`, `getRbac<AppRbac, 'api'>(context)` | `@RequirePermissions('orders.read', { guard: 'api' })` |
 | Next.js | `createNextRbac({ rbac, guard: 'api', getSubject })` | `can('orders.read', { guard: 'api' })` |
 | Nuxt | `createRbacServer({ rbac, guard: 'api', getSubject })` | `requirePermission(event, 'orders.read', { guard: 'api' })` |
+| SvelteKit | `createGuards<AppRbac, 'api'>()`, `RbacLocals<AppRbac, 'api'>` | `requirePermission(event, 'orders.read', { guard: 'api' })` |
 | CLI | `seed` in `defineConfig()` is checked block by block, like `sync()` | |
 
 ```ts

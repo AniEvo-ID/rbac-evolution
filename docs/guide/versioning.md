@@ -74,8 +74,10 @@ These only change in a major release:
 | Next.js | 14, 15, 16 |
 | Nuxt | 3, 4 |
 | NestJS | 10, 11, 12 |
+| tRPC | 11 |
 | React | 18, 19 |
 | Vue | 3.3+ |
+| SvelteKit | 2, 3 (with Svelte 5) |
 | Prisma | 5.12+, 6, 7 |
 | Drizzle ORM | 0.38+ |
 | Kysely | 0.28, 0.29 (Node.js 22+ and TypeScript 5.4+, Kysely's own minimums) |

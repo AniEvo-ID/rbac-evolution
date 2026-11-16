@@ -81,5 +81,5 @@ jobs:
         if: steps.changesets.outputs.published == 'true'
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          VERIFY_RETRIES: 30
+          VERIFY_RETRIES: 90
         run: node scripts/verify-release.mjs
