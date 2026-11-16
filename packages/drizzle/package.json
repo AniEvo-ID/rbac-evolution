@@ -94,7 +94,7 @@
     "@anievo-id/rbac-evolution": "workspace:^"
   },
   "peerDependencies": {
-    "drizzle-orm": ">=0.36"
+    "drizzle-orm": ">=0.38"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.0",

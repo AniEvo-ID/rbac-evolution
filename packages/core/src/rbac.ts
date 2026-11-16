@@ -258,6 +258,12 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return permission
   }
 
+  /** Finds a permission by id in the guard (spatie: `Permission::findById($id, $guard)`), or `null`. */
+  async findPermissionById(id: Id, options: GuardOptions = {}): Promise<Permission | null> {
+    const [permission] = await this.adapter.findPermissions({ ids: [id], guardName: this.#resolveGuard(options.guard) })
+    return permission ?? null
+  }
+
   async findOrCreatePermission(name: PermissionName<T>, options: GuardOptions = {}): Promise<Permission> {
     return (await this.findPermission(name, options)) ?? this.createPermission(name, options)
   }
@@ -303,6 +309,30 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     const role = await this.findRole(name, options)
     if (!role) throw new RoleDoesNotExist(normalizeName(name), this.#resolveGuard(options.guard))
     return role
+  }
+
+  /** Finds a role by id in the guard (spatie: `Role::findById($id, $guard)`), or `null`. */
+  async findRoleById(id: Id, options: GuardOptions = {}): Promise<Role | null> {
+    const [role] = await this.adapter.findRoles({ ids: [id], guardName: this.#resolveGuard(options.guard) })
+    return role ?? null
+  }
+
+  /**
+   * Roles in the given scope that grant the permission directly (spatie: `$permission->roles`).
+   * Throws `PermissionDoesNotExist` for an unknown permission. Wildcard grants are not expanded.
+   */
+  async rolesWithPermission(
+    permission: PermissionInput<PermissionName<T>>,
+    options: ScopeOptions = {},
+  ): Promise<Role[]> {
+    const guardName = this.#resolveGuard(options.guard)
+    const teamId = this.#resolveTeam(options.team)
+    const [resolved] = await this.#resolvePermissions([permission], guardName)
+    const roles = await this.adapter.findRoles({ guardName, teamIds: this.#visibleTeams(teamId) })
+    if (roles.length === 0) return []
+    const links = await this.adapter.getRolePermissionLinks(roles.map((r) => r.id))
+    const holders = new Set(links.filter((l) => idKey(l.permissionId) === idKey(resolved!.id)).map((l) => idKey(l.roleId)))
+    return roles.filter((r) => holders.has(idKey(r.id)))
   }
 
   async findOrCreateRole(name: RoleName<T>, options: ScopeOptions = {}): Promise<Role> {
@@ -670,6 +700,21 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     this.#core = internalsOf(rbac)
   }
 
+  /**
+   * The same subject in another guard and/or team; options left out keep the current ones (spatie passes the
+   * guard to each check: `$user->hasRole('admin', 'api')`).
+   *
+   * ```ts
+   * await rbac.for(user).withScope({ guard: 'api' }).hasRole('admin')
+   * ```
+   */
+  withScope(options: ScopeOptions): SubjectRbac<T> {
+    return this.rbac.for(this.subject, {
+      guard: options.guard ?? this.guardName,
+      team: options.team === undefined ? this.teamId : options.team,
+    })
+  }
+
   // ------------------------------------------------------------------------ roles
 
   async assignRole(...roles: Many<RoleInput<RoleName<T>>>[]): Promise<this> {
@@ -826,6 +871,30 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     return this.#core.permissionMatches(direct, name)
   }
 
+  /** `true` if the subject has ANY of the permissions directly (ignores roles). Never throws. */
+  async hasAnyDirectPermission(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<boolean> {
+    for (const permission of flatten(permissions)) {
+      if (await this.checkDirect(permission)) return true
+    }
+    return false
+  }
+
+  /** `true` if the subject has ALL the permissions directly (ignores roles). Never throws. */
+  async hasAllDirectPermissions(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<boolean> {
+    for (const permission of flatten(permissions)) {
+      if (!(await this.checkDirect(permission))) return false
+    }
+    return true
+  }
+
+  /**
+   * {@link hasPermissionTo} that returns `false` instead of throwing for an unknown permission or another guard
+   * (spatie: `checkPermissionTo`). Pure data check: no `before` hook or super-admin.
+   */
+  async checkPermissionTo(permission: PermissionInput<PermissionName<T>>): Promise<boolean> {
+    return this.check(permission)
+  }
+
   /**
    * Authorization check: runs the `before` hook and `superAdminRoles` first, then falls back
    * to {@link hasPermissionTo}, returning `false` instead of throwing.
@@ -882,6 +951,16 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   private async check(permission: PermissionInput<PermissionName<T>>): Promise<boolean> {
     try {
       return await this.hasPermissionTo(permission)
+    } catch (error) {
+      if (error instanceof RbacError) return false
+      throw error
+    }
+  }
+
+  /** {@link hasDirectPermission} that returns `false` instead of throwing. */
+  private async checkDirect(permission: PermissionInput<PermissionName<T>>): Promise<boolean> {
+    try {
+      return await this.hasDirectPermission(permission)
     } catch (error) {
       if (error instanceof RbacError) return false
       throw error

@@ -66,6 +66,8 @@ export default defineConfig({
           { text: 'Coming from Laravel', link: '/guide/coming-from-laravel' },
           { text: 'Example apps', link: '/guide/examples' },
           { text: "What's new", link: '/guide/whats-new' },
+          { text: 'Upgrading to 1.0', link: '/guide/upgrading' },
+          { text: 'Versioning', link: '/guide/versioning' },
         ],
       },
       {
@@ -124,6 +126,16 @@ export default defineConfig({
           { text: 'Roles vs permissions', link: '/best-practices/roles-vs-permissions' },
           { text: 'Security', link: '/best-practices/security' },
           { text: 'Threat model', link: '/best-practices/threat-model' },
+          { text: 'Production checklist', link: '/best-practices/production' },
+        ],
+      },
+      {
+        text: 'Recipes',
+        items: [
+          { text: 'Auth.js in Next.js', link: '/recipes/authjs' },
+          { text: 'Multi-tenant SaaS', link: '/recipes/multi-tenant' },
+          { text: 'Admin UI for roles', link: '/recipes/admin-ui' },
+          { text: 'Audit log', link: '/recipes/audit-log' },
         ],
       },
     ],

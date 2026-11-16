@@ -6,6 +6,7 @@ import {
   Can,
   Cannot,
   HasRole,
+  UnlessRole,
   RbacProvider,
   useCan,
   useCanAll,
@@ -124,6 +125,25 @@ describe('components', () => {
     expect(screen.queryByText('all-roles')).toBeNull()
   })
 
+  it('<UnlessRole> renders when the user lacks the role(s), like @unlessrole', () => {
+    const Untyped = UnlessRole as unknown as (p: { children: ReactNode }) => ReactNode
+    render(
+      <RbacProvider snapshot={snapshot}>
+        <UnlessRole role="banned"><span>not-banned</span></UnlessRole>
+        <UnlessRole role="writer" fallback={<span>writer-fallback</span>}><span>not-writer</span></UnlessRole>
+        <UnlessRole anyOf={['admin', 'banned']}><span>none-of</span></UnlessRole>
+        <UnlessRole allOf={['admin', 'writer']}><span>not-all</span></UnlessRole>
+        <Untyped>no-condition</Untyped>
+      </RbacProvider>,
+    )
+    expect(screen.queryByText('not-banned')).not.toBeNull()
+    expect(screen.queryByText('not-writer')).toBeNull()
+    expect(screen.queryByText('writer-fallback')).not.toBeNull()
+    expect(screen.queryByText('none-of')).not.toBeNull()
+    expect(screen.queryByText('not-all')).not.toBeNull()
+    expect(screen.queryByText('no-condition')).toBeNull()
+  })
+
   it('denies when no condition is given (untyped usage)', () => {
     const Untyped = Can as unknown as (p: { children: ReactNode }) => ReactNode
     render(
@@ -162,15 +182,18 @@ describe('loading state', () => {
       <Cannot permission="articles.edit"><span>read-only</span></Cannot>
       <Can permission="articles.edit" fallback={<span>no-edit</span>}>edit</Can>
       <HasRole role="admin" fallback={<span>not-admin</span>}>admin</HasRole>
+      <UnlessRole role="admin"><span>unless-admin</span></UnlessRole>
     </RbacProvider>
   )
 
   it('renders nothing (not even the fallback) while loading, then the normal result', () => {
     const { rerender } = render(gates(true))
-    for (const text of ['read-only', 'no-edit', 'not-admin']) expect(screen.queryByText(text)).toBeNull()
+    for (const text of ['read-only', 'no-edit', 'not-admin', 'unless-admin']) expect(screen.queryByText(text)).toBeNull()
 
     rerender(gates(false))
-    for (const text of ['read-only', 'no-edit', 'not-admin']) expect(screen.queryByText(text)).not.toBeNull()
+    for (const text of ['read-only', 'no-edit', 'not-admin', 'unless-admin']) {
+      expect(screen.queryByText(text)).not.toBeNull()
+    }
   })
 
   it('exposes loading on the checker; checks still deny', () => {

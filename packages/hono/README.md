@@ -1,16 +1,15 @@
 # @anievo-id/rbac-evolution-hono
 
-📖 **[Documentation](https://creation.anievo.id/rbac-evolution/frameworks/hono)**
+[Hono](https://hono.dev) middleware for [RBAC Evolution](https://github.com/AniEvo-ID/rbac-evolution), for Node, Bun,
+Deno, Cloudflare Workers and other edge runtimes.
 
-[Hono](https://hono.dev) middleware for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution) — the counterpart of spatie/laravel-permission's
-`role`, `permission` and `role_or_permission` middleware. Runs anywhere Hono runs: **Node, Bun, Deno,
-Cloudflare Workers and other edge runtimes** (no Node-only APIs).
+## Install
 
 ```bash
 npm i @anievo-id/rbac-evolution @anievo-id/rbac-evolution-hono hono
 ```
 
-## Setup
+## Usage
 
 ```ts
 import { Hono } from 'hono'
@@ -20,112 +19,23 @@ import { type RbacEnv, rbacMiddleware, requirePermission, requireRole } from '@a
 const rbac = createRbac({ adapter: new MemoryAdapter() })
 const app = new Hono<RbacEnv>()
 
-app.use(yourAuthMiddleware) // your authentication runs first
+app.use(yourAuthMiddleware) // authentication runs first
+app.use(rbacMiddleware({ rbac, getSubject: (c) => getUserSubject(c) })) // yours: { type, id } or null
 
-app.use(
-  rbacMiddleware({
-    rbac,
-    // return null/undefined for guests
-    getSubject: (c) => {
-      const userId = c.req.header('x-user-id')
-      return userId ? { type: 'user', id: userId } : null
-    },
-    guard: 'web', // optional, defaults to the engine's defaultGuard
-    team: (c) => c.req.header('x-team-id'), // optional, only with createRbac({ teams: true })
-  }),
-)
-```
-
-`rbacMiddleware` sets `c.var.rbac`: a `SubjectRbac` for the current subject, or `null` for guests.
-Type it with `new Hono<RbacEnv>()`, or merge `RbacVariables` into your own variables:
-
-```ts
-import type { RbacVariables } from '@anievo-id/rbac-evolution-hono'
-
-type AppEnv = { Variables: RbacVariables & { user: User | undefined } }
-const app = new Hono<AppEnv>()
-
-app.use(rbacMiddleware<AppEnv>({ rbac, getSubject: (c) => (c.var.user ? { type: 'user', id: c.var.user.id } : null) }))
-
+app.put('/articles/:id', requirePermission('edit articles|publish articles'), updateArticle) // any of
+app.use('/admin/*', requireRole('admin'))
 app.get('/me/permissions', async (c) => c.json(c.var.rbac ? await c.var.rbac.snapshot() : null))
-
-app.post('/articles/:id/publish', async (c) => {
-  if (!(await c.var.rbac?.can('publish articles'))) return c.json({ error: 'FORBIDDEN' }, 403)
-  // ...
-})
 ```
 
-## Guards
+- `c.var.rbac` is a `SubjectRbac`, or `null` for guests. Merge `RbacVariables` into your own `Variables` type if
+  you have one.
+- Guests get **401**, users without access get **403** `{ error, reason, message }`. The required names are only
+  added with `exposeRequirements: true`. Leave it off in production.
+- `createGuards<AppRbac>()` returns guards that type-check names against your `createRbac<AppRbac>()` type.
 
-```ts
-app.put('/articles/:id', requirePermission('edit articles'), handler)
-app.put('/articles/:id', requirePermission('edit articles|delete articles'), handler) // any of (pipe, like spatie)
-app.put('/articles/:id', requirePermission('edit articles', 'publish articles'), handler) // all of
-app.put('/articles/:id', requirePermission('edit articles', 'publish articles', { any: true }), handler) // any of
+## Documentation
 
-app.get('/admin', requireRole('admin'), handler)
-app.get('/staff', requireRole('admin|editor'), handler) // any of
-app.get('/staff', requireRole('admin', 'editor'), handler) // any of
-app.get('/both', requireRole('writer', 'editor', { all: true }), handler) // all of
-
-app.get('/dashboard', requireRoleOrPermission('admin|view dashboard'), handler) // any role OR any permission
-
-app.use('/admin/*', requireRole('admin')) // guard a whole sub-tree
-```
-
-Arrays are accepted anywhere a name is (`requirePermission(['a', 'b'])` = all of).
-Unknown permissions simply fail the check (no exception). Permission checks go through `can()`,
-so `superAdminRoles` and the engine's `before` hook apply.
-
-### Responses
-
-- No subject (`c.var.rbac === null`) → **401** `{ "error": "UNAUTHENTICATED", "message": "User is not logged in." }`
-- Not allowed → **403** `{ "error": "FORBIDDEN", "reason": "permission" | "role" | "role_or_permission", "message": "..." }`
-- `rbacMiddleware` not registered → throws `RbacMiddlewareMissingError` (`code: 'RBAC_MIDDLEWARE_MISSING'`), handled by `app.onError`
-
-The required names are not included in the 403 body unless you pass `exposeRequirements: true`
-(like spatie's `display_permission_in_exception`).
-
-### Custom handlers
-
-Handlers return the `Response` to send (or throw, e.g. an `HTTPException`). Per guard:
-
-```ts
-requirePermission('edit articles', {
-  onUnauthenticated: (c) => c.redirect('/login'),
-  onForbidden: (c, { kind, requirements }) => c.html('<h1>Forbidden</h1>', 403),
-})
-```
-
-Or once for all guards:
-
-```ts
-import { HTTPException } from 'hono/http-exception'
-import { createGuards } from '@anievo-id/rbac-evolution-hono'
-
-export const { requirePermission, requireRole, requireRoleOrPermission } = createGuards({
-  onUnauthenticated: (c) => c.redirect('/login'),
-  onForbidden: () => {
-    throw new HTTPException(403)
-  },
-})
-```
-
-## Typed names
-
-Pass the type you gave `createRbac<AppRbac>()` to `createGuards()`, and a typo in a guard name is a compile error:
-
-```ts
-import { createGuards } from '@anievo-id/rbac-evolution-hono'
-import type { AppRbac } from './rbac' // the type you pass to createRbac<AppRbac>()
-
-export const { requirePermission, requireRole } = createGuards<AppRbac>()
-
-app.put('/articles/:id', requirePermission('edit articles|publish articles'), updateArticle)
-app.delete('/articles/:id', requirePermission('delete artcles'), deleteArticle) // type error
-```
-
-`createGuards<typeof rbac>()` works too. The guards exported by the package still accept any string.
+https://creation.anievo.id/rbac-evolution/frameworks/hono
 
 ## License
 

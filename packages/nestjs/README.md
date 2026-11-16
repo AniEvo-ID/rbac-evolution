@@ -1,112 +1,51 @@
 # @anievo-id/rbac-evolution-nestjs
 
-📖 **[Documentation](https://creation.anievo.id/rbac-evolution/frameworks/nestjs)**
+NestJS integration for [RBAC Evolution](https://github.com/AniEvo-ID/rbac-evolution): a global `RbacModule`, an
+`RbacGuard` and the `@RequirePermissions()`, `@RequireRoles()` and `@RequireRoleOrPermission()` decorators.
 
-NestJS integration for [rbac-evolution](https://github.com/AniEvo-ID/rbac-evolution): a global `RbacModule`, an `RbacGuard`, and the
-`@RequirePermissions()`, `@RequireRoles()` and `@RequireRoleOrPermission()` decorators — the Nest counterpart of
-spatie/laravel-permission's `permission`, `role` and `role_or_permission` middleware. Semantics and error bodies are
-identical to [`@anievo-id/rbac-evolution-express`](https://www.npmjs.com/package/@anievo-id/rbac-evolution-express).
+## Install
 
 ```bash
-npm i @anievo-id/rbac-evolution @anievo-id/rbac-evolution-nestjs
+npm i @anievo-id/rbac-evolution @anievo-id/rbac-evolution-nestjs @nestjs/common @nestjs/core reflect-metadata
 ```
 
-`@nestjs/common`, `@nestjs/core` (10, 11 or 12) and `reflect-metadata` are peer dependencies.
+Works with NestJS 10, 11 and 12.
 
-## Setup
+## Usage
 
 ```ts
-import { Module } from '@nestjs/common'
+import { Controller, Delete, Module } from '@nestjs/common'
 import { createRbac, MemoryAdapter } from '@anievo-id/rbac-evolution'
-import { RbacModule } from '@anievo-id/rbac-evolution-nestjs'
+import { RbacModule, RequirePermissions } from '@anievo-id/rbac-evolution-nestjs'
 
 const rbac = createRbac({ adapter: new MemoryAdapter() })
 
+@Controller('articles')
+class ArticlesController {
+  @Delete(':id')
+  @RequirePermissions('articles.delete') // 'a|b' = any of; several arguments = all of
+  remove() {}
+}
+
 @Module({
-  imports: [
-    RbacModule.forRoot({
-      rbac,
-      // Return null / undefined for guests. Runs after your auth guard/middleware.
-      getSubject: (ctx) => {
-        const user = ctx.switchToHttp().getRequest().user
-        return user ? { type: 'user', id: user.id } : null
-      },
-    }),
-  ],
+  imports: [RbacModule.forRoot({ rbac, getSubject: (ctx) => toSubject(ctx.switchToHttp().getRequest().user) })],
+  controllers: [ArticlesController],
 })
 export class AppModule {}
 ```
 
-Options: `rbac`, `getSubject(ctx)`, `guard` (RBAC guard name, e.g. `'api'`), `team(ctx)` (for `teams: true`),
-`exposeRequirements` (add `required` to 403 bodies) and `globalGuard` (register `RbacGuard` as `APP_GUARD`).
+`toSubject` stands for your own code: return `{ type: 'user', id }` or `null` for guests.
 
-`RbacModule.forRootAsync({ imports, inject, useFactory, globalGuard })` builds the options from other providers
-(e.g. a `ConfigService`).
+- Guests get `UnauthorizedException`, users without access get `ForbiddenException` with
+  `{ error, reason, message }`. `exposeRequirements: true` adds the required names. Leave it off in production.
+- `createRbacDecorators<AppRbac>()` returns decorators that type-check names against your `createRbac<AppRbac>()`
+  type.
+- The package does not rely on `emitDecoratorMetadata`, so your app can build with `tsc`, SWC or esbuild.
 
-## Decorators
+## Documentation
 
-```ts
-import { Controller, Delete, Get, Post } from '@nestjs/common'
-import { CurrentRbac, RequirePermissions, RequireRoleOrPermission, RequireRoles } from '@anievo-id/rbac-evolution-nestjs'
-import type { SubjectRbac } from '@anievo-id/rbac-evolution'
+https://creation.anievo.id/rbac-evolution/frameworks/nestjs
 
-@Controller('articles')
-export class ArticlesController {
-  @Post()
-  @RequirePermissions('articles.create')
-  create() {}
+## License
 
-  @Post(':id/publish')
-  @RequirePermissions('articles.edit', 'articles.publish') // all of them
-  publish() {}
-
-  @Delete(':id')
-  @RequirePermissions('articles.delete|articles.moderate') // any of them (also: { any: true })
-  remove() {}
-
-  @Get('drafts')
-  @RequireRoles('editor|admin') // any; RequireRoles('a', 'b', { all: true }) for all
-  drafts() {}
-
-  @Get('stats')
-  @RequireRoleOrPermission('admin|stats.view')
-  stats(@CurrentRbac() rbac: SubjectRbac) {
-    return rbac.snapshot()
-  }
-}
-```
-
-- Decorators work on controllers and handlers; class-level and handler-level requirements must **all** pass,
-  and stacked decorators add up.
-- Each decorator applies `@UseGuards(RbacGuard)` itself. `@CurrentRbac()` needs the guard to have run: use a
-  `@Require*()` decorator, `@UseGuards(RbacGuard)`, or `globalGuard: true`.
-- The `Rbac` engine is injectable with `@Inject(RBAC)`.
-
-## Typed names
-
-Pass your `createRbac<AppRbac>()` type to `createRbacDecorators()`, and typos become compile errors:
-
-```ts
-export const { RequirePermissions, RequireRoles } = createRbacDecorators<AppRbac>()
-
-class ArticlesController {
-  @Put(':id') @RequirePermissions('articles.edit') update() {} // ok
-  @Delete(':id') @RequirePermissions('articles.edti') remove() {} // type error
-}
-```
-
-The top-level decorators still accept any string.
-
-## Errors
-
-| Situation      | Exception               | Body                                                     |
-| -------------- | ----------------------- | -------------------------------------------------------- |
-| No subject     | `UnauthorizedException` | `{ error: 'UNAUTHENTICATED', message }`                  |
-| Missing access | `ForbiddenException`    | `{ error: 'FORBIDDEN', reason, message[, required] }`    |
-
-`reason` is `'permission'`, `'role'` or `'role_or_permission'`. Customize the response with a Nest exception filter.
-
-## Decorators & build tooling
-
-The package is compiled with esbuild and does not rely on `emitDecoratorMetadata`: every injected dependency
-uses an explicit `@Inject(token)`. Your app can use `tsc`, SWC or esbuild.
+MIT

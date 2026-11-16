@@ -57,7 +57,7 @@
     "@anievo-id/rbac-evolution": "workspace:^"
   },
   "peerDependencies": {
-    "@prisma/client": ">=5"
+    "@prisma/client": "^5.12.0 || ^6.0.0"
   },
   "devDependencies": {
     "@prisma/client": "^6.19.0",

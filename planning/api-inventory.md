@@ -5,6 +5,9 @@ Every public export of every package entry point, for the 1.0 API freeze ([01-ap
 Regenerate after `pnpm build` with `pnpm api:inventory > planning/api-inventory.md`, then copy back the Decision column.
 Fill **Decision** with one of: **keep**, **rename** (to what), **internal**, **remove**.
 
+**Decided for 1.0: every export is kept** (see `docs/guide/versioning.md`). Renaming or removing anything now would
+break users for little gain; the internals that should not be public were made private in 0.7.0.
+
 ## Findings from the first run (0.6.6)
 
 - 14 packages, 23 entry points with types (plus 3 static SQL files in drizzle), 336 exports in total.
@@ -24,101 +27,106 @@ Fill **Decision** with one of: **keep**, **rename** (to what), **internal**, **r
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `CliError` | class |  | |
-| `CONFIG_FILES` | const |  | |
-| `defineConfig` | function |  | |
-| `findConfigFile` | function |  | |
-| `formatSyncResult` | function |  | |
-| `Io` | interface |  | |
-| `loadConfig` | function |  | |
-| `RbacCliConfig` | interface |  | |
-| `run` | function |  | |
-| `RunOptions` | interface |  | |
-| `UsageError` | class |  | |
-| `VERSION` | const |  | |
+| `CliError` | class |  | keep |
+| `CONFIG_FILES` | const |  | keep |
+| `defineConfig` | function |  | keep |
+| `findConfigFile` | function |  | keep |
+| `formatSyncResult` | function |  | keep |
+| `Io` | interface |  | keep |
+| `loadConfig` | function |  | keep |
+| `RbacCliConfig` | interface |  | keep |
+| `run` | function |  | keep |
+| `RunOptions` | interface |  | keep |
+| `UsageError` | class |  | keep |
+| `VERSION` | const |  | keep |
 
 
 ## @anievo-id/rbac-evolution
 
 ### `@anievo-id/rbac-evolution`
 
-73 exports (23 values, 50 types).
+78 exports (23 values, 55 types).
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `BeforeContext` | interface |  | |
-| `BeforeHook` | type |  | |
-| `CacheStore` | interface |  | |
-| `createRbac` | function |  | |
-| `DefaultRbacTypes` | interface |  | |
-| `FindPermissionsQuery` | interface |  | |
-| `FindRolesQuery` | interface |  | |
-| `GuardDoesNotMatch` | class |  | |
-| `GuardOptions` | interface |  | |
-| `Id` | type |  | |
-| `InvalidWildcardPermission` | class |  | |
-| `Many` | type |  | |
-| `MemoryAdapter` | class |  | |
-| `MemoryCache` | class |  | |
-| `MemoryCacheOptions` | interface |  | |
-| `parseWildcardPermission` | function |  | |
-| `Permission` | interface |  | |
-| `PermissionAlreadyExists` | class |  | |
-| `PermissionAttachedEvent` | type |  | |
-| `PermissionCreatedEvent` | interface |  | |
-| `PermissionDeletedEvent` | interface |  | |
-| `PermissionDetachedEvent` | type |  | |
-| `PermissionDoesNotExist` | class |  | |
-| `PermissionInput` | type |  | |
-| `PermissionName` | type |  | |
-| `permissionRequirement` | function |  | |
-| `PermissionRequirementOptions` | interface |  | |
-| `PermissionTarget` | type |  | |
-| `Rbac` | class |  | |
-| `RbacAdapter` | interface |  | |
-| `RbacError` | class |  | |
-| `RbacErrorCode` | type |  | |
-| `RbacEvent` | type |  | |
-| `RbacEventListener` | type |  | |
-| `RbacEventMap` | interface |  | |
-| `RbacEventName` | type |  | |
-| `RbacOptions` | interface |  | |
-| `RbacRequirement` | interface |  | |
-| `RbacSnapshot` | interface |  | |
-| `RbacTypeConfig` | interface |  | |
-| `REQUIREMENT_MESSAGES` | const |  | |
-| `RequirementKind` | type |  | |
-| `RequirementNames` | type |  | |
-| `Role` | interface |  | |
-| `RoleAlreadyExists` | class |  | |
-| `RoleAttachedEvent` | interface |  | |
-| `RoleCreatedEvent` | interface |  | |
-| `RoleDeletedEvent` | interface |  | |
-| `RoleDetachedEvent` | interface |  | |
-| `RoleDoesNotExist` | class |  | |
-| `RoleInput` | type |  | |
-| `RoleName` | type |  | |
-| `roleOrPermissionRequirement` | function |  | |
-| `RolePermissionLink` | interface |  | |
-| `RoleRbac` | class |  | |
-| `roleRequirement` | function |  | |
-| `RoleRequirementOptions` | interface |  | |
-| `satisfiesRequirement` | function |  | |
-| `ScopeOptions` | interface |  | |
-| `splitRequirementArgs` | function |  | |
-| `Subject` | interface |  | |
-| `SubjectRbac` | class |  | |
-| `SyncDefinition` | interface |  | |
-| `SyncOptions` | interface |  | |
-| `SyncPermissionChange` | interface |  | |
-| `SyncResult` | interface |  | |
-| `SyncRoleChange` | interface |  | |
-| `SyncRolePermissions` | type |  | |
-| `SyncRoleUpdate` | interface |  | |
-| `TeamId` | type |  | |
-| `UNAUTHENTICATED_MESSAGE` | const |  | |
-| `VERSION` | const |  | |
-| `wildcardImplies` | function |  | |
+| `BeforeContext` | interface |  | keep |
+| `BeforeHook` | type |  | keep |
+| `CacheStore` | interface |  | keep |
+| `CheckRequirementName` | type |  | keep |
+| `createRbac` | function |  | keep |
+| `DefaultRbacTypes` | interface |  | keep |
+| `FindPermissionsQuery` | interface |  | keep |
+| `FindRolesQuery` | interface |  | keep |
+| `GuardDoesNotMatch` | class |  | keep |
+| `GuardOptions` | interface |  | keep |
+| `Id` | type |  | keep |
+| `InvalidWildcardPermission` | class |  | keep |
+| `Many` | type |  | keep |
+| `MemoryAdapter` | class |  | keep |
+| `MemoryCache` | class |  | keep |
+| `MemoryCacheOptions` | interface |  | keep |
+| `NamesRequired` | interface |  | keep |
+| `OptionsMustBeLast` | interface |  | keep |
+| `parseWildcardPermission` | function |  | keep |
+| `Permission` | interface |  | keep |
+| `PermissionAlreadyExists` | class |  | keep |
+| `PermissionAttachedEvent` | type |  | keep |
+| `PermissionCreatedEvent` | interface |  | keep |
+| `PermissionDeletedEvent` | interface |  | keep |
+| `PermissionDetachedEvent` | type |  | keep |
+| `PermissionDoesNotExist` | class |  | keep |
+| `PermissionInput` | type |  | keep |
+| `PermissionName` | type |  | keep |
+| `permissionRequirement` | function |  | keep |
+| `PermissionRequirementOptions` | interface |  | keep |
+| `PermissionTarget` | type |  | keep |
+| `Rbac` | class |  | keep |
+| `RbacAdapter` | interface |  | keep |
+| `RbacError` | class |  | keep |
+| `RbacErrorCode` | type |  | keep |
+| `RbacEvent` | type |  | keep |
+| `RbacEventListener` | type |  | keep |
+| `RbacEventMap` | interface |  | keep |
+| `RbacEventName` | type |  | keep |
+| `RbacOptions` | interface |  | keep |
+| `RbacRequirement` | interface |  | keep |
+| `RbacSnapshot` | interface |  | keep |
+| `RbacTypeConfig` | interface |  | keep |
+| `REQUIREMENT_MESSAGES` | const |  | keep |
+| `RequirementArgs` | type |  | keep |
+| `RequirementKind` | type |  | keep |
+| `RequirementNames` | type |  | keep |
+| `Role` | interface |  | keep |
+| `RoleAlreadyExists` | class |  | keep |
+| `RoleAttachedEvent` | interface |  | keep |
+| `RoleCreatedEvent` | interface |  | keep |
+| `RoleDeletedEvent` | interface |  | keep |
+| `RoleDetachedEvent` | interface |  | keep |
+| `RoleDoesNotExist` | class |  | keep |
+| `RoleInput` | type |  | keep |
+| `RoleName` | type |  | keep |
+| `roleOrPermissionRequirement` | function |  | keep |
+| `RolePermissionLink` | interface |  | keep |
+| `RoleRbac` | class |  | keep |
+| `roleRequirement` | function |  | keep |
+| `RoleRequirementOptions` | interface |  | keep |
+| `satisfiesRequirement` | function |  | keep |
+| `ScopeOptions` | interface |  | keep |
+| `splitRequirementArgs` | function |  | keep |
+| `Subject` | interface |  | keep |
+| `SubjectRbac` | class |  | keep |
+| `SyncDefinition` | interface |  | keep |
+| `SyncOptions` | interface |  | keep |
+| `SyncPermissionChange` | interface |  | keep |
+| `SyncResult` | interface |  | keep |
+| `SyncRoleChange` | interface |  | keep |
+| `SyncRolePermissions` | type |  | keep |
+| `SyncRoleUpdate` | interface |  | keep |
+| `TeamId` | type |  | keep |
+| `UNAUTHENTICATED_MESSAGE` | const |  | keep |
+| `UnknownRequirementName` | interface |  | keep |
+| `VERSION` | const |  | keep |
+| `wildcardImplies` | function |  | keep |
 
 ### `@anievo-id/rbac-evolution/testing`
 
@@ -126,8 +134,8 @@ Fill **Decision** with one of: **keep**, **rename** (to what), **internal**, **r
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `AdapterTestOptions` | interface |  | |
-| `runAdapterTests` | function |  | |
+| `AdapterTestOptions` | interface |  | keep |
+| `runAdapterTests` | function |  | keep |
 
 
 ## @anievo-id/rbac-evolution-drizzle
@@ -138,20 +146,20 @@ Fill **Decision** with one of: **keep**, **rename** (to what), **internal**, **r
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `DrizzleDialect` | type |  | |
-| `drizzleMysqlAdapter` | function |  | |
-| `drizzlePgAdapter` | function |  | |
-| `DrizzleRbacAdapter` | class |  | |
-| `drizzleSqliteAdapter` | function |  | |
-| `mysqlRbacSchema` | function |  | |
-| `MysqlRbacSchema` | type |  | |
-| `pgRbacSchema` | function |  | |
-| `PgRbacSchema` | type |  | |
-| `RbacSchemaOptions` | interface |  | |
-| `RbacTableNames` | interface |  | |
-| `RbacTables` | interface |  | |
-| `sqliteRbacSchema` | function |  | |
-| `SqliteRbacSchema` | type |  | |
+| `DrizzleDialect` | type |  | keep |
+| `drizzleMysqlAdapter` | function |  | keep |
+| `drizzlePgAdapter` | function |  | keep |
+| `DrizzleRbacAdapter` | class |  | keep |
+| `drizzleSqliteAdapter` | function |  | keep |
+| `mysqlRbacSchema` | function |  | keep |
+| `MysqlRbacSchema` | type |  | keep |
+| `pgRbacSchema` | function |  | keep |
+| `PgRbacSchema` | type |  | keep |
+| `RbacSchemaOptions` | interface |  | keep |
+| `RbacTableNames` | interface |  | keep |
+| `RbacTables` | interface |  | keep |
+| `sqliteRbacSchema` | function |  | keep |
+| `SqliteRbacSchema` | type |  | keep |
 
 ### `@anievo-id/rbac-evolution-drizzle/pg`
 
@@ -159,10 +167,10 @@ Fill **Decision** with one of: **keep**, **rename** (to what), **internal**, **r
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `drizzlePgAdapter` | function |  | |
-| `pgRbacSchema` | function |  | |
-| `PgRbacSchema` | type |  | |
-| `RbacSchemaOptions` | interface |  | |
+| `drizzlePgAdapter` | function |  | keep |
+| `pgRbacSchema` | function |  | keep |
+| `PgRbacSchema` | type |  | keep |
+| `RbacSchemaOptions` | interface |  | keep |
 
 ### `@anievo-id/rbac-evolution-drizzle/sqlite`
 
@@ -170,10 +178,10 @@ Fill **Decision** with one of: **keep**, **rename** (to what), **internal**, **r
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `drizzleSqliteAdapter` | function |  | |
-| `RbacSchemaOptions` | interface |  | |
-| `sqliteRbacSchema` | function |  | |
-| `SqliteRbacSchema` | type |  | |
+| `drizzleSqliteAdapter` | function |  | keep |
+| `RbacSchemaOptions` | interface |  | keep |
+| `sqliteRbacSchema` | function |  | keep |
+| `SqliteRbacSchema` | type |  | keep |
 
 ### `@anievo-id/rbac-evolution-drizzle/mysql`
 
@@ -181,10 +189,10 @@ Fill **Decision** with one of: **keep**, **rename** (to what), **internal**, **r
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `drizzleMysqlAdapter` | function |  | |
-| `mysqlRbacSchema` | function |  | |
-| `MysqlRbacSchema` | type |  | |
-| `RbacSchemaOptions` | interface |  | |
+| `drizzleMysqlAdapter` | function |  | keep |
+| `mysqlRbacSchema` | function |  | keep |
+| `MysqlRbacSchema` | type |  | keep |
+| `RbacSchemaOptions` | interface |  | keep |
 
 ### `@anievo-id/rbac-evolution-drizzle/sql/pg.sql`
 
@@ -203,86 +211,92 @@ Static file `./sql/mysql.sql`.
 
 ### `@anievo-id/rbac-evolution-express`
 
-18 exports (9 values, 9 types).
+20 exports (9 values, 11 types).
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `asyncHandler` | function |  | |
-| `canAll` | const |  | |
-| `canAny` | const |  | |
-| `createGuards` | function |  | |
-| `GuardContext` | interface |  | |
-| `GuardHandler` | type |  | |
-| `GuardHandlers` | interface |  | |
-| `GuardKind` | type |  | |
-| `GuardNames` | type |  | |
-| `PermissionGuardOptions` | interface |  | |
-| `rbacMiddleware` | function |  | |
-| `RbacMiddlewareMissingError` | class |  | |
-| `RbacMiddlewareOptions` | interface |  | |
-| `requirePermission` | const |  | |
-| `requireRole` | const |  | |
-| `requireRoleOrPermission` | const |  | |
-| `RoleGuardOptions` | interface |  | |
-| `RoleOrPermissionGuardOptions` | type |  | |
+| `asyncHandler` | function |  | keep |
+| `canAll` | const |  | keep |
+| `canAny` | const |  | keep |
+| `createGuards` | function |  | keep |
+| `Guard` | type |  | keep |
+| `GuardContext` | interface |  | keep |
+| `GuardHandler` | type |  | keep |
+| `GuardHandlers` | interface |  | keep |
+| `GuardKind` | type |  | keep |
+| `GuardNames` | type |  | keep |
+| `Guards` | interface |  | keep |
+| `PermissionGuardOptions` | interface |  | keep |
+| `rbacMiddleware` | function |  | keep |
+| `RbacMiddlewareMissingError` | class |  | keep |
+| `RbacMiddlewareOptions` | interface |  | keep |
+| `requirePermission` | const |  | keep |
+| `requireRole` | const |  | keep |
+| `requireRoleOrPermission` | const |  | keep |
+| `RoleGuardOptions` | interface |  | keep |
+| `RoleOrPermissionGuardOptions` | type |  | keep |
 
 
 ## @anievo-id/rbac-evolution-fastify
 
 ### `@anievo-id/rbac-evolution-fastify`
 
-19 exports (8 values, 11 types).
+21 exports (8 values, 13 types).
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `canAll` | const |  | |
-| `canAny` | const |  | |
-| `createGuards` | function |  | |
-| `GuardContext` | interface |  | |
-| `GuardHandler` | type |  | |
-| `GuardHandlers` | interface |  | |
-| `GuardHook` | type |  | |
-| `GuardKind` | type |  | |
-| `GuardNames` | type |  | |
-| `PermissionGuardOptions` | interface |  | |
-| `RbacHook` | type |  | |
-| `RbacMiddlewareMissingError` | class |  | |
-| `rbacPlugin` | const |  | |
-| `RbacPluginOptions` | interface |  | |
-| `requirePermission` | const |  | |
-| `requireRole` | const |  | |
-| `requireRoleOrPermission` | const |  | |
-| `RoleGuardOptions` | interface |  | |
-| `RoleOrPermissionGuardOptions` | type |  | |
+| `canAll` | const |  | keep |
+| `canAny` | const |  | keep |
+| `createGuards` | function |  | keep |
+| `Guard` | type |  | keep |
+| `GuardContext` | interface |  | keep |
+| `GuardHandler` | type |  | keep |
+| `GuardHandlers` | interface |  | keep |
+| `GuardHook` | type |  | keep |
+| `GuardKind` | type |  | keep |
+| `GuardNames` | type |  | keep |
+| `Guards` | interface |  | keep |
+| `PermissionGuardOptions` | interface |  | keep |
+| `RbacHook` | type |  | keep |
+| `RbacMiddlewareMissingError` | class |  | keep |
+| `rbacPlugin` | const |  | keep |
+| `RbacPluginOptions` | interface |  | keep |
+| `requirePermission` | const |  | keep |
+| `requireRole` | const |  | keep |
+| `requireRoleOrPermission` | const |  | keep |
+| `RoleGuardOptions` | interface |  | keep |
+| `RoleOrPermissionGuardOptions` | type |  | keep |
 
 
 ## @anievo-id/rbac-evolution-hono
 
 ### `@anievo-id/rbac-evolution-hono`
 
-19 exports (8 values, 11 types).
+21 exports (8 values, 13 types).
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `canAll` | const |  | |
-| `canAny` | const |  | |
-| `createGuards` | function |  | |
-| `GuardContext` | interface |  | |
-| `GuardHandler` | type |  | |
-| `GuardHandlers` | interface |  | |
-| `GuardKind` | type |  | |
-| `GuardNames` | type |  | |
-| `PermissionGuardOptions` | interface |  | |
-| `RbacEnv` | type |  | |
-| `rbacMiddleware` | function |  | |
-| `RbacMiddlewareMissingError` | class |  | |
-| `RbacMiddlewareOptions` | interface |  | |
-| `RbacVariables` | type |  | |
-| `requirePermission` | const |  | |
-| `requireRole` | const |  | |
-| `requireRoleOrPermission` | const |  | |
-| `RoleGuardOptions` | interface |  | |
-| `RoleOrPermissionGuardOptions` | type |  | |
+| `canAll` | const |  | keep |
+| `canAny` | const |  | keep |
+| `createGuards` | function |  | keep |
+| `Guard` | type |  | keep |
+| `GuardContext` | interface |  | keep |
+| `GuardHandler` | type |  | keep |
+| `GuardHandlers` | interface |  | keep |
+| `GuardKind` | type |  | keep |
+| `GuardNames` | type |  | keep |
+| `Guards` | interface |  | keep |
+| `PermissionGuardOptions` | interface |  | keep |
+| `RbacEnv` | type |  | keep |
+| `rbacMiddleware` | function |  | keep |
+| `RbacMiddlewareMissingError` | class |  | keep |
+| `RbacMiddlewareOptions` | interface |  | keep |
+| `RbacVariables` | type |  | keep |
+| `requirePermission` | const |  | keep |
+| `requireRole` | const |  | keep |
+| `requireRoleOrPermission` | const |  | keep |
+| `RoleGuardOptions` | interface |  | keep |
+| `RoleOrPermissionGuardOptions` | type |  | keep |
 
 
 ## @anievo-id/rbac-evolution-kysely
@@ -293,25 +307,25 @@ Static file `./sql/mysql.sql`.
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `createRbacTables` | function |  | |
-| `detectDialect` | function |  | |
-| `dropRbacTables` | function |  | |
-| `kyselyAdapter` | function |  | |
-| `KyselyAdapterOptions` | interface |  | |
-| `KyselyRbacAdapter` | class |  | |
-| `ModelHasPermissionsTable` | interface |  | |
-| `ModelHasRolesTable` | interface |  | |
-| `PermissionsTable` | interface |  | |
-| `RbacDatabase` | type |  | |
-| `RbacDialect` | type |  | |
-| `rbacMigration` | function |  | |
-| `RbacMigrationOptions` | interface |  | |
-| `RbacTableNames` | interface |  | |
-| `RbacTableOptions` | interface |  | |
-| `RbacTimestamp` | type |  | |
-| `RoleHasPermissionsTable` | interface |  | |
-| `RolesTable` | interface |  | |
-| `tableNames` | const |  | |
+| `createRbacTables` | function |  | keep |
+| `detectDialect` | function |  | keep |
+| `dropRbacTables` | function |  | keep |
+| `kyselyAdapter` | function |  | keep |
+| `KyselyAdapterOptions` | interface |  | keep |
+| `KyselyRbacAdapter` | class |  | keep |
+| `ModelHasPermissionsTable` | interface |  | keep |
+| `ModelHasRolesTable` | interface |  | keep |
+| `PermissionsTable` | interface |  | keep |
+| `RbacDatabase` | type |  | keep |
+| `RbacDialect` | type |  | keep |
+| `rbacMigration` | function |  | keep |
+| `RbacMigrationOptions` | interface |  | keep |
+| `RbacTableNames` | interface |  | keep |
+| `RbacTableOptions` | interface |  | keep |
+| `RbacTimestamp` | type |  | keep |
+| `RoleHasPermissionsTable` | interface |  | keep |
+| `RolesTable` | interface |  | keep |
+| `tableNames` | const |  | keep |
 
 
 ## @anievo-id/rbac-evolution-mongoose
@@ -322,51 +336,54 @@ Static file `./sql/mysql.sql`.
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `collectionNames` | const |  | |
-| `createRbacModels` | function |  | |
-| `ModelHasPermissionDoc` | interface |  | |
-| `ModelHasRoleDoc` | interface |  | |
-| `mongooseAdapter` | function |  | |
-| `MongooseRbacAdapter` | class |  | |
-| `PermissionDoc` | interface |  | |
-| `RbacCollectionNames` | interface |  | |
-| `RbacModelOptions` | interface |  | |
-| `RbacModels` | interface |  | |
-| `rbacSchemas` | function |  | |
-| `RoleDoc` | interface |  | |
-| `RoleHasPermissionDoc` | interface |  | |
-| `syncRbacIndexes` | function |  | |
+| `collectionNames` | const |  | keep |
+| `createRbacModels` | function |  | keep |
+| `ModelHasPermissionDoc` | interface |  | keep |
+| `ModelHasRoleDoc` | interface |  | keep |
+| `mongooseAdapter` | function |  | keep |
+| `MongooseRbacAdapter` | class |  | keep |
+| `PermissionDoc` | interface |  | keep |
+| `RbacCollectionNames` | interface |  | keep |
+| `RbacModelOptions` | interface |  | keep |
+| `RbacModels` | interface |  | keep |
+| `rbacSchemas` | function |  | keep |
+| `RoleDoc` | interface |  | keep |
+| `RoleHasPermissionDoc` | interface |  | keep |
+| `syncRbacIndexes` | function |  | keep |
 
 
 ## @anievo-id/rbac-evolution-nestjs
 
 ### `@anievo-id/rbac-evolution-nestjs`
 
-21 exports (13 values, 8 types).
+24 exports (14 values, 10 types).
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `CanAll` | function |  | |
-| `CanAny` | function |  | |
-| `CurrentRbac` | const |  | |
-| `getRbac` | function |  | |
-| `PermissionRequirementOptions` | interface |  | |
-| `RBAC` | const |  | |
-| `RBAC_MODULE_OPTIONS` | const |  | |
-| `RBAC_REQUIREMENTS` | const |  | |
-| `RbacGuard` | class |  | |
-| `RbacGuardMissingError` | class |  | |
-| `RbacModule` | class |  | |
-| `RbacModuleAsyncConfig` | interface |  | |
-| `RbacModuleConfig` | interface |  | |
-| `RbacModuleOptions` | interface |  | |
-| `RbacRequirement` | interface |  | |
-| `RequirementKind` | type |  | |
-| `RequirementNames` | type |  | |
-| `RequirePermissions` | function |  | |
-| `RequireRoleOrPermission` | function |  | |
-| `RequireRoles` | function |  | |
-| `RoleRequirementOptions` | interface |  | |
+| `CanAll` | const |  | keep |
+| `CanAny` | const |  | keep |
+| `createRbacDecorators` | function |  | keep |
+| `CurrentRbac` | const |  | keep |
+| `getRbac` | function |  | keep |
+| `PermissionRequirementOptions` | interface |  | keep |
+| `RBAC` | const |  | keep |
+| `RBAC_MODULE_OPTIONS` | const |  | keep |
+| `RBAC_REQUIREMENTS` | const |  | keep |
+| `RbacDecorator` | type |  | keep |
+| `RbacDecorators` | interface |  | keep |
+| `RbacGuard` | class |  | keep |
+| `RbacGuardMissingError` | class |  | keep |
+| `RbacModule` | class |  | keep |
+| `RbacModuleAsyncConfig` | interface |  | keep |
+| `RbacModuleConfig` | interface |  | keep |
+| `RbacModuleOptions` | interface |  | keep |
+| `RbacRequirement` | interface |  | keep |
+| `RequirementKind` | type |  | keep |
+| `RequirementNames` | type |  | keep |
+| `RequirePermissions` | const |  | keep |
+| `RequireRoleOrPermission` | const |  | keep |
+| `RequireRoles` | const |  | keep |
+| `RoleRequirementOptions` | interface |  | keep |
 
 
 ## @anievo-id/rbac-evolution-next
@@ -377,29 +394,29 @@ Static file `./sql/mysql.sql`.
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `AuthorizeResult` | type |  | |
-| `compilePathPattern` | function |  | |
-| `createNextRbac` | function |  | |
-| `createRbacMiddleware` | function |  | |
-| `FailureReason` | type |  | |
-| `forbiddenMessage` | function |  | |
-| `ForbiddenReason` | type |  | |
-| `matchPath` | function |  | |
-| `MaybePromise` | type |  | |
-| `MiddlewareRequest` | type |  | |
-| `NextRbac` | type |  | |
-| `NextRbacOptions` | interface |  | |
-| `PathMatcher` | type |  | |
-| `RbacMiddlewareOptions` | type |  | |
-| `RbacMiddlewareRule` | interface |  | |
-| `RbacMiddlewareWithRbac` | interface |  | |
-| `RbacMiddlewareWithSnapshot` | interface |  | |
-| `RbacUnauthorizedError` | class |  | |
-| `Requirement` | type |  | |
-| `RequireOptions` | interface |  | |
-| `SnapshotCheckOptions` | interface |  | |
-| `snapshotSatisfies` | function |  | |
-| `WithRbacOptions` | type |  | |
+| `AuthorizeResult` | type |  | keep |
+| `compilePathPattern` | function |  | keep |
+| `createNextRbac` | function |  | keep |
+| `createRbacMiddleware` | function |  | keep |
+| `FailureReason` | type |  | keep |
+| `forbiddenMessage` | function |  | keep |
+| `ForbiddenReason` | type |  | keep |
+| `matchPath` | function |  | keep |
+| `MaybePromise` | type |  | keep |
+| `MiddlewareRequest` | type |  | keep |
+| `NextRbac` | interface |  | keep |
+| `NextRbacOptions` | interface |  | keep |
+| `PathMatcher` | type |  | keep |
+| `RbacMiddlewareOptions` | type |  | keep |
+| `RbacMiddlewareRule` | interface |  | keep |
+| `RbacMiddlewareWithRbac` | interface |  | keep |
+| `RbacMiddlewareWithSnapshot` | interface |  | keep |
+| `RbacUnauthorizedError` | class |  | keep |
+| `Requirement` | type |  | keep |
+| `RequireOptions` | interface |  | keep |
+| `SnapshotCheckOptions` | interface |  | keep |
+| `snapshotSatisfies` | function |  | keep |
+| `WithRbacOptions` | type |  | keep |
 
 ### `@anievo-id/rbac-evolution-next/middleware`
 
@@ -407,19 +424,19 @@ Static file `./sql/mysql.sql`.
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `compilePathPattern` | function |  | |
-| `createRbacMiddleware` | function |  | |
-| `matchPath` | function |  | |
-| `MaybePromise` | type |  | |
-| `MiddlewareRequest` | type |  | |
-| `PathMatcher` | type |  | |
-| `RbacMiddlewareOptions` | type |  | |
-| `RbacMiddlewareRule` | interface |  | |
-| `RbacMiddlewareWithRbac` | interface |  | |
-| `RbacMiddlewareWithSnapshot` | interface |  | |
-| `Requirement` | type |  | |
-| `SnapshotCheckOptions` | interface |  | |
-| `snapshotSatisfies` | function |  | |
+| `compilePathPattern` | function |  | keep |
+| `createRbacMiddleware` | function |  | keep |
+| `matchPath` | function |  | keep |
+| `MaybePromise` | type |  | keep |
+| `MiddlewareRequest` | type |  | keep |
+| `PathMatcher` | type |  | keep |
+| `RbacMiddlewareOptions` | type |  | keep |
+| `RbacMiddlewareRule` | interface |  | keep |
+| `RbacMiddlewareWithRbac` | interface |  | keep |
+| `RbacMiddlewareWithSnapshot` | interface |  | keep |
+| `Requirement` | type |  | keep |
+| `SnapshotCheckOptions` | interface |  | keep |
+| `snapshotSatisfies` | function |  | keep |
 
 
 ## @anievo-id/rbac-evolution-nuxt
@@ -430,13 +447,13 @@ Static file `./sql/mysql.sql`.
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `COMPOSABLES` | const |  | |
-| `default` | const |  | |
-| `ModuleOptions` | interface |  | |
-| `NuxtRbac` | interface |  | |
-| `RbacPublicConfig` | interface |  | |
-| `RbacRouteRule` | interface |  | |
-| `RouteRuleResult` | type |  | |
+| `COMPOSABLES` | const |  | keep |
+| `default` | const |  | keep |
+| `ModuleOptions` | interface |  | keep |
+| `NuxtRbac` | interface |  | keep |
+| `RbacPublicConfig` | interface |  | keep |
+| `RbacRouteRule` | interface |  | keep |
+| `RouteRuleResult` | type |  | keep |
 
 ### `@anievo-id/rbac-evolution-nuxt/server`
 
@@ -444,16 +461,16 @@ Static file `./sql/mysql.sql`.
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `createRbacServer` | function |  | |
-| `PermissionRequirementOptions` | interface |  | |
-| `RbacErrorBody` | type |  | |
-| `RbacEvent` | interface |  | |
-| `RbacHttpError` | class |  | |
-| `RbacServer` | interface |  | |
-| `RbacServerOptions` | interface |  | |
-| `RequirementKind` | type |  | |
-| `RequirementNames` | type |  | |
-| `RoleRequirementOptions` | interface |  | |
+| `createRbacServer` | function |  | keep |
+| `PermissionRequirementOptions` | interface |  | keep |
+| `RbacErrorBody` | type |  | keep |
+| `RbacEvent` | interface |  | keep |
+| `RbacHttpError` | class |  | keep |
+| `RbacServer` | interface |  | keep |
+| `RbacServerOptions` | interface |  | keep |
+| `RequirementKind` | type |  | keep |
+| `RequirementNames` | type |  | keep |
+| `RoleRequirementOptions` | interface |  | keep |
 
 ### `@anievo-id/rbac-evolution-nuxt/rule`
 
@@ -461,9 +478,9 @@ Static file `./sql/mysql.sql`.
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `evaluateRouteRule` | function |  | |
-| `RbacRouteRule` | interface |  | |
-| `RouteRuleResult` | type |  | |
+| `evaluateRouteRule` | function |  | keep |
+| `RbacRouteRule` | interface |  | keep |
+| `RouteRuleResult` | type |  | keep |
 
 
 ## @anievo-id/rbac-evolution-prisma
@@ -474,21 +491,21 @@ Static file `./sql/mysql.sql`.
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `PrismaAdapter` | class |  | |
-| `PrismaAdapterOptions` | interface |  | |
-| `PrismaRbacClient` | interface |  | |
-| `PrismaRbacDelegate` | interface |  | |
-| `PrismaRbacModelHasPermissionDelegate` | type |  | |
-| `PrismaRbacModelHasPermissionRow` | interface |  | |
-| `PrismaRbacModelHasRoleDelegate` | type |  | |
-| `PrismaRbacModelHasRoleRow` | interface |  | |
-| `PrismaRbacPermissionDelegate` | type |  | |
-| `PrismaRbacPermissionRow` | interface |  | |
-| `PrismaRbacRoleDelegate` | type |  | |
-| `PrismaRbacRoleHasPermissionDelegate` | type |  | |
-| `PrismaRbacRoleHasPermissionRow` | interface |  | |
-| `PrismaRbacRoleRow` | interface |  | |
-| `PrismaRbacSubjectGroupBy` | interface |  | |
+| `PrismaAdapter` | class |  | keep |
+| `PrismaAdapterOptions` | interface |  | keep |
+| `PrismaRbacClient` | interface |  | keep |
+| `PrismaRbacDelegate` | interface |  | keep |
+| `PrismaRbacModelHasPermissionDelegate` | type |  | keep |
+| `PrismaRbacModelHasPermissionRow` | interface |  | keep |
+| `PrismaRbacModelHasRoleDelegate` | type |  | keep |
+| `PrismaRbacModelHasRoleRow` | interface |  | keep |
+| `PrismaRbacPermissionDelegate` | type |  | keep |
+| `PrismaRbacPermissionRow` | interface |  | keep |
+| `PrismaRbacRoleDelegate` | type |  | keep |
+| `PrismaRbacRoleHasPermissionDelegate` | type |  | keep |
+| `PrismaRbacRoleHasPermissionRow` | interface |  | keep |
+| `PrismaRbacRoleRow` | interface |  | keep |
+| `PrismaRbacSubjectGroupBy` | interface |  | keep |
 
 
 ## @anievo-id/rbac-evolution-react
@@ -499,27 +516,27 @@ Static file `./sql/mysql.sql`.
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `Can` | function |  | |
-| `Cannot` | function |  | |
-| `CannotProps` | type |  | |
-| `CanProps` | type |  | |
-| `createRbacChecker` | function |  | |
-| `HasRole` | function |  | |
-| `HasRoleProps` | type |  | |
-| `PermissionCondition` | type |  | |
-| `RbacChecker` | interface |  | |
-| `RbacCheckerOptions` | interface |  | |
-| `RbacProvider` | function |  | |
-| `RbacProviderProps` | interface |  | |
-| `RoleCondition` | type |  | |
-| `useCan` | function |  | |
-| `useCanAll` | function |  | |
-| `useCanAny` | function |  | |
-| `useCannot` | function |  | |
-| `useHasAllRoles` | function |  | |
-| `useHasAnyRole` | function |  | |
-| `useHasRole` | function |  | |
-| `useRbac` | function |  | |
+| `Can` | function |  | keep |
+| `Cannot` | function |  | keep |
+| `CannotProps` | type |  | keep |
+| `CanProps` | type |  | keep |
+| `createRbacChecker` | function |  | keep |
+| `HasRole` | function |  | keep |
+| `HasRoleProps` | type |  | keep |
+| `PermissionCondition` | type |  | keep |
+| `RbacChecker` | interface |  | keep |
+| `RbacCheckerOptions` | interface |  | keep |
+| `RbacProvider` | function |  | keep |
+| `RbacProviderProps` | interface |  | keep |
+| `RoleCondition` | type |  | keep |
+| `useCan` | function |  | keep |
+| `useCanAll` | function |  | keep |
+| `useCanAny` | function |  | keep |
+| `useCannot` | function |  | keep |
+| `useHasAllRoles` | function |  | keep |
+| `useHasAnyRole` | function |  | keep |
+| `useHasRole` | function |  | keep |
+| `useRbac` | function |  | keep |
 
 
 ## @anievo-id/rbac-evolution-vue
@@ -530,25 +547,25 @@ Static file `./sql/mysql.sql`.
 
 | Export | Kind | Notes | Decision |
 | --- | --- | --- | --- |
-| `Can` | const |  | |
-| `createCanDirective` | function |  | |
-| `createRbacPlugin` | function |  | |
-| `createRbacState` | function |  | |
-| `createRoleDirective` | function |  | |
-| `HasRole` | const |  | |
-| `NameList` | type |  | |
-| `RBAC_KEY` | const |  | |
-| `RbacPlugin` | type |  | |
-| `RbacPluginOptions` | interface |  | |
-| `RbacSnapshot` | interface |  | |
-| `RbacStateOptions` | interface |  | |
-| `useCan` | const |  | |
-| `useCanAll` | const |  | |
-| `useCanAny` | const |  | |
-| `useCannot` | const |  | |
-| `useHasAllRoles` | const |  | |
-| `useHasAnyRole` | const |  | |
-| `useHasRole` | const |  | |
-| `useRbac` | function |  | |
-| `VueRbac` | interface |  | |
+| `Can` | const |  | keep |
+| `createCanDirective` | function |  | keep |
+| `createRbacPlugin` | function |  | keep |
+| `createRbacState` | function |  | keep |
+| `createRoleDirective` | function |  | keep |
+| `HasRole` | const |  | keep |
+| `NameList` | type |  | keep |
+| `RBAC_KEY` | const |  | keep |
+| `RbacPlugin` | type |  | keep |
+| `RbacPluginOptions` | interface |  | keep |
+| `RbacSnapshot` | interface |  | keep |
+| `RbacStateOptions` | interface |  | keep |
+| `useCan` | const |  | keep |
+| `useCanAll` | const |  | keep |
+| `useCanAny` | const |  | keep |
+| `useCannot` | const |  | keep |
+| `useHasAllRoles` | const |  | keep |
+| `useHasAnyRole` | const |  | keep |
+| `useHasRole` | const |  | keep |
+| `useRbac` | function |  | keep |
+| `VueRbac` | interface |  | keep |
 

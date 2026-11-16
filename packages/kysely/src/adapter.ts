@@ -9,7 +9,7 @@ import type {
   Subject,
   TeamId,
 } from '@anievo-id/rbac-evolution'
-import type { Kysely } from 'kysely'
+import { type Kysely, sql } from 'kysely'
 import { type RbacDialect, detectDialect } from './dialect'
 import { type RbacTableNames, type RbacTableOptions, tableNames } from './tables'
 
@@ -77,6 +77,71 @@ const MSSQL_DUPLICATE = new Set([2601, 2627])
 const isMssqlDuplicate = (error: unknown): boolean => {
   const number = (error as { number?: unknown } | null)?.number
   return typeof number === 'number' && MSSQL_DUPLICATE.has(number)
+}
+
+/** SQL Server accepts at most 2100 parameters per statement and 1000 rows per VALUES list. */
+const MSSQL_MAX_PARAMS = 2000 // a margin below 2100
+const MSSQL_MAX_VALUES_ROWS = 1000
+
+type LinkRow = Record<string, string | number>
+
+/**
+ * Splits rows into statements that fit SQL Server's limits. Columns with the same value in every row
+ * (the subject, or the role of `attachRolePermissions`) are sent once per statement as parameters;
+ * only the others (the target ids) go into the VALUES list.
+ */
+const mssqlChunks = (
+  rows: readonly LinkRow[],
+  columns: readonly string[],
+): { rows: LinkRow[]; constants: string[]; varying: string[] }[] => {
+  const first = rows[0]
+  if (first === undefined) return []
+  const constants = columns.filter((c) => rows.every((row) => row[c] === first[c]))
+  const varying = columns.filter((c) => !constants.includes(c))
+  if (varying.length === 0) return [{ rows: [first], constants, varying }]
+  // Constants are bound twice: in the SELECT list and in the NOT EXISTS check.
+  const perStatement = Math.floor((MSSQL_MAX_PARAMS - 2 * constants.length) / varying.length)
+  const size = Math.max(1, Math.min(MSSQL_MAX_VALUES_ROWS, perStatement))
+  const chunks: { rows: LinkRow[]; constants: string[]; varying: string[] }[] = []
+  for (let i = 0; i < rows.length; i += size) chunks.push({ rows: rows.slice(i, i + size), constants, varying })
+  return chunks
+}
+
+/**
+ * One duplicate-safe INSERT for SQL Server:
+ * `insert into t (cols) select v.id, @c1, ... from (values (@1), (@2), ...) as v (id)
+ *  where not exists (select 1 from t as e where e.id = v.id and e.c1 = @c1 ...)`.
+ * Constant columns are compared with parameters, not with derived-table columns, so a column collation
+ * that differs from the database default (the BIN2 columns of `createRbacTables`) never conflicts; the
+ * VALUES list only holds the integer target ids. Like `=`, NOT EXISTS ignores trailing spaces, so the links
+ * of a lookalike subject (`'admin '`) are skipped (fail closed), as the primary key would reject them anyway.
+ * The column order of the INSERT follows `columns` of the first row. Foreign-key and other errors propagate.
+ */
+const mssqlInsertIgnore = (
+  table: string,
+  rows: readonly LinkRow[],
+  constants: readonly string[],
+  varying: readonly string[],
+) => {
+  const first = rows[0] as LinkRow
+  const columns = Object.keys(first).filter((c) => constants.includes(c) || varying.includes(c))
+  const selected = columns.map((c) => (constants.includes(c) ? sql`${first[c]} as ${sql.ref(c)}` : sql.ref(`v.${c}`)))
+  const matches = [
+    ...varying.map((c) => sql`${sql.ref(`e.${c}`)} = ${sql.ref(`v.${c}`)}`),
+    ...constants.map((c) => sql`${sql.ref(`e.${c}`)} = ${first[c]}`),
+  ]
+  const source =
+    varying.length === 0
+      ? sql``
+      : sql` from (values ${sql.join(
+          rows.map((row) => sql`(${sql.join(varying.map((c) => row[c]))})`),
+        )}) as ${sql.ref('v')} (${sql.join(varying.map((c) => sql.ref(c)))})`
+  return sql`insert into ${sql.table(table)} (${sql.join(columns.map((c) => sql.ref(c)))}) select ${sql.join(
+    selected,
+  )}${source} where not exists (select 1 from ${sql.table(table)} as ${sql.ref('e')} where ${sql.join(
+    matches,
+    sql` and `,
+  )})`
 }
 
 type SubjectTable = 'modelHasRoles' | 'modelHasPermissions'
@@ -340,29 +405,21 @@ export class KyselyRbacAdapter implements RbacAdapter {
         return
       }
       case 'mssql':
-        // No ON CONFLICT: insert row by row when absent; a concurrent duplicate is a no-op too.
-        for (const row of rows) {
+        // No ON CONFLICT: batched INSERT ... SELECT ... WHERE NOT EXISTS (see `mssqlInsertIgnore`).
+        for (const chunk of mssqlChunks(rows, columns)) {
           try {
-            await this.db
-              .insertInto(table)
-              .columns(columns)
-              .expression(
-                this.db
-                  .selectNoFrom((eb) => columns.map((c) => eb.val(row[c]).as(c)))
-                  .where((eb) =>
-                    eb.not(
-                      eb.exists(
-                        this.db
-                          .selectFrom(table)
-                          .select((s) => s.lit(1).as('one'))
-                          .where((s) => s.and(columns.map((c) => s(c, '=', row[c])))),
-                      ),
-                    ),
-                  ),
-              )
-              .execute()
+            await mssqlInsertIgnore(table, chunk.rows, chunk.constants, chunk.varying).execute(this.db)
           } catch (error) {
             if (!isMssqlDuplicate(error)) throw error
+            // A concurrent insert won the race for one of the rows, which fails the whole statement:
+            // retry this chunk row by row, where a duplicate is a no-op.
+            for (const row of chunk.rows) {
+              try {
+                await mssqlInsertIgnore(table, [row], columns, []).execute(this.db)
+              } catch (rowError) {
+                if (!isMssqlDuplicate(rowError)) throw rowError
+              }
+            }
           }
         }
         return

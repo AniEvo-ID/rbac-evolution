@@ -60,7 +60,7 @@
     "@anievo-id/rbac-evolution": "workspace:^"
   },
   "peerDependencies": {
-    "kysely": ">=0.27"
+    "kysely": "^0.28.0"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.0",
