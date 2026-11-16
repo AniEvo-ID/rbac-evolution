@@ -16,6 +16,9 @@ jobs:
         node: [20, 22, 24]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # Full history, so the API changeset check can diff against the pull request's base.
+          fetch-depth: 0
       - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
@@ -29,6 +32,17 @@ jobs:
       # The packed tarball is the same on every Node version, so check it once.
       - if: matrix.node == 22
         run: pnpm lint:packages
+      # Public API snapshot (etc/*.api.md) must match the built .d.ts files. Run `pnpm api:snapshot` to update it.
+      - if: matrix.node == 22
+        run: pnpm api:check
+      # A pull request that changes the public API must add a changeset. Not for the release PR.
+      - if: matrix.node == 22 && github.event_name == 'pull_request' && github.head_ref != 'changeset-release/main'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: node scripts/check-api-changeset.mjs "origin/$BASE_REF"
+      # Bundle size of the client packages (react, vue, next/middleware), limits in .size-limit.json.
+      - if: matrix.node == 22
+        run: pnpm size
 
   # Runs every package's tests against real PostgreSQL and MySQL servers (the PG_URL / MYSQL_URL suites,
   # which are skipped when those variables are absent).
