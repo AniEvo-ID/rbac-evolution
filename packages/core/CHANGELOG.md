@@ -1,5 +1,18 @@
 # @anievo-id/rbac-evolution
 
+## 0.7.0
+
+### Minor Changes
+
+- 71ce31d: The adapter conformance suite (`runAdapterTests` from `@anievo-id/rbac-evolution/testing`) now checks exact matching: role and permission names, guards, subject types, subject ids and team ids that differ only by case, accents or a trailing space must stay apart. A database collation that ignores case (MySQL's default, SQL Server's usual one) must not let a user `ADMIN` get the roles of `admin`. If you maintain a custom adapter, run the suite: these tests may fail where your columns use such a collation.
+- 71ce31d: `Rbac` no longer exposes its engine internals. The ten members marked `@internal` (`events`, `gate`, `permissionExists`, `permissionMatches`, `remember`, `resolveGuard`, `resolvePermissions`, `resolveRoles`, `resolveTeam`, `visibleTeams`) are now truly private, so they can't be called by accident and can change freely before 1.0. Nothing documented changes: listen to events with `rbac.on()` / `rbac.off()`, and check permissions through `rbac.for(subject)` and `rbac.role(name)`.
+
+  If your code called one of these members anyway, `rbac.defaultGuard`, `rbac.wildcard` and `rbac.teams` are still public, and `rbac.for(subject, { guard, team })` resolves guards and teams for you.
+
+### Patch Changes
+
+- 3aca854: The documentation moved to https://creation.anievo.id/rbac-evolution/. Each package's npm Homepage and Documentation link now point there.
+
 ## 0.6.6
 
 ## 0.6.5
