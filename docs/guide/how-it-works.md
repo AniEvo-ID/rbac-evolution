@@ -42,6 +42,7 @@ flowchart LR
     react["react"]
     vue["vue"]
     nuxt["nuxt"]
+    sveltekit["sveltekit"]
   end
 
   cli["cli"]
@@ -60,6 +61,7 @@ flowchart LR
   vue --> core
   nuxt --> core
   nuxt --> vue
+  sveltekit --> core
   cli --> core
 ```
 
@@ -80,9 +82,12 @@ Most packages also have a peer dependency on the library they plug into, so you 
 | `-react` | `react` 18+ | |
 | `-vue` | `vue` 3.3+ | |
 | `-nuxt` | `nuxt` 3 or 4, `vue` 3.3+ | `-vue`, `@nuxt/kit` |
+| `-sveltekit` | `@sveltejs/kit` 2+, `svelte` 5+ | |
 | `-cli` | | `jiti` (loads `rbac.config.ts` without a build step) |
 
 The Nuxt module is listed with the UI packages, but it also has server helpers for Nitro routes. The Next.js package does not use the React package. They work well together, but you install them separately.
+
+The SvelteKit package is listed with the UI packages too: its main entry point has the Svelte components, and its `/server` entry point has the `handle` hook and the guards for loads, form actions and endpoints. It does not build on another UI package.
 
 ## How a permission check is decided
 

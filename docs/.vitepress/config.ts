@@ -131,6 +131,7 @@ export default defineConfig({
             { text: 'Next.js', link: '/frameworks/nextjs' },
             { text: 'Vue', link: '/frameworks/vue' },
             { text: 'Nuxt', link: '/frameworks/nuxt' },
+            { text: 'SvelteKit', link: '/frameworks/sveltekit' },
             { text: 'Express', link: '/frameworks/express' },
             { text: 'Hono', link: '/frameworks/hono' },
             { text: 'Fastify', link: '/frameworks/fastify' },

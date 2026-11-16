@@ -37,6 +37,7 @@ Decide and write down:
 | NestJS | 10, 11, 12 | 12 (`ci`), 10 and 11 (`peers`) |
 | React | 18, 19 | 19 (`ci`), 18 (`peers`) |
 | Vue | 3.3+ | 3.5 (`ci`), 3.3 (`peers`) |
+| SvelteKit | 2, 3 (Svelte 5) | 2 latest with Svelte 5 latest (`ci`), 2.0.0 with Svelte 5.0.0 and 3 (`peers`) |
 | Prisma | 5.12+, 6, 7 | 7 (`ci`), 5.12.0 and 6 (`peers`) |
 | Drizzle | 0.38+ | 0.44 (`ci`), 0.38.0 and 0.45 (`peers`) |
 | Kysely | 0.28, 0.29 | 0.28 latest (`ci`), 0.28.0 without typecheck and 0.29 (`peers`) |

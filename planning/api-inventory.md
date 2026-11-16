@@ -584,6 +584,72 @@ Static file `./sql/mysql.sql`.
 | `ScopedGuards` | interface |  | keep |
 | `TypesOf` | type |  | keep |
 
+## @anievo-id/rbac-evolution-sveltekit
+
+### `@anievo-id/rbac-evolution-sveltekit`
+
+18 exports (7 values, 11 types).
+
+| Export | Kind | Notes | Decision |
+| --- | --- | --- | --- |
+| `Can` | const |  | keep (new in 1.3) |
+| `CanProps` | interface |  | keep (new in 1.3) |
+| `CheckNames` | type |  | keep (new in 1.3) |
+| `createRbacChecker` | function |  | keep (new in 1.3) |
+| `createRbacState` | function |  | keep (new in 1.3) |
+| `getRbacContext` | function |  | keep (new in 1.3) |
+| `HasRole` | const |  | keep (new in 1.3) |
+| `HasRoleProps` | interface |  | keep (new in 1.3) |
+| `NameList` | type |  | keep (new in 1.3) |
+| `RBAC_KEY` | const |  | keep (new in 1.3) |
+| `RbacChecker` | interface |  | keep (new in 1.3) |
+| `RbacCheckerOptions` | interface |  | keep (new in 1.3) |
+| `RbacSnapshot` | interface |  | keep (new in 1.3) |
+| `RbacSnapshotSource` | type |  | keep (new in 1.3) |
+| `RbacStateOptions` | type |  | keep (new in 1.3) |
+| `setRbacContext` | function |  | keep (new in 1.3) |
+| `SvelteRbac` | interface |  | keep (new in 1.3) |
+| `TypesOf` | type |  | keep (new in 1.3) |
+
+### `@anievo-id/rbac-evolution-sveltekit/server`
+
+31 exports (10 values, 21 types).
+
+| Export | Kind | Notes | Decision |
+| --- | --- | --- | --- |
+| `canAll` | const |  | keep (new in 1.3) |
+| `canAny` | const |  | keep (new in 1.3) |
+| `createGuards` | function |  | keep (new in 1.3) |
+| `getRbac` | function |  | keep (new in 1.3) |
+| `getSnapshot` | function |  | keep (new in 1.3) |
+| `GetSnapshotOptions` | interface |  | keep (new in 1.3) |
+| `Guard` | type |  | keep (new in 1.3) |
+| `GuardContext` | interface |  | keep (new in 1.3) |
+| `GuardHandler` | type |  | keep (new in 1.3) |
+| `GuardHandlers` | interface |  | keep (new in 1.3) |
+| `GuardKind` | type |  | keep (new in 1.3) |
+| `GuardNames` | type |  | keep (new in 1.3) |
+| `Guards` | interface |  | keep (new in 1.3) |
+| `GuardsFor` | type |  | keep (new in 1.3) |
+| `PermissionGuardOptions` | interface |  | keep (new in 1.3) |
+| `RbacErrorBody` | type |  | keep (new in 1.3) |
+| `RbacEvent` | interface |  | keep (new in 1.3) |
+| `rbacHandle` | function |  | keep (new in 1.3) |
+| `RbacHandle` | type |  | keep (new in 1.3) |
+| `RbacHandleMissingError` | class |  | keep (new in 1.3) |
+| `RbacHandleOptions` | interface |  | keep (new in 1.3) |
+| `RbacLocals` | interface |  | keep (new in 1.3) |
+| `requirePermission` | const |  | keep (new in 1.3) |
+| `requireRole` | const |  | keep (new in 1.3) |
+| `requireRoleOrPermission` | const |  | keep (new in 1.3) |
+| `RoleGuardOptions` | interface |  | keep (new in 1.3) |
+| `RoleOrPermissionGuardOptions` | type |  | keep (new in 1.3) |
+| `RouteGuardOptions` | interface |  | keep (new in 1.3) |
+| `ScopedGuard` | type |  | keep (new in 1.3) |
+| `ScopedGuards` | interface |  | keep (new in 1.3) |
+| `TypesOf` | type |  | keep (new in 1.3) |
+
+
 ## @anievo-id/rbac-evolution-vue
 
 ### `@anievo-id/rbac-evolution-vue`

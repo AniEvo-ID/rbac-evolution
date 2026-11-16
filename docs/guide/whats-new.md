@@ -10,6 +10,10 @@ with `1.x` of all the others. Full details are in the
   `t.procedure.use(requirePermission('posts.edit'))`, with the same arguments as the other integrations, and
   `ctx.rbac` is a typed, non-null subject after the guard. Denials are `TRPCError`s (`UNAUTHORIZED` /
   `FORBIDDEN`), and `rbacErrorFormatter` sends the usual `reason` to the client. See [tRPC](/frameworks/trpc).
+- **SvelteKit.** The new `@anievo-id/rbac-evolution-sveltekit` package adds a `handle` hook that puts the user's
+  `SubjectRbac` on `event.locals.rbac`, the usual guards (`requirePermission`, `requireRole`, ...) for `load`
+  functions, form actions and `+server.ts` endpoints, with the same 401 / 403 bodies, and Svelte 5 `<Can>` /
+  `<HasRole>` components with a runes-based context fed by the root layout. See [SvelteKit](/frameworks/sveltekit).
 
 ## 1.3: Prisma 7, Kysely 0.29 and Mongoose 9
 

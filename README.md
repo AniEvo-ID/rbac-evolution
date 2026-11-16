@@ -126,6 +126,7 @@ The API follows [spatie/laravel-permission](https://spatie.be/docs/laravel-permi
 | [`@anievo-id/rbac-evolution-trpc`](./packages/trpc) | tRPC procedure middleware with a typed, non-null `ctx.rbac` |
 | [`@anievo-id/rbac-evolution-next`](./packages/next) | Next.js middleware, server helpers, server action guards |
 | [`@anievo-id/rbac-evolution-nuxt`](./packages/nuxt) | Nuxt module: SSR snapshot, page rules, Nitro helpers |
+| [`@anievo-id/rbac-evolution-sveltekit`](./packages/sveltekit) | SvelteKit `handle` hook, guards for loads, actions and endpoints, Svelte 5 `<Can>` / `<HasRole>` |
 | [`@anievo-id/rbac-evolution-react`](./packages/react) | `<Can>`, `<Cannot>`, `<HasRole>`, `useCan()` |
 | [`@anievo-id/rbac-evolution-vue`](./packages/vue) | `v-can`, `v-role`, `<Can>`, composables |
 | [`@anievo-id/rbac-evolution-cli`](./packages/cli) | CLI like `php artisan permission:*` |

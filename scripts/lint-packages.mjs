@@ -22,6 +22,10 @@ const ATTW = {
   default: ['--profile', 'node16'],
   // A Nuxt module is ESM only (Nuxt loads it with import()), so CommonJS `require` is not supported.
   nuxt: ['--profile', 'esm-only'],
+  // ESM only too (`svelte-package` emits ESM; SvelteKit apps are ESM). The main entry point imports `.svelte`
+  // components, which only a bundler with the Svelte plugin can load, but its types don't: they declare `Can` and
+  // `HasRole` as `Component<CanProps>` / `Component<HasRoleProps>`, so they resolve under node16 and bundler.
+  sveltekit: ['--profile', 'esm-only'],
   // The `/sql/*.sql` entry points are plain SQL files for migrations, not modules.
   drizzle: [
     '--profile',
