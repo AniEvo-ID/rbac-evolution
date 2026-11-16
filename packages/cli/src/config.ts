@@ -1,28 +1,32 @@
 import { existsSync } from 'node:fs'
 import { isAbsolute, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import type { Rbac, SyncDefinition } from '@anievo-id/rbac-evolution'
+import type { DefaultRbacTypes, Rbac, RbacTypeConfig, SyncDefinition } from '@anievo-id/rbac-evolution'
 import { CliError } from './errors'
 
-export interface RbacCliConfig {
+/**
+ * `T` is the engine's typed names (see `RbacTypeConfig`): `defineConfig` infers it from `rbac`, so the
+ * names in `seed` are checked against them.
+ */
+export interface RbacCliConfig<T extends RbacTypeConfig = DefaultRbacTypes> {
   /**
    * The `Rbac` instance (with your storage adapter) the CLI operates on —
    * or a function returning it, so connections are only opened when a command runs.
    */
-  rbac: Rbac | (() => Rbac | Promise<Rbac>)
+  rbac: Rbac<T> | (() => Rbac<T> | Promise<Rbac<T>>)
   /** Default subject type for `assign-role` / `give-permission` (spatie's user model). Default: `user`. */
   subjectType?: string | undefined
   /**
    * Roles & permissions for `rbac-evolution sync` — the same shape as `rbac.sync()`:
    * one definition, or an array of definitions (one per guard / team).
    */
-  seed?: SyncDefinition | readonly SyncDefinition[] | undefined
+  seed?: SyncDefinition<T> | readonly SyncDefinition<T>[] | undefined
   /** Called after every command, e.g. to close the database connection. */
   teardown?: (() => void | Promise<void>) | undefined
 }
 
-/** Type helper for `rbac.config.ts`. */
-export function defineConfig(config: RbacCliConfig): RbacCliConfig {
+/** Type helper for `rbac.config.ts`. With a typed engine, the names in `seed` are checked against it. */
+export function defineConfig<T extends RbacTypeConfig = DefaultRbacTypes>(config: RbacCliConfig<T>): RbacCliConfig<T> {
   return config
 }
 
