@@ -169,6 +169,17 @@ export default defineConfig({
           ],
         },
         {
+          text: 'Use cases',
+          items: [
+            { text: 'Overview', link: '/use-cases/' },
+            { text: 'Blog / CMS', link: '/use-cases/blog-cms' },
+            { text: 'B2B SaaS with organizations', link: '/use-cases/saas-multi-tenant' },
+            { text: 'E-commerce back office', link: '/use-cases/ecommerce-admin' },
+            { text: 'Public API with API keys', link: '/use-cases/public-api' },
+            { text: 'Internal admin panel', link: '/use-cases/internal-tools' },
+          ],
+        },
+        {
           text: 'Recipes',
           items: [
             { text: 'Auth.js in Next.js', link: '/recipes/authjs' },

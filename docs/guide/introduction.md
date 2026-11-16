@@ -60,3 +60,5 @@ The React and Vue packages only decide what the UI shows. Always enforce permiss
 - [Follow the quick start](/guide/quick-start)
 - [Coming from Laravel?](/guide/coming-from-laravel) See how spatie's API maps to RBAC Evolution.
 - [How it works](/guide/how-it-works): diagrams of the packages, the checks, the tables and the cache.
+- [Use cases](/use-cases/): complete setups for a blog, a multi-tenant SaaS, a shop back office, a public API
+  and an internal admin panel.
