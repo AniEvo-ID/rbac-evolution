@@ -4,6 +4,25 @@ The highlights of each minor release. Every package shares one version number, s
 with `1.x` of all the others. Full details are in the
 [changelog](https://github.com/AniEvo-ID/rbac-evolution/blob/main/packages/core/CHANGELOG.md).
 
+## 1.1: lifecycle, typed requests and audit
+
+No breaking changes: every addition is opt-in, and code written for 1.0 behaves the same.
+
+- **Removing access.** `rbac.for(user).revokeAll()` removes every role and direct permission (optionally in every
+  guard and team), `rbac.deleteTeam(teamId)` removes a team's links and roles, and `rbac.for(user).teams()` lists the
+  teams a subject has access in. See [Teams](/basic-usage/teams). Custom adapters get three optional methods; see
+  [Custom adapter](/adapters/custom).
+- **Typed requests.** `req.rbac` (Express, Fastify), `c.var.rbac` (Hono) and `getRbac<T>()` (NestJS) can carry your
+  typed names, and `isRoleName(rbac, value)` / `isPermissionName(rbac, value)` check user input against them. See
+  [Typed names](/basic-usage/typed-names).
+- **Wildcards.** `subjectsWithPermission(name, { expandWildcards: true })` also finds subjects whose wildcard grant
+  implies the name, and `wildcardPrefixCheck` warns when a short name like `orders.refund` silently implies
+  `orders.refund.large`. See [Wildcard permissions](/basic-usage/wildcard-permissions).
+- **`before` hooks in the UI.** `snapshot({ checkBefore: [...] })` sends the names a `before` hook denies, and React,
+  Vue and Next.js treat them as not allowed, super-admins included. See [Super-admin](/basic-usage/super-admin).
+- **Who made the change.** Write calls take `{ actor }`, the engine takes `getActor`, and every event carries `actor`.
+  See [Events](/advanced/events#who-made-the-change-actor).
+
 ## 1.0: the stable API
 
 1.0 has no breaking changes from 0.9. What it adds is a promise: the public API of every package only changes in a
