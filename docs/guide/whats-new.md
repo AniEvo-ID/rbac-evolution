@@ -4,6 +4,18 @@ The highlights of each minor release. Every package shares one version number, s
 with `1.x` of all the others. Full details are in the
 [changelog](https://github.com/AniEvo-ID/rbac-evolution/blob/main/packages/core/CHANGELOG.md).
 
+## 1.3: Prisma 7, Kysely 0.29 and Mongoose 9
+
+Support for the current major versions of three ORMs. The older versions stay supported, and nothing changes on
+the rbac side: the same models, tables and options.
+
+- **Prisma 7.** Pass your driver adapter to `new PrismaClient({ adapter })` as Prisma 7 requires, and give the
+  client to `PrismaAdapter` as before. Prisma 5.12 and 6 keep working. See [Prisma 7](/adapters/prisma#prisma-7).
+- **Kysely 0.29.** `rbacMigration()` and `rbacExpiryMigration()` now return `RbacMigration`, the same shape as
+  Kysely's `Migration`, so they work with the `Migrator` from `kysely/migration` (0.29) and from `kysely` (0.28).
+- **Mongoose 9.** Mongoose 8 keeps working. On 9, hooks you add to `rbacSchemas()` must be `async`. See
+  [Mongoose 9](/adapters/mongoose#mongoose-9).
+
 ## 1.2
 
 - **Typed names per guard.** `createRbac<{ guards: { web: {...}; api: {...} }; defaultGuard: 'web' }>()` types the
