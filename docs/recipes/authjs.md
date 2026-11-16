@@ -89,6 +89,7 @@ Assign a default role when a user signs in. The `signIn` callback runs on every 
 nothing when the user already has the role. The `member` role must exist, so create it in your
 [seed](/advanced/seeding):
 
+<!-- doc-test: skip -->
 ```ts
 // auth.ts, inside NextAuth({ ... })
 callbacks: {

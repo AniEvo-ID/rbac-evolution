@@ -36,6 +36,7 @@ Or put the same definition in `seed` in `rbac.config.ts` and run `npx rbac-evolu
 
 ```ts
 app.post('/teams', async (req, res) => {
+  if (!req.user) return res.sendStatus(401)
   const team = await db.team.create({ data: { name: req.body.name } })
   await db.membership.create({ data: { teamId: team.id, userId: req.user.id } })
   await rbac.for({ type: 'user', id: req.user.id }, { team: team.id }).assignRole('owner')
@@ -67,8 +68,8 @@ team.use(async (req, res, next) => {
 team.use(
   rbacMiddleware({
     rbac,
-    getSubject: (req) => ({ type: 'user', id: req.user.id }),
-    team: (req) => req.params.teamId,
+    getSubject: (req) => (req.user ? { type: 'user', id: req.user.id } : null),
+    team: (req) => String(req.params.teamId),
   }),
 )
 

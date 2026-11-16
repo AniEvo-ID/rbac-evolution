@@ -296,3 +296,5 @@ app.get('/api/reports', canAny('reports.view', 'reports.export', { guard: 'api' 
 ```
 
 See [Multiple guards](/basic-usage/multiple-guards).
+
+Full API: [reference](/api/hono/)

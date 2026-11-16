@@ -24,7 +24,9 @@
     "api:inventory": "node scripts/list-exports.mjs",
     "api:snapshot": "node scripts/api-snapshot.mjs",
     "api:check": "node scripts/api-snapshot.mjs --check",
+    "docs:api": "pnpm --filter @anievo-id/rbac-evolution-docs api",
     "lint:packages": "node scripts/lint-packages.mjs",
+    "doc:test": "node scripts/doc-tests.mjs",
     "size": "size-limit"
   },
   "devDependencies": {

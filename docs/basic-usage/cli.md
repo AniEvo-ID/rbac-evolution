@@ -217,3 +217,5 @@ const exitCode = await run(['create-role', 'writer', 'edit articles'], { config 
 ```
 
 `run()` also accepts `cwd` (where to look for the config file) and `io` (custom `out` / `err` writers, useful in tests).
+
+Full API: [reference](/api/cli/)

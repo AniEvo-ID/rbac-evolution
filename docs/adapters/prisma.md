@@ -169,6 +169,7 @@ See [Teams](/basic-usage/teams) for how global roles and team roles work togethe
 
 ## Options
 
+<!-- doc-test: skip -->
 ```ts
 new PrismaAdapter(prisma, options?)
 ```
@@ -253,3 +254,5 @@ await rbac.role('admin').syncPermissions(permissions)
 
 await prisma.$disconnect()
 ```
+
+Full API: [reference](/api/prisma/)

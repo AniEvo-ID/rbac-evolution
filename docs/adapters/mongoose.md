@@ -49,6 +49,7 @@ Links are separate documents rather than arrays embedded in roles or users. Each
 
 ## Adapter
 
+<!-- doc-test: skip -->
 ```ts
 mongooseAdapter(options?: { connection?: Connection; prefix?: string }): MongooseRbacAdapter
 ```
@@ -141,3 +142,5 @@ await syncRbacIndexes(createRbacModels())
 Deletes run a few operations one after another and are **not** wrapped in a transaction, because MongoDB transactions need a replica set. Links are deleted first, so if a delete fails halfway, the role or permission still exists with some of its links removed. Running the same delete again finishes the job.
 
 The adapter doesn't take a session argument. Mongoose 8.4 and later can attach the session for you: with `mongoose.set('transactionAsyncLocalStorage', true)`, operations started inside `connection.transaction(async () => { ... })` use that transaction automatically. This setup isn't covered by the adapter's tests. If you use it, run the changes through a short-lived instance with `cache: false`, then call `forgetCachedPermissions()` on your long-lived instance. See [Cache](/advanced/cache).
+
+Full API: [reference](/api/mongoose/)

@@ -129,6 +129,7 @@ The table interfaces are also exported one by one: `PermissionsTable`, `RolesTab
 
 ## Adapter
 
+<!-- doc-test: skip -->
 ```ts
 kyselyAdapter(db, options?: { dialect?: RbacDialect; prefix?: string }): KyselyRbacAdapter
 ```
@@ -239,3 +240,5 @@ await rbac.forgetCachedPermissions()
 ::: tip
 `cache: false` on the transaction instance keeps uncommitted data out of any cache. After the commit, call `forgetCachedPermissions()` on your long-lived instance. See [Cache](/advanced/cache).
 :::
+
+Full API: [reference](/api/kysely/)

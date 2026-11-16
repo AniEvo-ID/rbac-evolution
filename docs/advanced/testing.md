@@ -145,6 +145,7 @@ See [Events](/advanced/events) for every payload.
 
 `@anievo-id/rbac-evolution/testing` exports `runAdapterTests`. It registers a full Vitest suite that checks an adapter against the `RbacAdapter` contract described in [Custom adapter](/adapters/custom).
 
+<!-- doc-test: skip -->
 ```ts
 import { runAdapterTests } from '@anievo-id/rbac-evolution/testing'
 

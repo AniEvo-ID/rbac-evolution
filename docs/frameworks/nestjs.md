@@ -189,6 +189,7 @@ decorator is a type error. See [Typed names](/basic-usage/typed-names).
 Injects the `SubjectRbac` that `RbacGuard` resolved — the same object as `rbac.for(subject, { guard, team })` — or
 `null` for guests (only possible on routes without requirements).
 
+<!-- doc-test: skip -->
 ```ts
 @Get('me/permissions')
 @UseGuards(RbacGuard) // or any @Require*() decorator, or globalGuard: true
@@ -286,3 +287,5 @@ The package is built with esbuild and does not depend on `emitDecoratorMetadata`
 `@Inject()` tokens. Your own app can use `tsc`, SWC or any other compiler Nest supports.
 
 See also [Security](/best-practices/security).
+
+Full API: [reference](/api/nestjs/)

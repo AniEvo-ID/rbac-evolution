@@ -293,3 +293,5 @@ app.get('/api/reports', { preHandler: canAny('reports.view', 'reports.export', {
 ```
 
 See [Multiple guards](/basic-usage/multiple-guards).
+
+Full API: [reference](/api/fastify/)

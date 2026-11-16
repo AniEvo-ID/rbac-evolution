@@ -277,3 +277,5 @@ access on the server.
 - With `wildcard: true`, a granted `articles.*` satisfies `can('articles.edit')`. See
   [Wildcard permissions](/basic-usage/wildcard-permissions).
 - A snapshot belongs to one guard and team; build it with the same scope you check on the server.
+
+Full API: [reference](/api/vue/)

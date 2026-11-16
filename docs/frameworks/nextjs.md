@@ -369,6 +369,7 @@ export const config = {
 
 Overrides return a `Response`:
 
+<!-- doc-test: skip -->
 ```ts
 import { NextResponse } from 'next/server'
 
@@ -380,6 +381,7 @@ createRbacMiddleware<NextRequest>({
 
 The middleware function returns `undefined` when the request may continue, so it composes with other logic:
 
+<!-- doc-test: skip -->
 ```ts
 const rbacMiddleware = createRbacMiddleware<NextRequest>({ /* ... */ })
 
@@ -619,3 +621,5 @@ In `rbac` mode the middleware checks through the engine (`canAny()` / `hasAnyRol
 `before` hook apply exactly like in `requirePermission()` and friends. In snapshot mode, pass `superAdminRoles` to the
 middleware itself.
 :::
+
+Full API: [reference](/api/next/)
