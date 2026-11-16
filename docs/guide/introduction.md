@@ -19,7 +19,7 @@ Laravel developers have a de-facto standard for roles and permissions. In JavaSc
 RBAC Evolution keeps the logic in one framework-agnostic core and moves the rest into small packages:
 
 - an **adapter** decides where roles and permissions are stored (Prisma, Drizzle, Kysely, Mongoose, memory, or your own),
-- an **integration** connects the engine to your framework (Express, Fastify, Hono, NestJS, Next.js, Nuxt, React, Vue).
+- an **integration** connects the engine to your framework (Express, Fastify, Hono, NestJS, Next.js, Nuxt, SvelteKit, tRPC, React, Vue).
 
 You install only the pieces you use.
 
@@ -35,7 +35,7 @@ You install only the pieces you use.
 - Built-in caching with pluggable stores (Redis, KV, ...)
 - Events when roles or permissions are created, deleted, attached or detached
 - A [CLI](/basic-usage/cli) similar to `php artisan permission:*`
-- UI helpers for React and Vue, and route protection for Express, Fastify, Hono, NestJS, Next.js and Nuxt
+- UI helpers for React, Vue and Svelte, and route protection for Express, Fastify, Hono, NestJS, Next.js, Nuxt, SvelteKit and tRPC
 
 ## Packages
 
@@ -59,7 +59,7 @@ You install only the pieces you use.
 | `@anievo-id/rbac-evolution-cli` | Command-line tool to create roles, assign them and inspect the setup |
 
 ::: tip
-The React and Vue packages only decide what the UI shows. Always enforce permissions on the server as well.
+The React, Vue and Svelte helpers only decide what the UI shows. Always enforce permissions on the server as well.
 :::
 
 ## Next steps

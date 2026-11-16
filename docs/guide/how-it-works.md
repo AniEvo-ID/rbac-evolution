@@ -274,7 +274,7 @@ Some details:
 - With wildcards off, the engine also reads the cached list of the guard's permission names, the same way.
 - Every guard is wrapped in `asyncHandler()`, so an error (for example from the database) goes to `next(err)` on Express 4 and 5.
 
-The other integrations follow the same shape: resolve the subject once per request, scope it with `rbac.for()`, then check it in a guard. Fastify, Hono, NestJS and the Nuxt server helpers use the same `satisfiesRequirement()` from the core, so the checks are identical. Fastify, Hono, NestJS and Next.js send the same 401 and 403 JSON bodies. Nuxt's server helpers throw an error with status 401 or 403 and put the same fields in its `data`. See [Frameworks](/frameworks/express).
+The other integrations follow the same shape: resolve the subject once per request, scope it with `rbac.for()`, then check it in a guard. Fastify, Hono, NestJS, tRPC and the Nuxt and SvelteKit server helpers use the same `satisfiesRequirement()` from the core, so the checks are identical. Fastify, Hono, NestJS and Next.js send the same 401 and 403 JSON bodies. Nuxt's and SvelteKit's server helpers throw an error with status 401 or 403 and put the same fields in it, and tRPC throws a `TRPCError` (`UNAUTHORIZED` / `FORBIDDEN`) whose `cause` carries them. See [Frameworks](/frameworks/express).
 
 The tRPC middleware uses `satisfiesRequirement()` too. It throws a `TRPCError` (`UNAUTHORIZED` or `FORBIDDEN`) whose cause carries the same fields, and `rbacErrorFormatter` sends them to the client as `error.data.rbac`. See [tRPC](/frameworks/trpc).
 

@@ -40,7 +40,7 @@ jobs:
         env:
           BASE_REF: ${{ github.base_ref }}
         run: node scripts/check-api-changeset.mjs "origin/$BASE_REF"
-      # Bundle size of the client packages (react, vue, next/middleware), limits in .size-limit.json.
+      # Bundle size of the client packages (react, vue, next/middleware, sveltekit), limits in .size-limit.json.
       - if: matrix.node == 22
         run: pnpm size
       # Doc tests: the TypeScript code blocks of the main docs pages type-check against the built packages.
