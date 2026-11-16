@@ -536,11 +536,11 @@ importers:
         version: link:../core
     devDependencies:
       '@trpc/client':
-        specifier: ^11.0.0
-        version: 11.28.3(@trpc/server@11.28.3(@types/express@5.0.6)(@types/ws@8.18.2)(fastify@5.12.8)(next@15.5.29(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.9.3))(typescript@5.9.3)
+        specifier: ~11.26.0
+        version: 11.26.0(@trpc/server@11.26.0(@types/express@5.0.6)(@types/ws@8.18.2)(fastify@5.12.8)(next@15.5.29(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.9.3))(typescript@5.9.3)
       '@trpc/server':
-        specifier: ^11.0.0
-        version: 11.28.3(@types/express@5.0.6)(@types/ws@8.18.2)(fastify@5.12.8)(next@15.5.29(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.9.3)
+        specifier: ~11.26.0
+        version: 11.26.0(@types/express@5.0.6)(@types/ws@8.18.2)(fastify@5.12.8)(next@15.5.29(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.9.3)
       tsup:
         specifier: ^8.3.0
         version: 8.5.1(jiti@2.7.0)(postcss@8.5.33)(tsx@4.23.15)(typescript@5.9.3)(yaml@2.9.1)
@@ -2822,14 +2822,14 @@ packages:
   '@tokenizer/token@0.3.0':
     resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
 
-  '@trpc/client@11.28.3':
-    resolution: {integrity: sha512-NnMXBOCVzPMELdQH/X26MhI4u9g83nxWy3apc7UX1beevUk6rEYqfOboqCb/rVoVPu3CBVaPb8PB7AG51oEKvQ==}
+  '@trpc/client@11.26.0':
+    resolution: {integrity: sha512-z/vqvt5OLJYmx66xfd5xDAYmz9qpjQbA7DVuASha6g1/QLy42Ik9IOXTLI0lZu3iXFrDjeKLzGFQQgRJISVjMg==}
     peerDependencies:
-      '@trpc/server': 11.28.3
+      '@trpc/server': 11.26.0
       typescript: '>=5.7.2'
 
-  '@trpc/server@11.28.3':
-    resolution: {integrity: sha512-os9o1enNvbcSSyn9agxsYPkIE8kWK7IJbkD5/ySCCApsdM58cFZ5IF410G9Q0k3RwKfsM2Q/GbGp1rbgCWLp5Q==}
+  '@trpc/server@11.26.0':
+    resolution: {integrity: sha512-DFvyJRXbvk0fmSTkD8qh3wo7aXO1yed2AsELhDN/cvEwL4T+7rmPkSOKjEfZkEf6INBp+nIFZAl/B70DC6bY4A==}
     peerDependencies:
       '@types/aws-lambda': '*'
       '@types/express': '*'
@@ -10044,12 +10044,12 @@ snapshots:
 
   '@tokenizer/token@0.3.0': {}
 
-  '@trpc/client@11.28.3(@trpc/server@11.28.3(@types/express@5.0.6)(@types/ws@8.18.2)(fastify@5.12.8)(next@15.5.29(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.9.3))(typescript@5.9.3)':
+  '@trpc/client@11.26.0(@trpc/server@11.26.0(@types/express@5.0.6)(@types/ws@8.18.2)(fastify@5.12.8)(next@15.5.29(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.9.3))(typescript@5.9.3)':
     dependencies:
-      '@trpc/server': 11.28.3(@types/express@5.0.6)(@types/ws@8.18.2)(fastify@5.12.8)(next@15.5.29(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.9.3)
+      '@trpc/server': 11.26.0(@types/express@5.0.6)(@types/ws@8.18.2)(fastify@5.12.8)(next@15.5.29(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.9.3)
       typescript: 5.9.3
 
-  '@trpc/server@11.28.3(@types/express@5.0.6)(@types/ws@8.18.2)(fastify@5.12.8)(next@15.5.29(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.9.3)':
+  '@trpc/server@11.26.0(@types/express@5.0.6)(@types/ws@8.18.2)(fastify@5.12.8)(next@15.5.29(@types/node@22.20.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(typescript@5.9.3)':
     dependencies:
       typescript: 5.9.3
     optionalDependencies:
