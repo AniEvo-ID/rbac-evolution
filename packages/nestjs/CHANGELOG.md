@@ -1,5 +1,11 @@
 # @anievo-id/rbac-evolution-nestjs
 
+## 1.3.0
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@1.3.0
+
 ## 1.2.0
 
 ### Minor Changes

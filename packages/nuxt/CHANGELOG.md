@@ -1,5 +1,12 @@
 # @anievo-id/rbac-evolution-nuxt
 
+## 1.3.0
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@1.3.0
+  - @anievo-id/rbac-evolution-vue@1.3.0
+
 ## 1.2.0
 
 ### Minor Changes
