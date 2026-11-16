@@ -208,12 +208,15 @@ declare class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     createPermission(name: PermissionName<T>, options?: GuardOptions): Promise<Permission>;
     findPermission(name: PermissionName<T>, options?: GuardOptions): Promise<Permission | null>;
     findPermissionOrFail(name: PermissionName<T>, options?: GuardOptions): Promise<Permission>;
+    findPermissionById(id: Id, options?: GuardOptions): Promise<Permission | null>;
     findOrCreatePermission(name: PermissionName<T>, options?: GuardOptions): Promise<Permission>;
     getPermissions(options?: GuardOptions): Promise<Permission[]>;
     deletePermission(permission: PermissionInput<PermissionName<T>>, options?: GuardOptions): Promise<void>;
     createRole(name: RoleName<T>, options?: ScopeOptions): Promise<Role>;
     findRole(name: RoleName<T>, options?: ScopeOptions): Promise<Role | null>;
     findRoleOrFail(name: RoleName<T>, options?: ScopeOptions): Promise<Role>;
+    findRoleById(id: Id, options?: GuardOptions): Promise<Role | null>;
+    rolesWithPermission(permission: PermissionInput<PermissionName<T>>, options?: ScopeOptions): Promise<Role[]>;
     findOrCreateRole(name: RoleName<T>, options?: ScopeOptions): Promise<Role>;
     getRoles(options?: ScopeOptions): Promise<Role[]>;
     deleteRole(role: RoleInput<RoleName<T>>, options?: ScopeOptions): Promise<void>;
@@ -438,6 +441,7 @@ declare class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     readonly guardName: string;
     readonly teamId: TeamId;
     constructor(rbac: Rbac<T>, subject: Subject, guardName: string, teamId: TeamId);
+    withScope(options: ScopeOptions): SubjectRbac<T>;
     assignRole(...roles: Many<RoleInput<RoleName<T>>>[]): Promise<this>;
     removeRole(...roles: Many<RoleInput<RoleName<T>>>[]): Promise<this>;
     syncRoles(...roles: Many<RoleInput<RoleName<T>>>[]): Promise<this>;
@@ -456,6 +460,9 @@ declare class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     getPermissionNames(): Promise<string[]>;
     hasPermissionTo(permission: PermissionInput<PermissionName<T>>): Promise<boolean>;
     hasDirectPermission(permission: PermissionInput<PermissionName<T>>): Promise<boolean>;
+    hasAnyDirectPermission(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<boolean>;
+    hasAllDirectPermissions(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<boolean>;
+    checkPermissionTo(permission: PermissionInput<PermissionName<T>>): Promise<boolean>;
     can(permission: PermissionInput<PermissionName<T>>): Promise<boolean>;
     cannot(permission: PermissionInput<PermissionName<T>>): Promise<boolean>;
     canAny(...permissions: Many<PermissionInput<PermissionName<T>>>[]): Promise<boolean>;

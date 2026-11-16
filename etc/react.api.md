@@ -4,7 +4,7 @@
 
 ## `@anievo-id/rbac-evolution-react`
 
-21 exports.
+23 exports.
 
 ```ts
 // Can: function
@@ -88,6 +88,12 @@ type RoleCondition = {
     anyOf?: never;
     allOf: readonly string[];
 };
+
+// UnlessRole: function
+declare function UnlessRole(props: UnlessRoleProps): react.JSX.Element | null;
+
+// UnlessRoleProps: type
+type UnlessRoleProps = RoleCondition & GateProps;
 
 // createRbacChecker: function
 declare function createRbacChecker(snapshot: RbacSnapshot | null | undefined, options?: RbacCheckerOptions): RbacChecker;

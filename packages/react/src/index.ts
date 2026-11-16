@@ -20,5 +20,5 @@ export {
 } from './context'
 export type { RbacProviderProps } from './context'
 
-export { Can, Cannot, HasRole } from './components'
-export type { CannotProps, CanProps, HasRoleProps, PermissionCondition, RoleCondition } from './components'
+export { Can, Cannot, HasRole, UnlessRole } from './components'
+export type { CannotProps, CanProps, HasRoleProps, PermissionCondition, RoleCondition, UnlessRoleProps } from './components'

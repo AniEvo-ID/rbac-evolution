@@ -6,6 +6,7 @@ import {
   Can,
   Cannot,
   HasRole,
+  UnlessRole,
   RbacProvider,
   useCan,
   useCanAll,
@@ -122,6 +123,25 @@ describe('components', () => {
     expect(screen.queryByText('not-admin')).not.toBeNull()
     expect(screen.queryByText('any-role')).not.toBeNull()
     expect(screen.queryByText('all-roles')).toBeNull()
+  })
+
+  it('<UnlessRole> renders when the user lacks the role(s), like @unlessrole', () => {
+    const Untyped = UnlessRole as unknown as (p: { children: ReactNode }) => ReactNode
+    render(
+      <RbacProvider snapshot={snapshot}>
+        <UnlessRole role="banned"><span>not-banned</span></UnlessRole>
+        <UnlessRole role="writer" fallback={<span>writer-fallback</span>}><span>not-writer</span></UnlessRole>
+        <UnlessRole anyOf={['admin', 'banned']}><span>none-of</span></UnlessRole>
+        <UnlessRole allOf={['admin', 'writer']}><span>not-all</span></UnlessRole>
+        <Untyped>no-condition</Untyped>
+      </RbacProvider>,
+    )
+    expect(screen.queryByText('not-banned')).not.toBeNull()
+    expect(screen.queryByText('not-writer')).toBeNull()
+    expect(screen.queryByText('writer-fallback')).not.toBeNull()
+    expect(screen.queryByText('none-of')).not.toBeNull()
+    expect(screen.queryByText('not-all')).not.toBeNull()
+    expect(screen.queryByText('no-condition')).toBeNull()
   })
 
   it('denies when no condition is given (untyped usage)', () => {

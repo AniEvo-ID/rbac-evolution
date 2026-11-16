@@ -23,6 +23,7 @@ interface GateProps {
 export type CanProps = PermissionCondition & GateProps
 export type CannotProps = PermissionCondition & GateProps
 export type HasRoleProps = RoleCondition & GateProps
+export type UnlessRoleProps = RoleCondition & GateProps
 
 interface LooseCondition {
   anyOf?: readonly string[] | undefined
@@ -67,4 +68,16 @@ export function HasRole(props: HasRoleProps) {
   const rbac = useRbac()
   if (rbac.loading) return null
   return <>{checkRoles(rbac, props) ? props.children : props.fallback}</>
+}
+
+/**
+ * Renders `children` if the user does NOT have the role(s) — like spatie's `@unlessrole`.
+ * `anyOf`: none of them. `allOf`: not all of them. Without a condition it renders `fallback` (deny by default).
+ */
+export function UnlessRole(props: UnlessRoleProps) {
+  const rbac = useRbac()
+  if (rbac.loading) return null
+  const loose = props as LooseCondition & { role?: string | undefined }
+  const hasCondition = loose.role !== undefined || loose.anyOf !== undefined || loose.allOf !== undefined
+  return <>{hasCondition && !checkRoles(rbac, props) ? props.children : props.fallback}</>
 }
