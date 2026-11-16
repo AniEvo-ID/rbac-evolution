@@ -22,5 +22,7 @@
     "rbac-evolution-bun-tests": "0.0.0",
     "rbac-evolution-e2e": "0.0.0"
   },
-  "changesets": []
+  "changesets": [
+    "stable-1-0"
+  ]
 }
