@@ -316,12 +316,22 @@ const dirs = readdirSync(join(root, 'packages'))
   .filter((d) => existsSync(join(root, 'packages', d, 'package.json')))
   .sort()
 
+/** The file's text, or `null` when it doesn't exist (read directly, so nothing can change between a check and the read). */
+function readIfExists(file) {
+  try {
+    return readFileSync(file, 'utf8')
+  } catch (error) {
+    if (error && error.code === 'ENOENT') return null
+    throw error
+  }
+}
+
 const changed = []
 if (!check) mkdirSync(outDir, { recursive: true })
 for (const dir of dirs) {
   const target = join(outDir, `${dir}.api.md`)
   const next = snapshotPackage(dir)
-  const current = existsSync(target) ? readFileSync(target, 'utf8') : null
+  const current = readIfExists(target)
   if (current === next) continue
   changed.push({ file: relative(root, target), current, next })
   if (!check) writeFileSync(target, next)
