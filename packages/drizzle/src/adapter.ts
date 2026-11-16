@@ -90,6 +90,27 @@ const toRole = (row: RoleRow): Role => ({
 
 type SubjectTable = RbacTables['modelHasRoles'] | RbacTables['modelHasPermissions']
 
+interface LinkRow {
+  id: number
+  subjectType: string
+  subjectId: string
+  teamId: string
+}
+
+/**
+ * SQL compares text with the column's collation, which can ignore case or accents (MySQL's default
+ * `utf8mb4_0900_ai_ci`) or trailing spaces (MySQL's `utf8mb4_bin` is PAD SPACE, SQL Server always pads).
+ * Every row read back is therefore checked again here, with exact string equality, so a subject `admin `
+ * or `ADMIN` never gets the links of `admin`, whatever the schema's collation.
+ */
+const sameLink = (
+  row: Omit<LinkRow, 'id'>,
+  subjectType: string,
+  subjectId: string | undefined,
+  team: string,
+): boolean =>
+  row.subjectType === subjectType && (subjectId === undefined || row.subjectId === subjectId) && row.teamId === team
+
 /**
  * Dialect-agnostic Drizzle implementation of `RbacAdapter`.
  * Use `drizzlePgAdapter()`, `drizzleSqliteAdapter()` or `drizzleMysqlAdapter()` to construct it.
@@ -143,7 +164,15 @@ export class DrizzleRbacAdapter implements RbacAdapter {
       .from(p)
       .where(and(...where))
       .orderBy(p.id)
-    return rows.map(toPermission)
+    // Exact match, whatever the collation (see `sameLink`).
+    const names = query.names === undefined ? undefined : new Set(query.names)
+    return rows
+      .filter(
+        (row) =>
+          (names === undefined || names.has(row.name)) &&
+          (query.guardName === undefined || row.guardName === query.guardName),
+      )
+      .map(toPermission)
   }
 
   async deletePermission(id: Id): Promise<void> {
@@ -185,9 +214,10 @@ export class DrizzleRbacAdapter implements RbacAdapter {
       where.push(inArray(r.name, [...query.names]))
     }
     if (query.guardName !== undefined) where.push(eq(r.guardName, query.guardName))
-    if (query.teamIds !== undefined) {
-      if (query.teamIds.length === 0) return []
-      where.push(inArray(r.teamId, [...new Set(query.teamIds.map(teamKey))]))
+    const teams = query.teamIds === undefined ? undefined : new Set(query.teamIds.map(teamKey))
+    if (teams !== undefined) {
+      if (teams.size === 0) return []
+      where.push(inArray(r.teamId, [...teams]))
     }
 
     const rows: RoleRow[] = await this.db
@@ -195,7 +225,16 @@ export class DrizzleRbacAdapter implements RbacAdapter {
       .from(r)
       .where(and(...where))
       .orderBy(r.id)
-    return rows.map(toRole)
+    // Exact match, whatever the collation (see `sameLink`).
+    const names = query.names === undefined ? undefined : new Set(query.names)
+    return rows
+      .filter(
+        (row) =>
+          (names === undefined || names.has(row.name)) &&
+          (query.guardName === undefined || row.guardName === query.guardName) &&
+          (teams === undefined || teams.has(row.teamId)),
+      )
+      .map(toRole)
   }
 
   async deleteRole(id: Id): Promise<void> {
@@ -339,12 +378,22 @@ export class DrizzleRbacAdapter implements RbacAdapter {
     ]
   }
 
-  private async getLinks(table: SubjectTable, target: AnyColumn, subject: Subject, teamId: TeamId): Promise<Id[]> {
-    const rows: { id: number }[] = await this.db
-      .select({ id: target })
+  /** The subject's link rows, compared exactly (see `sameLink`). */
+  private async linkRows(
+    table: SubjectTable,
+    target: AnyColumn,
+    subject: Subject,
+    teamId: TeamId,
+  ): Promise<LinkRow[]> {
+    const rows: LinkRow[] = await this.db
+      .select({ id: target, subjectType: table.subjectType, subjectId: table.subjectId, teamId: table.teamId })
       .from(table)
       .where(and(...DrizzleRbacAdapter.subjectWhere(table, subject, teamId)))
-    return rows.map((row) => Number(row.id))
+    return rows.filter((row) => sameLink(row, subject.type, String(subject.id), teamKey(teamId)))
+  }
+
+  private async getLinks(table: SubjectTable, target: AnyColumn, subject: Subject, teamId: TeamId): Promise<Id[]> {
+    return (await this.linkRows(table, target, subject, teamId)).map((row) => Number(row.id))
   }
 
   private async attach(
@@ -372,13 +421,18 @@ export class DrizzleRbacAdapter implements RbacAdapter {
     targetIds: readonly Id[] | undefined,
     teamId: TeamId,
   ): Promise<void> {
-    const where = DrizzleRbacAdapter.subjectWhere(table, subject, teamId)
-    if (targetIds !== undefined) {
-      const ids = toIntIds(targetIds)
-      if (ids.length === 0) return
-      where.push(inArray(target, ids))
-    }
-    await this.db.delete(table).where(and(...where))
+    const wanted = targetIds === undefined ? undefined : new Set(toIntIds(targetIds))
+    if (wanted !== undefined && wanted.size === 0) return
+    // Only delete the links this exact subject holds: with a collation that ignores case or trailing spaces,
+    // `subject_id = 'admin '` also matches the rows of `admin`. Restricting the delete to the target ids read
+    // back is exact, because the primary key stops a lookalike from holding the same target.
+    const ids = (await this.linkRows(table, target, subject, teamId))
+      .map((row) => Number(row.id))
+      .filter((id) => wanted === undefined || wanted.has(id))
+    if (ids.length === 0) return
+    await this.db
+      .delete(table)
+      .where(and(...DrizzleRbacAdapter.subjectWhere(table, subject, teamId), inArray(target, ids)))
   }
 
   private async reverse(
@@ -390,10 +444,12 @@ export class DrizzleRbacAdapter implements RbacAdapter {
   ): Promise<Id[]> {
     const ids = toIntIds(targetIds)
     if (ids.length === 0) return []
-    const rows: { id: string }[] = await this.db
-      .selectDistinct({ id: table.subjectId })
+    const team = teamKey(teamId)
+    const rows: Omit<LinkRow, 'id'>[] = await this.db
+      .selectDistinct({ subjectType: table.subjectType, subjectId: table.subjectId, teamId: table.teamId })
       .from(table)
-      .where(and(eq(table.subjectType, subjectType), eq(table.teamId, teamKey(teamId)), inArray(target, ids)))
-    return rows.map((row) => row.id)
+      .where(and(eq(table.subjectType, subjectType), eq(table.teamId, team), inArray(target, ids)))
+    const exact = rows.filter((row) => sameLink(row, subjectType, undefined, team))
+    return [...new Set(exact.map((row) => row.subjectId))]
   }
 }

@@ -256,21 +256,38 @@ export function runAdapterTests(
     // accents, SQL Server's usually ignores case, and older PAD SPACE collations ignore trailing spaces.
     // An adapter must still match exactly, or a subject `ADMIN` could get the roles of `admin`.
     describe('exact matching', () => {
-      const lookalikes = (value: string): string[] => [value.toUpperCase(), `${value} `, value.replace('a', 'à')]
+      const ACCENTS: Record<string, string> = { a: 'à', e: 'é', i: 'í', o: 'ó', u: 'ú' }
+      /** Other case, a trailing space, and an accent on the first vowel: `admin` → `ADMIN`, `admin `, `àdmin`. */
+      const lookalikes = (value: string): string[] => [
+        value.toUpperCase(),
+        `${value} `,
+        value.replace(/[aeiou]/, (vowel) => ACCENTS[vowel]!),
+      ]
 
-      it('keeps names that differ only by case, accents or trailing spaces apart', async () => {
+      it('never returns a role or permission for a lookalike name or guard', async () => {
         const permission = await adapter.createPermission({ name: 'edit', guardName: 'web' })
         const role = await adapter.createRole({ name: 'admin', guardName: 'web', teamId: null })
-        for (const name of ['EDIT', 'édit']) await adapter.createPermission({ name, guardName: 'web' })
-        for (const name of lookalikes('admin')) await adapter.createRole({ name, guardName: 'web', teamId: null })
+        // A unique index may reject a lookalike under some collations: that is fine (fail closed).
+        // What must never happen is a lookup returning a row with another name.
+        for (const name of lookalikes('edit')) {
+          await Promise.resolve(adapter.createPermission({ name, guardName: 'web' })).catch(() => undefined)
+        }
+        for (const name of lookalikes('admin')) {
+          await Promise.resolve(adapter.createRole({ name, guardName: 'web', teamId: null })).catch(() => undefined)
+        }
 
         const permissions = await adapter.findPermissions({ names: ['edit'] })
         expect(permissions.map((p) => [String(p.id), p.name])).toEqual([[String(permission.id), 'edit']])
         const roles = await adapter.findRoles({ names: ['admin'] })
         expect(roles.map((r) => [String(r.id), r.name])).toEqual([[String(role.id), 'admin']])
+        for (const name of lookalikes('edit')) {
+          for (const p of await adapter.findPermissions({ names: [name] })) expect(p.name, name).toBe(name)
+        }
+        for (const name of lookalikes('admin')) {
+          for (const r of await adapter.findRoles({ names: [name] })) expect(r.name, name).toBe(name)
+        }
         expect(await adapter.findPermissions({ names: ['edit'], guardName: 'WEB' })).toEqual([])
-        expect(await adapter.findPermissions()).toHaveLength(3)
-        expect(await adapter.findRoles()).toHaveLength(4)
+        expect(await adapter.findRoles({ names: ['admin'], guardName: 'web ' })).toEqual([])
       })
 
       it('never gives a subject the links of a lookalike subject id or type', async () => {

@@ -22,7 +22,7 @@ Each guarantee has tests that would fail if it broke.
 | **Malformed input fails closed.** An unknown permission or an invalid wildcard makes `can()` return `false` instead of throwing; a guard defined without any name throws when it is defined; a missing subject gets a 401. | Unit and property tests in core and in every integration |
 | **Guards are separate.** A role or permission of the `api` guard never grants anything in the `web` guard. | Core and adapter conformance tests |
 | **Changes take effect at once in the process that made them**, and in every process that shares the cache store. | `packages/core/test/shared-cache.test.ts` (two engines, one database, one async JSON store) |
-| **Every adapter matches exactly.** Role and permission names, guards, subject types, subject ids and team ids that differ only by case, accents or a trailing space are kept apart, so a user `ADMIN` never gets the roles of `admin`, whatever the database's collation. | The "exact matching" tests of the shared adapter conformance suite, run against real PostgreSQL, MySQL, SQL Server and MongoDB servers in CI |
+| **Every adapter matches exactly.** Role and permission names, guards, subject types, subject ids and team ids that differ only by case, accents or a trailing space are kept apart, so a user `ADMIN` or `admin ` never gets the roles of `admin`, whatever the database's collation (the SQL adapters re-check every row in JavaScript, because MySQL's `utf8mb4_bin` and SQL Server ignore trailing spaces). | The "exact matching" tests of the shared adapter conformance suite, run against real PostgreSQL, MySQL, SQL Server and MongoDB servers in CI |
 
 ## What it assumes
 
