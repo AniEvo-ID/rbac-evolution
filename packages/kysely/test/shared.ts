@@ -86,6 +86,35 @@ export function runSharedDatabaseSuite(
       expect(await adapter.findPermissions()).toHaveLength(1)
     })
 
+    // More links than one SQL Server VALUES list (1000 rows) holds, so the batched insert is chunked.
+    it('attaches 1200 links at once, re-attaches them idempotently and still reports a missing target', async () => {
+      await clearTables(db, prefix)
+      const adapter = kyselyAdapter(db, { prefix })
+      const n = tableNames({ prefix })
+      const names = Array.from({ length: 1200 }, (_, i) => `r${i}`)
+      for (let i = 0; i < names.length; i += 500) {
+        const rows = names.slice(i, i + 500).map((name) => ({ name, guard_name: 'web', team_id: '' }))
+        await db.insertInto(n.roles).values(rows).execute()
+      }
+      const roleIds = (await adapter.findRoles()).map((r) => Number(r.id)).sort((a, b) => a - b)
+      expect(roleIds).toHaveLength(1200)
+      const alice = { type: 'user', id: 'alice' }
+      const sorted = (ids: readonly unknown[]) => ids.map(Number).sort((a, b) => a - b)
+
+      await adapter.attachSubjectRoles(alice, roleIds.slice(0, 500), 'acme')
+      await adapter.attachSubjectRoles(alice, roleIds, 'acme')
+      await adapter.attachSubjectRoles(alice, roleIds, 'acme')
+      expect(await count(db, n.modelHasRoles)).toBe(1200)
+      expect(sorted(await adapter.getSubjectRoleIds(alice, 'acme'))).toEqual(roleIds)
+      expect(await adapter.getSubjectRoleIds({ type: 'user', id: 'alice ' }, 'acme')).toEqual([])
+
+      // A target without a row is a foreign-key error, not silently skipped.
+      const missing = (roleIds.at(-1) ?? 0) + 100_000
+      await expect(adapter.attachSubjectRoles({ type: 'user', id: 'bob' }, [missing], 'acme')).rejects.toThrow()
+      await expect(adapter.attachSubjectRoles(alice, [...roleIds, missing], 'acme')).rejects.toThrow()
+      expect(await count(db, n.modelHasRoles)).toBe(1200)
+    }, 60_000)
+
     it('runs a full flow and fills timestamps', async () => {
       await clearTables(db, prefix)
       const rbac = createRbac({ adapter: kyselyAdapter(db, { prefix }), cache: false })

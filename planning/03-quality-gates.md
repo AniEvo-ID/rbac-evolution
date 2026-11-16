@@ -24,7 +24,7 @@ Goal: CI catches anything that would break the 1.0 promise before it is merged.
 
 ## Known gaps to close
 
-- [ ] Kysely SQL Server inserts links one row at a time; now that SQL Server runs in CI, batch them and keep the duplicate-safety.
+- [x] Kysely SQL Server inserts links one row at a time; now that SQL Server runs in CI, batch them and keep the duplicate-safety. One `INSERT ... SELECT ... FROM (VALUES ...) WHERE NOT EXISTS` per 1000 links (and under 2100 parameters); a duplicate-key error from a concurrent insert retries that chunk row by row. SQL pinned in `compile.test.ts`; 1200-link attach test in the shared database suite.
 - [ ] Next.js and Nuxt are only exercised end-to-end through the Next example; add a Nuxt or NestJS example app to E2E.
 
 ## Done when
