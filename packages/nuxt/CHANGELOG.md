@@ -1,5 +1,16 @@
 # @anievo-id/rbac-evolution-nuxt
 
+## 0.7.0
+
+### Patch Changes
+
+- 71ce31d: Types now resolve under `moduleResolution: "node16"` / `"nodenext"`. The declaration files imported their siblings without a `.js` extension (`'./runtime/rule'`), which those settings can't resolve, so `RbacRouteRule`, `RouteRuleResult`, `NuxtRbac` and `RbacPublicConfig` silently became `any` and a wrong `rbac` route rule type-checked. Found by the new package lint (publint and arethetypeswrong) that now runs in CI.
+- Updated dependencies [71ce31d]
+- Updated dependencies [3aca854]
+- Updated dependencies [71ce31d]
+  - @anievo-id/rbac-evolution@0.7.0
+  - @anievo-id/rbac-evolution-vue@0.7.0
+
 ## 0.6.6
 
 ### Patch Changes
