@@ -9,7 +9,7 @@ Goal: a new user succeeds without reading the source, and an existing user upgra
 
 ## To add
 
-- [ ] **API reference** generated from the TypeScript types (TypeDoc with the markdown plugin, or the api-extractor output from [03-quality-gates.md](./03-quality-gates.md)), one page per package, linked from each guide.
+- [x] **API reference** generated from the TypeScript types (TypeDoc with the markdown plugin, or the api-extractor output from [03-quality-gates.md](./03-quality-gates.md)), one page per package, linked from each guide. Done: `docs/scripts/api.mjs` (TypeDoc + typedoc-plugin-markdown) writes `docs/api/<package>/` for every `exports` entry of all 14 packages; `pnpm docs:api`, run by the docs build, output gitignored.
 - [x] **Upgrade guide 0.x → 1.0**: every rename and removal from [01-api-freeze.md](./01-api-freeze.md), with before/after code. Include the 0.6.0 blank-guard change and the SQL Server collation note.
 - [x] **Versioning page** from [02-compatibility-and-semver.md](./02-compatibility-and-semver.md).
 - [ ] **Versioned docs**: keep a frozen copy of the 0.x docs (for example under `/rbac-evolution/0.x/`) once 1.0 ships, and a version switcher in the nav.

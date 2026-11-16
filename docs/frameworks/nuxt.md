@@ -304,3 +304,5 @@ See [Typed names](/basic-usage/typed-names).
 
 The module augments `PageMeta`, so `definePageMeta({ rbac })` is typed, and Nuxt generates the types of
 `useNuxtApp().$rbac` and the auto-imported composables. Run `nuxi prepare` (or `nuxt dev`) after installing.
+
+Full API: [reference](/api/nuxt/)

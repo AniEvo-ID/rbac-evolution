@@ -1,9 +1,31 @@
-import { readFileSync } from 'node:fs'
-import { defineConfig } from 'vitepress'
+import { existsSync, readFileSync } from 'node:fs'
+import { type DefaultTheme, defineConfig } from 'vitepress'
 
 const repo = 'https://github.com/AniEvo-ID/rbac-evolution'
 // The docs deploy on every push to main, so this is always the version that main (and npm) carries.
 const { version } = JSON.parse(readFileSync(new URL('../../packages/core/package.json', import.meta.url), 'utf8'))
+
+// One sidebar group per package, written by docs/scripts/api.mjs (`pnpm docs:api`, run by the
+// docs `build` and `dev` scripts). Missing when VitePress is started on its own.
+const apiSidebarFile = new URL('../api/sidebar.json', import.meta.url)
+const apiSidebar: DefaultTheme.SidebarItem[] = existsSync(apiSidebarFile)
+  ? JSON.parse(readFileSync(apiSidebarFile, 'utf8'))
+  : []
+// `/api/` lists the packages; each `/api/<dir>/` page only gets its own package's tree, so a page
+// doesn't render the members of all 14 packages in its sidebar.
+const apiPackages: DefaultTheme.SidebarItem = {
+  text: 'API reference',
+  items: [{ text: 'All packages', link: '/api/' }, ...apiSidebar.map(({ text, link }) => ({ text, link }))],
+}
+const apiSidebars: DefaultTheme.SidebarMulti = {
+  '/api/': [apiPackages],
+  ...Object.fromEntries(
+    apiSidebar.map((pkg) => [
+      pkg.link!,
+      [{ text: 'API reference', items: [{ text: 'All packages', link: '/api/' }] }, { ...pkg, collapsed: false }],
+    ]),
+  ),
+}
 
 export default defineConfig({
   title: 'RBAC Evolution',
@@ -41,6 +63,7 @@ export default defineConfig({
       { text: 'Frameworks', link: '/frameworks/react' },
       { text: 'Adapters', link: '/adapters/overview' },
       { text: 'CLI', link: '/basic-usage/cli' },
+      { text: 'API', link: '/api/' },
       { text: 'Test report', link: '/quality' },
       {
         text: `v${version}`,
@@ -55,90 +78,97 @@ export default defineConfig({
       },
     ],
 
-    sidebar: [
-      {
-        text: 'Introduction',
-        items: [
-          { text: 'Introduction', link: '/guide/introduction' },
-          { text: 'Installation', link: '/guide/installation' },
-          { text: 'Runtimes (Node, Bun)', link: '/guide/runtimes' },
-          { text: 'Quick start', link: '/guide/quick-start' },
-          { text: 'Coming from Laravel', link: '/guide/coming-from-laravel' },
-          { text: 'Example apps', link: '/guide/examples' },
-          { text: "What's new", link: '/guide/whats-new' },
-          { text: 'Upgrading to 1.0', link: '/guide/upgrading' },
-          { text: 'Versioning', link: '/guide/versioning' },
-        ],
-      },
-      {
-        text: 'Basic Usage',
-        items: [
-          { text: 'Basic usage', link: '/basic-usage/basic-usage' },
-          { text: 'Direct permissions', link: '/basic-usage/direct-permissions' },
-          { text: 'Permissions via roles', link: '/basic-usage/roles' },
-          { text: 'Typed names (enums)', link: '/basic-usage/typed-names' },
-          { text: 'Teams', link: '/basic-usage/teams' },
-          { text: 'Wildcard permissions', link: '/basic-usage/wildcard-permissions' },
-          { text: 'Super-admin', link: '/basic-usage/super-admin' },
-          { text: 'Multiple guards', link: '/basic-usage/multiple-guards' },
-          { text: 'CLI', link: '/basic-usage/cli' },
-        ],
-      },
-      {
-        text: 'Frameworks',
-        items: [
-          { text: 'React', link: '/frameworks/react' },
-          { text: 'Next.js', link: '/frameworks/nextjs' },
-          { text: 'Vue', link: '/frameworks/vue' },
-          { text: 'Nuxt', link: '/frameworks/nuxt' },
-          { text: 'Express', link: '/frameworks/express' },
-          { text: 'Hono', link: '/frameworks/hono' },
-          { text: 'Fastify', link: '/frameworks/fastify' },
-          { text: 'NestJS', link: '/frameworks/nestjs' },
-        ],
-      },
-      {
-        text: 'Adapters',
-        items: [
-          { text: 'Overview', link: '/adapters/overview' },
-          { text: 'Prisma', link: '/adapters/prisma' },
-          { text: 'Drizzle', link: '/adapters/drizzle' },
-          { text: 'Kysely', link: '/adapters/kysely' },
-          { text: 'Mongoose (MongoDB)', link: '/adapters/mongoose' },
-          { text: 'Memory', link: '/adapters/memory' },
-          { text: 'Custom adapter', link: '/adapters/custom' },
-        ],
-      },
-      {
-        text: 'Advanced',
-        items: [
-          { text: 'Seeding (sync)', link: '/advanced/seeding' },
-          { text: 'Cache', link: '/advanced/cache' },
-          { text: 'Events', link: '/advanced/events' },
-          { text: 'Querying subjects', link: '/advanced/querying-subjects' },
-          { text: 'Errors', link: '/advanced/errors' },
-          { text: 'Testing', link: '/advanced/testing' },
-        ],
-      },
-      {
-        text: 'Best Practices',
-        items: [
-          { text: 'Roles vs permissions', link: '/best-practices/roles-vs-permissions' },
-          { text: 'Security', link: '/best-practices/security' },
-          { text: 'Threat model', link: '/best-practices/threat-model' },
-          { text: 'Production checklist', link: '/best-practices/production' },
-        ],
-      },
-      {
-        text: 'Recipes',
-        items: [
-          { text: 'Auth.js in Next.js', link: '/recipes/authjs' },
-          { text: 'Multi-tenant SaaS', link: '/recipes/multi-tenant' },
-          { text: 'Admin UI for roles', link: '/recipes/admin-ui' },
-          { text: 'Audit log', link: '/recipes/audit-log' },
-        ],
-      },
-    ],
+    sidebar: {
+      ...apiSidebars,
+      '/': [
+        {
+          text: 'Introduction',
+          items: [
+            { text: 'Introduction', link: '/guide/introduction' },
+            { text: 'Installation', link: '/guide/installation' },
+            { text: 'Runtimes (Node, Bun)', link: '/guide/runtimes' },
+            { text: 'Quick start', link: '/guide/quick-start' },
+            { text: 'Coming from Laravel', link: '/guide/coming-from-laravel' },
+            { text: 'Example apps', link: '/guide/examples' },
+            { text: "What's new", link: '/guide/whats-new' },
+            { text: 'Upgrading to 1.0', link: '/guide/upgrading' },
+            { text: 'Versioning', link: '/guide/versioning' },
+          ],
+        },
+        {
+          text: 'Basic Usage',
+          items: [
+            { text: 'Basic usage', link: '/basic-usage/basic-usage' },
+            { text: 'Direct permissions', link: '/basic-usage/direct-permissions' },
+            { text: 'Permissions via roles', link: '/basic-usage/roles' },
+            { text: 'Typed names (enums)', link: '/basic-usage/typed-names' },
+            { text: 'Teams', link: '/basic-usage/teams' },
+            { text: 'Wildcard permissions', link: '/basic-usage/wildcard-permissions' },
+            { text: 'Super-admin', link: '/basic-usage/super-admin' },
+            { text: 'Multiple guards', link: '/basic-usage/multiple-guards' },
+            { text: 'CLI', link: '/basic-usage/cli' },
+          ],
+        },
+        {
+          text: 'Frameworks',
+          items: [
+            { text: 'React', link: '/frameworks/react' },
+            { text: 'Next.js', link: '/frameworks/nextjs' },
+            { text: 'Vue', link: '/frameworks/vue' },
+            { text: 'Nuxt', link: '/frameworks/nuxt' },
+            { text: 'Express', link: '/frameworks/express' },
+            { text: 'Hono', link: '/frameworks/hono' },
+            { text: 'Fastify', link: '/frameworks/fastify' },
+            { text: 'NestJS', link: '/frameworks/nestjs' },
+          ],
+        },
+        {
+          text: 'Adapters',
+          items: [
+            { text: 'Overview', link: '/adapters/overview' },
+            { text: 'Prisma', link: '/adapters/prisma' },
+            { text: 'Drizzle', link: '/adapters/drizzle' },
+            { text: 'Kysely', link: '/adapters/kysely' },
+            { text: 'Mongoose (MongoDB)', link: '/adapters/mongoose' },
+            { text: 'Memory', link: '/adapters/memory' },
+            { text: 'Custom adapter', link: '/adapters/custom' },
+          ],
+        },
+        {
+          text: 'Advanced',
+          items: [
+            { text: 'Seeding (sync)', link: '/advanced/seeding' },
+            { text: 'Cache', link: '/advanced/cache' },
+            { text: 'Events', link: '/advanced/events' },
+            { text: 'Querying subjects', link: '/advanced/querying-subjects' },
+            { text: 'Errors', link: '/advanced/errors' },
+            { text: 'Testing', link: '/advanced/testing' },
+          ],
+        },
+        {
+          text: 'Best Practices',
+          items: [
+            { text: 'Roles vs permissions', link: '/best-practices/roles-vs-permissions' },
+            { text: 'Security', link: '/best-practices/security' },
+            { text: 'Threat model', link: '/best-practices/threat-model' },
+            { text: 'Production checklist', link: '/best-practices/production' },
+          ],
+        },
+        {
+          text: 'Recipes',
+          items: [
+            { text: 'Auth.js in Next.js', link: '/recipes/authjs' },
+            { text: 'Multi-tenant SaaS', link: '/recipes/multi-tenant' },
+            { text: 'Admin UI for roles', link: '/recipes/admin-ui' },
+            { text: 'Audit log', link: '/recipes/audit-log' },
+          ],
+        },
+        {
+          text: 'Reference',
+          items: [{ text: 'API reference', link: '/api/' }],
+        },
+      ],
+    },
 
     socialLinks: [{ icon: 'github', link: repo }],
     editLink: { pattern: `${repo}/edit/main/docs/:path`, text: 'Edit this page on GitHub' },

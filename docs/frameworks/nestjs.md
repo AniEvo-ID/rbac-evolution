@@ -286,3 +286,5 @@ The package is built with esbuild and does not depend on `emitDecoratorMetadata`
 `@Inject()` tokens. Your own app can use `tsc`, SWC or any other compiler Nest supports.
 
 See also [Security](/best-practices/security).
+
+Full API: [reference](/api/nestjs/)

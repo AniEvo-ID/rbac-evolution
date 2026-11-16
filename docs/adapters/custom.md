@@ -243,3 +243,5 @@ runAdapterTests('MyAdapter', async () => {
 Run it with `npx vitest`. The suite reports as `RbacAdapter conformance: MyAdapter`. Add your own `describe` blocks next to it for behaviour specific to your adapter (id conversion, prefixes, transactions).
 
 See [Testing](/advanced/testing#testing-a-custom-adapter) for complete examples with PostgreSQL and SQLite.
+
+Full API: [reference](/api/core/interfaces/RbacAdapter) (and [`runAdapterTests`](/api/core/testing/))

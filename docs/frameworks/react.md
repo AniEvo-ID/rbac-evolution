@@ -311,3 +311,5 @@ checker.hasRole('admin') // false
   snapshot (refetch, or `router.refresh()` in Next.js).
 - **Empty lists never pass.** `useCanAny()`, `useCanAll()` and `useHasAllRoles()` return `false` for an empty list,
   and `<Can allOf={[]}>` renders its fallback — the same deny-by-default rule as the Vue package.
+
+Full API: [reference](/api/react/)

@@ -239,3 +239,5 @@ await rbac.forgetCachedPermissions()
 ::: tip
 `cache: false` on the transaction instance keeps uncommitted data out of any cache. After the commit, call `forgetCachedPermissions()` on your long-lived instance. See [Cache](/advanced/cache).
 :::
+
+Full API: [reference](/api/kysely/)

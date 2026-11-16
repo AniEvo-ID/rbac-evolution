@@ -275,3 +275,5 @@ await rbac.forgetCachedPermissions()
 ::: tip
 `cache: false` on the transaction instance keeps uncommitted data out of any cache. After the commit, call `forgetCachedPermissions()` on your long-lived instance. Each instance owns its own cache and doesn't know about changes made through another instance. See [Cache](/advanced/cache).
 :::
+
+Full API: [reference](/api/drizzle/)

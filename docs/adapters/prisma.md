@@ -253,3 +253,5 @@ await rbac.role('admin').syncPermissions(permissions)
 
 await prisma.$disconnect()
 ```
+
+Full API: [reference](/api/prisma/)

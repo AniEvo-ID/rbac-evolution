@@ -95,3 +95,5 @@ function reset() {
   rbac = createRbac({ adapter: new MemoryAdapter() })
 }
 ```
+
+Full API: [reference](/api/core/classes/MemoryAdapter)

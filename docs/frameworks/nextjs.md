@@ -619,3 +619,5 @@ In `rbac` mode the middleware checks through the engine (`canAny()` / `hasAnyRol
 `before` hook apply exactly like in `requirePermission()` and friends. In snapshot mode, pass `superAdminRoles` to the
 middleware itself.
 :::
+
+Full API: [reference](/api/next/)

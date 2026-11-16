@@ -317,3 +317,5 @@ app.post(
 
 `asyncHandler` expects a function that resolves to nothing — send the response, then `return` without a value.
 On Express 5 it is optional, since Express 5 forwards rejected promises itself.
+
+Full API: [reference](/api/express/)
