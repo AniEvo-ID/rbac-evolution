@@ -81,7 +81,7 @@ jobs:
       - name: Release sync report
         env:
           GH_TOKEN: ${{ github.token }}
-          VERIFY_RETRIES: 30
+          VERIFY_RETRIES: 90
         run: node scripts/verify-release.mjs || echo "::warning::npm and GitHub are out of sync, see the Test report page."
       - name: E2E report
         run: |

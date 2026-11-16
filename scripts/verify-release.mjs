@@ -8,7 +8,8 @@
 // Writes docs/public/reports/release.json and exits 1 on any mismatch.
 //
 // Usage (repo root): node scripts/verify-release.mjs
-// VERIFY_RETRIES=30 waits up to ~5 minutes for npm to show a fresh publish (10 s between tries).
+// VERIFY_RETRIES=90 waits up to ~15 minutes for npm to show a fresh publish (10 s between tries). npm can take
+// several minutes to list one package of a batch: in 1.3.0 the mongoose package showed up 6 minutes after the others.
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
