@@ -149,7 +149,8 @@ describe('fastify types: guards', () => {
       app.post<{ Body: { title: string }; Params: { id: string } }>(
         '/c/:id',
         { preHandler: requireRoleOrPermission('admin|edit articles') },
-        async (request) => request.body.title,
+        // Typed generics reach the handler (returns a length, not the raw input, so nothing is reflected).
+        async (request) => ({ titleLength: request.body.title.length, id: request.params.id.length }),
       )
       app.addHook('preHandler', canAll('a', 'b'))
       app.route({ method: 'GET', url: '/d', preHandler: requireRole('admin'), handler: ok })
