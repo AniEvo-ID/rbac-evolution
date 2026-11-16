@@ -8,7 +8,16 @@ export { RbacModule } from './module'
 export type { RbacModuleAsyncConfig, RbacModuleConfig, RbacModuleOptions } from './options'
 
 export { RbacGuard } from './guard'
-export { CanAll, CanAny, CurrentRbac, RequirePermissions, RequireRoleOrPermission, RequireRoles } from './decorators'
+export {
+  CanAll,
+  CanAny,
+  createRbacDecorators,
+  CurrentRbac,
+  RequirePermissions,
+  RequireRoleOrPermission,
+  RequireRoles,
+} from './decorators'
+export type { RbacDecorator, RbacDecorators } from './decorators'
 export { getRbac, RbacGuardMissingError } from './context'
 export { RBAC, RBAC_MODULE_OPTIONS, RBAC_REQUIREMENTS } from './tokens'
 

@@ -68,11 +68,16 @@ export {
   UNAUTHENTICATED_MESSAGE,
 } from './requirements'
 export type {
+  CheckRequirementName,
+  NamesRequired,
+  OptionsMustBeLast,
   PermissionRequirementOptions,
   RbacRequirement,
+  RequirementArgs,
   RequirementKind,
   RequirementNames,
   RoleRequirementOptions,
+  UnknownRequirementName,
 } from './requirements'
 
 export type {

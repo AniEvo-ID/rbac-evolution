@@ -4,6 +4,7 @@
  * (MemoryAdapter), and no command is run.
  */
 import {
+  type DefaultRbacTypes,
   type Rbac,
   type SyncDefinition,
   type SyncResult,
@@ -30,8 +31,8 @@ const rbac = createRbac({ adapter: new MemoryAdapter() })
 
 describe('cli: types', () => {
   it('defineConfig takes and returns RbacCliConfig', () => {
-    expectTypeOf(defineConfig).parameters.toEqualTypeOf<[config: RbacCliConfig]>()
-    expectTypeOf(defineConfig).returns.toEqualTypeOf<RbacCliConfig>()
+    expectTypeOf(defineConfig<DefaultRbacTypes>).parameters.toEqualTypeOf<[config: RbacCliConfig]>()
+    expectTypeOf(defineConfig<DefaultRbacTypes>).returns.toEqualTypeOf<RbacCliConfig>()
 
     expectTypeOf<RbacCliConfig['rbac']>().toEqualTypeOf<Rbac | (() => Rbac | Promise<Rbac>)>()
     expectTypeOf<RbacCliConfig['subjectType']>().toEqualTypeOf<string | undefined>()
@@ -57,6 +58,26 @@ describe('cli: types', () => {
     expectTypeOf(defineConfig).toBeCallableWith({ rbac: typed })
     expectTypeOf(defineConfig).toBeCallableWith({ rbac: () => typed })
     expectTypeOf(defineConfig).toBeCallableWith({ rbac: async () => typed })
+  })
+
+  it('checks the names in `seed` against a typed engine', () => {
+    type AppTypes = { permissions: 'edit articles' | 'delete articles'; roles: 'writer' | 'admin' }
+    const typed = createRbac<AppTypes>({ adapter: new MemoryAdapter() })
+    const config = defineConfig({
+      rbac: typed,
+      seed: { permissions: ['edit articles', 'delete articles'], roles: { admin: '*', writer: ['edit articles'] } },
+    })
+    expectTypeOf(config).toEqualTypeOf<RbacCliConfig<AppTypes>>()
+    defineConfig({ rbac: async () => typed, seed: [{ permissions: ['edit articles'] }] })
+
+    // Never called: only type-checked.
+    const _bad = () => {
+      // @ts-expect-error unknown permission in seed
+      defineConfig({ rbac: typed, seed: { permissions: ['edit artciles'] } })
+      // @ts-expect-error unknown role in seed
+      defineConfig({ rbac: () => typed, seed: { roles: { editor: '*' } } })
+    }
+    expect(typeof _bad).toBe('function')
   })
 
   it('RbacCliConfig rejects invalid configs (exactOptionalPropertyTypes)', () => {

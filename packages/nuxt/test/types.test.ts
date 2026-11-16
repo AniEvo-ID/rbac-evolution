@@ -178,15 +178,10 @@ describe('server helpers (`/server`)', () => {
 
   it('require*(): names, pipes and arrays, then trailing options; resolves to SubjectRbac', () => {
     const server = createRbacServer({ rbac, getSubject: () => null })
-    expectTypeOf(server.requirePermission).parameters.toEqualTypeOf<
-      [event: RbacEvent, ...args: (RequirementNames | PermissionRequirementOptions)[]]
-    >()
-    expectTypeOf(server.requireRole).parameters.toEqualTypeOf<
-      [event: RbacEvent, ...args: (RequirementNames | RoleRequirementOptions)[]]
-    >()
-    expectTypeOf(server.requireRoleOrPermission).parameters.toEqualTypeOf<
-      [event: RbacEvent, ...names: RequirementNames[]]
-    >()
+    // Generic over the arguments (so names can be checked); spread arrays still fit.
+    const spread: (RequirementNames | PermissionRequirementOptions)[] = ['a']
+    const roleSpread: (RequirementNames | RoleRequirementOptions)[] = ['a']
+    const nameSpread: RequirementNames[] = ['a']
     expectTypeOf(server.requirePermission).returns.toEqualTypeOf<Promise<SubjectRbac>>()
     expectTypeOf(server.canAny).returns.toEqualTypeOf<Promise<SubjectRbac>>()
     expectTypeOf(server.resolve).returns.toEqualTypeOf<Promise<SubjectRbac | null>>()
@@ -200,6 +195,10 @@ describe('server helpers (`/server`)', () => {
       await server.requirePermission(event, 'a', { any: undefined })
       await server.requireRole(event, 'writer', 'editor', { all: true })
       await server.canAll(event, ['a', 'b'] as const)
+      await server.requirePermission(event, ...spread)
+      await server.requireRole(event, ...roleSpread)
+      await server.requireRoleOrPermission(event, ...nameSpread)
+      await server.canAny(event, ...nameSpread)
 
       // @ts-expect-error -- `all` is a role option, not a permission option
       await server.requirePermission(event, 'a', { all: true })
@@ -209,6 +208,59 @@ describe('server helpers (`/server`)', () => {
       await server.requireRoleOrPermission(event, 'a', { any: true })
       // @ts-expect-error -- the event comes first
       await server.requirePermission('a')
+      // @ts-expect-error -- at least one name is required
+      await server.requireRole(event)
+      // @ts-expect-error -- options must be the last argument
+      await server.requirePermission(event, { any: true }, 'a')
+    }
+  })
+
+  it('typed names: inferred from the `rbac` option', () => {
+    type AppTypes = { permissions: 'articles.edit' | 'articles.delete'; roles: 'writer' | 'admin' }
+    const typedEngine = createRbac<AppTypes>({ adapter: new MemoryAdapter() })
+    const server = createRbacServer({ rbac: typedEngine, getSubject: () => null })
+    expectTypeOf(server).toEqualTypeOf<RbacServer<RbacEvent, AppTypes>>()
+    expectTypeOf(server.requireRole).returns.toEqualTypeOf<Promise<SubjectRbac<AppTypes>>>()
+    expectTypeOf(server.resolve).returns.toEqualTypeOf<Promise<SubjectRbac<AppTypes> | null>>()
+    // With an explicit event type, pass the names type too (TypeScript does not infer the rest).
+    type MyEvent = { context: Record<string, unknown> }
+    const withEvent = createRbacServer<MyEvent, AppTypes>({ rbac: typedEngine, getSubject: () => null })
+    expectTypeOf(withEvent).toEqualTypeOf<RbacServer<MyEvent, AppTypes>>()
+
+    const event = { context: {} }
+    const dynamic: string[] = ['anything']
+    void async function neverCalled() {
+      await server.requirePermission(event, 'articles.edit')
+      await server.requirePermission(event, 'articles.edit|articles.delete', ['articles.edit'], { any: true })
+      await server.requireRole(event, 'writer | admin', { all: true })
+      await server.requireRoleOrPermission(event, 'admin|articles.edit')
+      await server.canAny(event, ['articles.edit', 'articles.delete'])
+      await server.canAll(event, 'articles.edit', 'articles.delete')
+      // Spread `string[]` arguments are not checked.
+      await server.requirePermission(event, ...dynamic)
+      await withEvent.requireRole({ context: {} }, 'admin')
+
+      // @ts-expect-error -- typo
+      await server.requirePermission(event, 'articles.edti')
+      // @ts-expect-error -- typo inside a pipe list
+      await server.requirePermission(event, 'articles.edit|articles.delte', { any: true })
+      // @ts-expect-error -- typo inside an array
+      await server.canAny(event, ['articles.edit', 'nope'])
+      // @ts-expect-error -- a permission is not a role
+      await server.requireRole(event, 'articles.edit')
+      // @ts-expect-error -- neither a role nor a permission
+      await server.requireRoleOrPermission(event, 'admin', 'nope')
+      // @ts-expect-error -- typo
+      await server.canAll(event, 'nope')
+      // @ts-expect-error -- typo, with an explicit event type
+      await withEvent.requireRole({ context: {} }, 'admn')
+    }
+
+    // An untyped engine still accepts any string.
+    const untyped = createRbacServer({ rbac, getSubject: () => null })
+    void async function neverCalledUntyped() {
+      await untyped.requirePermission(event, 'anything|else', { any: true })
+      await untyped.requireRoleOrPermission(event, ['whatever'])
     }
   })
 

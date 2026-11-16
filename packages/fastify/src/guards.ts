@@ -1,9 +1,15 @@
 import {
+  type DefaultRbacTypes,
+  type PermissionName,
   permissionRequirement,
+  type Rbac,
+  type RbacTypeConfig,
   type RbacRequirement,
   type RequirementKind,
+  type RequirementArgs,
   type RequirementNames,
   REQUIREMENT_MESSAGES,
+  type RoleName,
   roleOrPermissionRequirement,
   roleRequirement,
   satisfiesRequirement,
@@ -113,8 +119,36 @@ function withDefaults(defaults: GuardHandlers, options: GuardHandlers): GuardHan
   return merged as GuardHandlers
 }
 
-/** Builds the guards with shared defaults (e.g. a custom `onForbidden` that renders an HTML page). */
-export function createGuards(defaults: GuardHandlers = {}) {
+/**
+ * A guard typed with the names `N` it accepts and its options `O`: `(...names, options?)`.
+ * Every name (each part of a `'a|b'` list, each array item) must be one of `N`; with `N = string`, any name is.
+ * A call without names, or with options that are not the last argument, is a type error.
+ */
+export type Guard<N extends string, O> = <const A extends readonly (GuardNames | O)[]>(
+  ...args: A & RequirementArgs<A, N, O>
+) => GuardHook
+
+/** The guards returned by `createGuards<T>()`, with names narrowed by `T` (see `RbacTypeConfig`). */
+export interface Guards<T extends RbacTypeConfig = DefaultRbacTypes> {
+  requirePermission: Guard<PermissionName<T>, PermissionGuardOptions>
+  requireRole: Guard<RoleName<T>, RoleGuardOptions>
+  requireRoleOrPermission: Guard<PermissionName<T> | RoleName<T>, RoleOrPermissionGuardOptions>
+  canAny: Guard<PermissionName<T>, GuardHandlers>
+  canAll: Guard<PermissionName<T>, GuardHandlers>
+}
+
+/** The type configuration of `T`: `T` itself, or the `X` of an `Rbac<X>` engine. */
+type TypesOf<T> = T extends Rbac<infer X> ? X : T extends RbacTypeConfig ? T : never
+
+/**
+ * Builds the guards with shared defaults (e.g. a custom `onForbidden` that renders an HTML page).
+ *
+ * Pass the same type argument as `createRbac<AppTypes>()` (or `typeof rbac`) to check names at compile time:
+ * `const { requirePermission } = createGuards<AppTypes>()`.
+ */
+export function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes>(
+  defaults: GuardHandlers = {},
+): Guards<TypesOf<T>> {
   /**
    * Requires permissions, like spatie's `permission:` middleware.
    *
@@ -123,7 +157,7 @@ export function createGuards(defaults: GuardHandlers = {}) {
    * - `requirePermission('edit articles', 'publish articles')` — all of them
    * - `requirePermission('a', 'b', { any: true })` — any of them
    */
-  function requirePermission(...args: (GuardNames | PermissionGuardOptions)[]): GuardHook {
+  function requirePermission(...args: readonly (GuardNames | PermissionGuardOptions)[]): GuardHook {
     const { names, options = {} } = splitRequirementArgs<PermissionGuardOptions>(args)
     return createGuard(permissionRequirement(names, options), withDefaults(defaults, options))
   }
@@ -134,7 +168,7 @@ export function createGuards(defaults: GuardHandlers = {}) {
    * - `requireRole('admin')`, `requireRole('admin|editor')`, `requireRole('admin', 'editor')` — any of them
    * - `requireRole('admin', 'editor', { all: true })` — all of them
    */
-  function requireRole(...args: (GuardNames | RoleGuardOptions)[]): GuardHook {
+  function requireRole(...args: readonly (GuardNames | RoleGuardOptions)[]): GuardHook {
     const { names, options = {} } = splitRequirementArgs<RoleGuardOptions>(args)
     return createGuard(roleRequirement(names, options), withDefaults(defaults, options))
   }
@@ -145,7 +179,7 @@ export function createGuards(defaults: GuardHandlers = {}) {
    *
    * - `requireRoleOrPermission('admin|edit articles')`
    */
-  function requireRoleOrPermission(...args: (GuardNames | RoleOrPermissionGuardOptions)[]): GuardHook {
+  function requireRoleOrPermission(...args: readonly (GuardNames | RoleOrPermissionGuardOptions)[]): GuardHook {
     const { names, options = {} } = splitRequirementArgs<RoleOrPermissionGuardOptions>(args)
     return createGuard(roleOrPermissionRequirement(names), withDefaults(defaults, options))
   }
@@ -155,7 +189,7 @@ export function createGuards(defaults: GuardHandlers = {}) {
    *
    * - `canAny('edit articles', 'publish articles')`, `canAny(['edit articles', 'publish articles'])`
    */
-  function canAny(...args: (GuardNames | GuardHandlers)[]): GuardHook {
+  function canAny(...args: readonly (GuardNames | GuardHandlers)[]): GuardHook {
     const { names, options } = splitRequirementArgs<GuardHandlers>(args)
     return requirePermission(...names, { ...options, any: true })
   }
@@ -165,12 +199,14 @@ export function createGuards(defaults: GuardHandlers = {}) {
    *
    * - `canAll('edit articles', 'publish articles')`, `canAll(['edit articles', 'publish|review'])`
    */
-  function canAll(...args: (GuardNames | GuardHandlers)[]): GuardHook {
+  function canAll(...args: readonly (GuardNames | GuardHandlers)[]): GuardHook {
     const { names, options } = splitRequirementArgs<GuardHandlers>(args)
     return requirePermission(...names, { ...options, any: false })
   }
 
-  return { requirePermission, requireRole, requireRoleOrPermission, canAny, canAll }
+  // The untyped functions above take any spread of names (`canAny` passes `...names` on); the typed signature
+  // is only the public face, so a cast is enough. No runtime change.
+  return { requirePermission, requireRole, requireRoleOrPermission, canAny, canAll } as Guards<TypesOf<T>>
 }
 
 export const { requirePermission, requireRole, requireRoleOrPermission, canAny, canAll } = createGuards()

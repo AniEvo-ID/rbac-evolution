@@ -266,6 +266,24 @@ export const PATCH = withRbac(
 The 403 message names the *kind* of requirement (permissions, roles, or either) but never the actual role or
 permission names.
 
+## Typed names
+
+If the engine has typed names (`createRbac<AppRbac>()`), `createNextRbac` picks them up from `rbac`. Then a typo
+is a compile error. Every name is checked, including each part of a `'a|b'` list and each array item.
+
+```ts
+const rbac = createRbac<AppRbac>({ adapter })
+
+export const { requirePermission, can, withPermission } = createNextRbac({ rbac, getSubject })
+
+await requirePermission('articles.edit|articles.publish') // ok
+await can('articles.dleete') // type error
+export const save = withPermission('articles.edit', async (id: number) => id) // still (id: number) => Promise<number>
+```
+
+With an untyped engine, every helper accepts any string. The middleware rules stay untyped.
+See [Typed names](/basic-usage/typed-names).
+
 ## Guards and teams
 
 Every helper accepts `{ guard, team }`, which is passed through to `rbac.for(subject, { guard, team })`. Missing

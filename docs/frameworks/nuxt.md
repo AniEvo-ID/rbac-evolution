@@ -268,6 +268,23 @@ Failures throw an `RbacHttpError` that h3 / Nitro send as an HTTP error:
 A guest gets `401` with `data: { "error": "UNAUTHENTICATED", "message": "User is not logged in." }`.
 `data` is exactly the body of the Express and NestJS packages.
 
+## Typed names
+
+If the engine has typed names (`createRbac<AppRbac>()`), `createRbacServer` picks them up from `rbac`. Then a typo
+in a server helper is a compile error. Every name is checked, including each part of a `'a|b'` list.
+
+```ts
+const rbac = createRbac<AppRbac>({ adapter })
+export const rbacServer = createRbacServer({ rbac, getSubject })
+
+await rbacServer.requirePermission(event, 'articles.edit|articles.publish') // ok
+await rbacServer.requireRole(event, 'admn') // type error
+```
+
+If you set the event type yourself, pass the names type too: `createRbacServer<MyEvent, AppRbac>(...)`.
+With an untyped engine, any string is accepted. Route rules and the client stay untyped.
+See [Typed names](/basic-usage/typed-names).
+
 ## TypeScript
 
 The module augments `PageMeta`, so `definePageMeta({ rbac })` is typed, and Nuxt generates the types of

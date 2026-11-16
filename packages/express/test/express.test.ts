@@ -243,7 +243,9 @@ describe('error handling', () => {
   })
 
   it('rejects guards without names', () => {
+    // @ts-expect-error -- no names is also a type error now; the runtime check stays for untyped callers
     expect(() => requirePermission()).toThrow(TypeError)
+    // @ts-expect-error options without names is a type error; checked here at runtime
     expect(() => requireRole({ all: true })).toThrow(TypeError)
     expect(() => requireRole(' | ')).toThrow(TypeError) // used to answer 403 at runtime; now fails at startup like Nuxt/NestJS
   })

@@ -4,11 +4,22 @@
  * Server-side enforcement for Nitro / h3 event handlers. Runs on the server only.
  */
 
-import type { Rbac, RbacSnapshot, Subject, SubjectRbac, TeamId } from '@anievo-id/rbac-evolution'
+import type {
+  DefaultRbacTypes,
+  PermissionName,
+  Rbac,
+  RbacSnapshot,
+  RbacTypeConfig,
+  RoleName,
+  Subject,
+  SubjectRbac,
+  TeamId,
+} from '@anievo-id/rbac-evolution'
 import {
   permissionRequirement,
   type PermissionRequirementOptions,
   type RbacRequirement,
+  type RequirementArgs,
   type RequirementKind,
   type RequirementNames,
   REQUIREMENT_MESSAGES,
@@ -29,9 +40,9 @@ export interface RbacEvent {
   context: object
 }
 
-export interface RbacServerOptions<E extends RbacEvent = RbacEvent> {
-  /** The RBAC engine created with `createRbac(...)`. */
-  rbac: Rbac
+export interface RbacServerOptions<E extends RbacEvent = RbacEvent, T extends RbacTypeConfig = DefaultRbacTypes> {
+  /** The RBAC engine created with `createRbac(...)`. Its typed names flow into the `require*` / `can*` helpers. */
+  rbac: Rbac<T>
   /** Resolves the authenticated subject for this request (e.g. from a session). `null` / `undefined` for guests. */
   getSubject: (event: E) => MaybePromise<Subject | null | undefined>
   /** Guard name (e.g. `web` or `api`). Defaults to the engine's `defaultGuard`. */
@@ -81,24 +92,55 @@ export class RbacHttpError extends Error {
   }
 }
 
-export interface RbacServer<E extends RbacEvent = RbacEvent> {
+/**
+ * The helpers returned by `createRbacServer()`. `T` comes from the `rbac` option: with typed names, every
+ * name (including each part of a `'a|b'` list) must be one of them; untyped, any string is accepted.
+ * A call without names, or with options that are not the last argument, is a type error.
+ */
+export interface RbacServer<E extends RbacEvent = RbacEvent, T extends RbacTypeConfig = DefaultRbacTypes> {
   /**
    * Resolves the subject once per request (cached per helper instance) and stores it on
    * `event.context.rbac` (a `SubjectRbac`, or `null` for guests) unless another instance did
    * first. The Nuxt plugin reads it to hydrate the client.
    */
-  resolve(event: E): Promise<SubjectRbac | null>
+  resolve(event: E): Promise<SubjectRbac<T> | null>
   /** The current subject's `{ roles, permissions }`, or `null` for guests. */
   snapshot(event: E): Promise<RbacSnapshot | null>
   /** Like Express `requirePermission`: arguments are all required, pipes mean any, `{ any: true }`. */
-  requirePermission(event: E, ...args: (RequirementNames | PermissionRequirementOptions)[]): Promise<SubjectRbac>
+  requirePermission<const A extends readonly (RequirementNames | PermissionRequirementOptions)[]>(
+    event: E,
+    ...args: A & RequirementArgs<A, PermissionName<T>, PermissionRequirementOptions>
+  ): Promise<SubjectRbac<T>>
   /** Like Express `requireRole`: any of the roles, `{ all: true }` for all. */
-  requireRole(event: E, ...args: (RequirementNames | RoleRequirementOptions)[]): Promise<SubjectRbac>
+  requireRole<const A extends readonly (RequirementNames | RoleRequirementOptions)[]>(
+    event: E,
+    ...args: A & RequirementArgs<A, RoleName<T>, RoleRequirementOptions>
+  ): Promise<SubjectRbac<T>>
   /** Like Express `requireRoleOrPermission`: any of the names as a role OR a permission. */
-  requireRoleOrPermission(event: E, ...names: RequirementNames[]): Promise<SubjectRbac>
+  requireRoleOrPermission<const A extends readonly RequirementNames[]>(
+    event: E,
+    ...names: A & RequirementArgs<A, PermissionName<T> | RoleName<T>, never>
+  ): Promise<SubjectRbac<T>>
   /** spatie v8.5 `canAny()`: requires ANY of the listed permissions. */
-  canAny(event: E, ...names: RequirementNames[]): Promise<SubjectRbac>
+  canAny<const A extends readonly RequirementNames[]>(
+    event: E,
+    ...names: A & RequirementArgs<A, PermissionName<T>, never>
+  ): Promise<SubjectRbac<T>>
   /** spatie v8.5 `canAll()`: requires EVERY listed entry; a `'a|b'` entry still means "a or b". */
+  canAll<const A extends readonly RequirementNames[]>(
+    event: E,
+    ...names: A & RequirementArgs<A, PermissionName<T>, never>
+  ): Promise<SubjectRbac<T>>
+}
+
+/** The untyped implementation behind `RbacServer` (plain `string` names, spread-friendly). */
+interface UntypedRbacServer<E extends RbacEvent> {
+  resolve(event: E): Promise<SubjectRbac | null>
+  snapshot(event: E): Promise<RbacSnapshot | null>
+  requirePermission(event: E, ...args: (RequirementNames | PermissionRequirementOptions)[]): Promise<SubjectRbac>
+  requireRole(event: E, ...args: (RequirementNames | RoleRequirementOptions)[]): Promise<SubjectRbac>
+  requireRoleOrPermission(event: E, ...names: RequirementNames[]): Promise<SubjectRbac>
+  canAny(event: E, ...names: RequirementNames[]): Promise<SubjectRbac>
   canAll(event: E, ...names: RequirementNames[]): Promise<SubjectRbac>
 }
 
@@ -122,8 +164,16 @@ const CONTEXT_KEY = 'rbac'
  *   await rbacServer.requirePermission(event, 'articles.create')
  * })
  * ```
+ *
+ * With a typed engine (`createRbac<AppTypes>(...)`), names are checked: `requirePermission(event, 'typo')` is a type error.
  */
-export function createRbacServer<E extends RbacEvent = RbacEvent>(options: RbacServerOptions<E>): RbacServer<E> {
+export function createRbacServer<E extends RbacEvent = RbacEvent, T extends RbacTypeConfig = DefaultRbacTypes>(
+  options: RbacServerOptions<E, T>,
+): RbacServer<E, T> {
+  return buildRbacServer(options as unknown as RbacServerOptions<E>) as unknown as RbacServer<E, T>
+}
+
+function buildRbacServer<E extends RbacEvent>(options: RbacServerOptions<E>): UntypedRbacServer<E> {
   const { rbac, getSubject, guard, team, exposeRequirements = false } = options
   // Per instance, so a second server (e.g. guard 'api') never reuses another guard's subject.
   const resolved = new WeakMap<object, SubjectRbac | null>()

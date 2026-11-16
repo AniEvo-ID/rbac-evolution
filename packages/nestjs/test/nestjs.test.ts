@@ -286,6 +286,7 @@ describe('rbac-evolution-nestjs: forRootAsync + globalGuard', () => {
 
 describe('decorator validation', () => {
   it('throws when no name is given', () => {
+    // @ts-expect-error -- no names is also a type error; at runtime it throws
     expect(() => RequirePermissions()).toThrow(TypeError)
     expect(() => RequireRoles(' | ')).toThrow(TypeError)
   })

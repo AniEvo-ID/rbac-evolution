@@ -82,6 +82,21 @@ export class ArticlesController {
   `@Require*()` decorator, `@UseGuards(RbacGuard)`, or `globalGuard: true`.
 - The `Rbac` engine is injectable with `@Inject(RBAC)`.
 
+## Typed names
+
+Pass your `createRbac<AppRbac>()` type to `createRbacDecorators()`, and typos become compile errors:
+
+```ts
+export const { RequirePermissions, RequireRoles } = createRbacDecorators<AppRbac>()
+
+class ArticlesController {
+  @Put(':id') @RequirePermissions('articles.edit') update() {} // ok
+  @Delete(':id') @RequirePermissions('articles.edti') remove() {} // type error
+}
+```
+
+The top-level decorators still accept any string.
+
 ## Errors
 
 | Situation      | Exception               | Body                                                     |

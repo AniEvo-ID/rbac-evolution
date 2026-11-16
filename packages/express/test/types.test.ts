@@ -11,11 +11,13 @@ import {
   canAll,
   canAny,
   createGuards,
+  type Guard,
   type GuardContext,
   type GuardHandler,
   type GuardHandlers,
   type GuardKind,
   type GuardNames,
+  type Guards,
   type PermissionGuardOptions,
   rbacMiddleware,
   type RbacMiddlewareOptions,
@@ -83,7 +85,7 @@ describe('express types: rbacMiddleware()', () => {
     expectTypeOf(invalid).toBeFunction()
   })
 
-  it('accepts an engine with narrowed names (the integration itself is not generic)', () => {
+  it('accepts an engine with narrowed names (the middleware itself is not generic; see `createGuards<T>()`)', () => {
     const typed = createRbac<{ permissions: 'edit articles'; roles: 'writer' }>({ adapter: new MemoryAdapter() })
     rbacMiddleware({ rbac: typed, getSubject: guest })
   })
@@ -215,6 +217,105 @@ describe('express types: hooks & failure details', () => {
     expectTypeOf(guards.requireRoleOrPermission).toEqualTypeOf(requireRoleOrPermission)
     expectTypeOf(guards.canAny).toEqualTypeOf(canAny)
     expectTypeOf(guards.canAll).toEqualTypeOf(canAll)
+  })
+})
+
+type AppTypes = { permissions: 'edit articles' | 'delete articles' | 'publish articles'; roles: 'admin' | 'editor' }
+type AppPermission = 'edit articles' | 'delete articles' | 'publish articles'
+type AppRole = 'admin' | 'editor'
+
+describe('express types: typed names (createGuards<T>())', () => {
+  const typed = createGuards<AppTypes>()
+
+  it('types the guards with the names of T', () => {
+    expectTypeOf(typed).toEqualTypeOf<Guards<AppTypes>>()
+    expectTypeOf(typed.requirePermission).toEqualTypeOf<Guard<AppPermission, PermissionGuardOptions>>()
+    expectTypeOf(typed.requireRole).toEqualTypeOf<Guard<AppRole, RoleGuardOptions>>()
+    expectTypeOf(typed.requireRoleOrPermission).toEqualTypeOf<
+      Guard<AppPermission | AppRole, RoleOrPermissionGuardOptions>
+    >()
+    expectTypeOf(typed.canAny).toEqualTypeOf<Guard<AppPermission, GuardHandlers>>()
+    expectTypeOf(typed.canAll).toEqualTypeOf<Guard<AppPermission, GuardHandlers>>()
+    // The defaults (and `createGuards()`) accept any string.
+    expectTypeOf(createGuards()).toEqualTypeOf<Guards>()
+    expectTypeOf(requirePermission).toEqualTypeOf<Guard<string, PermissionGuardOptions>>()
+  })
+
+  it('also takes the engine type: createGuards<typeof rbac>()', () => {
+    const engine = createRbac<AppTypes>({ adapter: new MemoryAdapter() })
+    expectTypeOf(createGuards<typeof engine>()).toEqualTypeOf<Guards<AppTypes>>()
+    expectTypeOf(createGuards<typeof rbac>()).toEqualTypeOf<Guards>()
+    // A config with only roles keeps permissions untyped.
+    expectTypeOf(createGuards<{ roles: AppRole }>().requirePermission).toEqualTypeOf<
+      Guard<string, PermissionGuardOptions>
+    >()
+    function invalid() {
+      // @ts-expect-error -- not a type config
+      createGuards<{ permissions: 1 }>()
+    }
+    expectTypeOf(invalid).toBeFunction()
+  })
+
+  it('accept typed names, pipe lists, arrays and a trailing options object', () => {
+    function valid() {
+      typed.requirePermission('edit articles')
+      typed.requirePermission('edit articles|delete articles', 'publish articles')
+      typed.requirePermission('edit articles | delete articles')
+      typed.requirePermission(['edit articles', 'delete articles'], { any: true })
+      typed.requireRole('admin|editor', { all: true })
+      typed.requireRole(['admin'], { onForbidden: (_req, res) => res.sendStatus(404) })
+      typed.requireRoleOrPermission('admin|edit articles', { exposeRequirements: true })
+      typed.canAny('edit articles', 'publish articles')
+      typed.canAny(['edit articles'], { onUnauthenticated: (_req, res) => res.redirect('/login') })
+      typed.canAll(['edit articles', 'publish articles|delete articles'])
+      // Spread `string[]` arguments are not checked.
+      const spread: string[] = ['anything']
+      typed.requirePermission(...spread)
+    }
+    expectTypeOf(valid).toBeFunction()
+  })
+
+  it('reject unknown names, calls without names and options that are not last', () => {
+    function invalid() {
+      // @ts-expect-error -- typo
+      typed.requirePermission('edit artciles')
+      // @ts-expect-error -- typo inside a pipe list
+      typed.requirePermission('edit articles|delte articles')
+      // @ts-expect-error -- typo inside an array
+      typed.requirePermission(['edit articles', 'nope'], { any: true })
+      // @ts-expect-error -- a role is not a permission
+      typed.requirePermission('admin')
+      // @ts-expect-error -- a permission is not a role
+      typed.requireRole('edit articles')
+      // @ts-expect-error -- unknown role or permission
+      typed.requireRoleOrPermission('admin|ghost')
+      // @ts-expect-error -- canAny/canAll take permissions
+      typed.canAny('admin')
+      // @ts-expect-error -- typo
+      typed.canAll('edit articles', 'publsh articles')
+      // @ts-expect-error -- no names
+      typed.requireRole()
+      // @ts-expect-error -- options before a name
+      typed.requirePermission({ any: true }, 'edit articles')
+    }
+    expectTypeOf(invalid).toBeFunction()
+  })
+
+  it('the default guards accept any string, but still need names and trailing options', () => {
+    function check() {
+      requirePermission('anything at all', 'x|y', ['z'], { any: true })
+      requireRole('whatever')
+      requireRoleOrPermission('who|knows')
+      canAny('a', 'b')
+      canAll(['a'])
+      // @ts-expect-error -- no names
+      requirePermission()
+      // @ts-expect-error -- no names
+      canAny()
+      // @ts-expect-error -- options before a name
+      requireRole({ all: true }, 'admin')
+    }
+    expectTypeOf(check).toBeFunction()
   })
 })
 

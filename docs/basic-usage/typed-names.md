@@ -69,6 +69,35 @@ for (const name of Object.values(Permission)) {
 - **`Permission` and `Role` objects are always accepted**, whatever their name.
 - **Return values stay `string[]`.** `getRoleNames()`, `getPermissionNames()` and `snapshot()` return plain strings, because the database may contain names your code doesn't know about.
 
+## In guards, middleware and the CLI
+
+The server integrations check names against the same type, so a typo in a route guard is a compile error too.
+Pipe lists (`'edit articles|delete articles'`) are checked part by part.
+
+```ts
+// Express, Fastify, Hono: pass the type to createGuards
+const { requirePermission, requireRole } = createGuards<AppRbac>()
+app.put('/articles/:id', requirePermission('edit articles|publish articles'), handler) // ok
+app.delete('/articles/:id', requirePermission('delete artcles'), handler) // type error
+
+// NestJS: typed decorators
+export const { RequirePermissions, RequireRoles } = createRbacDecorators<AppRbac>()
+
+// Next.js and Nuxt: the names come from the engine you pass in
+const nextRbac = createNextRbac({ rbac, getSubject })
+await nextRbac.requirePermission('edit artcles') // type error
+
+// CLI: `seed` in rbac.config.ts is checked against `rbac`
+export default defineConfig({ rbac, seed: { permissions: ['edit articles'] } })
+```
+
+The type error names the part that is wrong, for example `UnknownRequirementName<"delete artcles">`. A guard with
+no names, or with its options before a name, is a type error as well, because it would fail at runtime.
+
+The guards exported directly by each package (`import { requirePermission } from ...`) still accept any string.
+Client-side helpers (`<Can>`, `useCan()`, `v-can`) take plain strings, because the snapshot they read comes from the
+server.
+
 ::: warning Wildcards
 With `wildcard: true`, the names you *check* must be in the union too, not just the ones you store:
 
