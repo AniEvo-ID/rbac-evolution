@@ -19,7 +19,7 @@ Goal: CI catches anything that would break the 1.0 promise before it is merged.
 - [x] **Peer version matrix**: CI jobs for the oldest and newest supported major of each framework peer (from [02-compatibility-and-semver.md](./02-compatibility-and-semver.md)). The `ci` job covers the dev dependency (newest, except Next.js 16 and Drizzle 0.45); the `peers` job swaps in the oldest supported version (and those two). Filling it narrowed the Drizzle, Kysely, Prisma and Mongoose peer ranges; Mongoose 9 still needs a `peers` entry before it is claimed.
 - [x] **Node 24** in the CI matrix.
 - [x] **Bundle size**: record the size of each client package (react, vue) and fail on a large jump (`size-limit`). `pnpm size` (`.size-limit.json`, preset-small-lib, brotli, core bundled, framework peers ignored) for react, vue and `next/middleware`, run in the `ci` job on Node 22; limits are the first measurement + ~10%.
-- [ ] **Benchmarks** (optional for 1.0): `can()` cold and cached, `syncRoles`, reverse lookups on 100k links. Run on demand, not on every PR.
+- [x] **Benchmarks** (optional for 1.0): `can()` cold and cached, `syncRoles`, reverse lookups on 100k links. Run on demand, not on every PR. `tests/bench` (`vitest bench`, memory adapter and SQLite), `pnpm --filter rbac-evolution-bench bench` locally or the on-demand **Benchmarks** workflow, which writes a table to the job summary.
 - [ ] **Make `databases` and `bun` required checks** once they have been stable for a few weeks.
 
 ## Known gaps to close
@@ -30,4 +30,4 @@ Goal: CI catches anything that would break the 1.0 promise before it is merged.
 ## Done when
 
 - [ ] Every item above is merged and green on `main`
-- [ ] The test report page shows coverage next to the unit and E2E counts
+- [x] The test report page shows coverage next to the unit and E2E counts (average line and branch coverage cards, and per package)
