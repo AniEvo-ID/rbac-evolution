@@ -279,6 +279,18 @@ api.get('/reports', requirePermission('reports.view'), handler)
 app.use('/api', api)
 ```
 
+### Another guard per route
+
+Every guard also takes a `guard` option: the check runs in that guard (`req.rbac.withScope({ guard })`) instead of
+the middleware's, like spatie's `role:admin,api` / `permission:edit articles,api`. `req.rbac` itself is unchanged,
+and a guest still gets `401`. `guard` is per route only: it is not a `createGuards()` default.
+
+```ts
+app.get('/api/admin', requireRole('admin', { guard: 'api' }), handler) // role:admin,api
+app.get('/api/articles', requirePermission('articles.edit', { guard: 'api' }), handler) // permission:articles.edit,api
+app.get('/api/reports', canAny('reports.view', 'reports.export', { guard: 'api' }), handler)
+```
+
 See [Multiple guards](/basic-usage/multiple-guards).
 
 ## Express 4 and 5

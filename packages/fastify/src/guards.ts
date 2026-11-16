@@ -45,17 +45,31 @@ export interface GuardHandlers {
   exposeRequirements?: boolean | undefined
 }
 
-export interface PermissionGuardOptions extends GuardHandlers {
+/**
+ * The options every guard takes: the handlers plus `guard`.
+ *
+ * `guard` is per guard only (like spatie's `role:admin,api`), not a `createGuards()` default:
+ * the defaults are about handlers, and the request's guard is set on the middleware.
+ */
+export interface RouteGuardOptions extends GuardHandlers {
+  /**
+   * Check in this guard instead of the request's (`subject.withScope({ guard })`), like spatie's
+   * `role:admin,api`. Default: the guard of the request's subject.
+   */
+  guard?: string | undefined
+}
+
+export interface PermissionGuardOptions extends RouteGuardOptions {
   /** Pass when the subject has ANY of the permissions (instead of all). Default: `false`. */
   any?: boolean | undefined
 }
 
-export interface RoleGuardOptions extends GuardHandlers {
+export interface RoleGuardOptions extends RouteGuardOptions {
   /** Require ALL of the roles (instead of any). Default: `false`. */
   all?: boolean | undefined
 }
 
-export type RoleOrPermissionGuardOptions = GuardHandlers
+export type RoleOrPermissionGuardOptions = RouteGuardOptions
 
 /** A name, a pipe-separated list (`'edit|delete'` = any of), or an array of names. */
 export type GuardNames = RequirementNames
@@ -83,7 +97,7 @@ const defaultForbidden =
       ...(expose && { required: context.requirements }),
     })
 
-function createGuard(requirement: RbacRequirement, handlers: GuardHandlers): GuardHook {
+function createGuard(requirement: RbacRequirement, handlers: GuardHandlers, guard: string | undefined): GuardHook {
   const onUnauthenticated = handlers.onUnauthenticated ?? defaultUnauthenticated
   const onForbidden = handlers.onForbidden ?? defaultForbidden(handlers.exposeRequirements ?? false)
   const context: GuardContext = { kind: requirement.kind, requirements: requirement.requirements }
@@ -95,7 +109,7 @@ function createGuard(requirement: RbacRequirement, handlers: GuardHandlers): Gua
       await respond(onUnauthenticated, request, reply, context)
       return reply
     }
-    if (await satisfiesRequirement(rbac, requirement)) return
+    if (await satisfiesRequirement(guard === undefined ? rbac : rbac.withScope({ guard }), requirement)) return
     await respond(onForbidden, request, reply, context)
     return reply
   }
@@ -133,8 +147,8 @@ export interface Guards<T extends RbacTypeConfig = DefaultRbacTypes> {
   requirePermission: Guard<PermissionName<T>, PermissionGuardOptions>
   requireRole: Guard<RoleName<T>, RoleGuardOptions>
   requireRoleOrPermission: Guard<PermissionName<T> | RoleName<T>, RoleOrPermissionGuardOptions>
-  canAny: Guard<PermissionName<T>, GuardHandlers>
-  canAll: Guard<PermissionName<T>, GuardHandlers>
+  canAny: Guard<PermissionName<T>, RouteGuardOptions>
+  canAll: Guard<PermissionName<T>, RouteGuardOptions>
 }
 
 /** The type configuration of `T`: `T` itself, or the `X` of an `Rbac<X>` engine. */
@@ -159,7 +173,7 @@ export function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = D
    */
   function requirePermission(...args: readonly (GuardNames | PermissionGuardOptions)[]): GuardHook {
     const { names, options = {} } = splitRequirementArgs<PermissionGuardOptions>(args)
-    return createGuard(permissionRequirement(names, options), withDefaults(defaults, options))
+    return createGuard(permissionRequirement(names, options), withDefaults(defaults, options), options.guard)
   }
 
   /**
@@ -170,7 +184,7 @@ export function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = D
    */
   function requireRole(...args: readonly (GuardNames | RoleGuardOptions)[]): GuardHook {
     const { names, options = {} } = splitRequirementArgs<RoleGuardOptions>(args)
-    return createGuard(roleRequirement(names, options), withDefaults(defaults, options))
+    return createGuard(roleRequirement(names, options), withDefaults(defaults, options), options.guard)
   }
 
   /**
@@ -181,7 +195,7 @@ export function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = D
    */
   function requireRoleOrPermission(...args: readonly (GuardNames | RoleOrPermissionGuardOptions)[]): GuardHook {
     const { names, options = {} } = splitRequirementArgs<RoleOrPermissionGuardOptions>(args)
-    return createGuard(roleOrPermissionRequirement(names), withDefaults(defaults, options))
+    return createGuard(roleOrPermissionRequirement(names), withDefaults(defaults, options), options.guard)
   }
 
   /**
@@ -189,8 +203,8 @@ export function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = D
    *
    * - `canAny('edit articles', 'publish articles')`, `canAny(['edit articles', 'publish articles'])`
    */
-  function canAny(...args: readonly (GuardNames | GuardHandlers)[]): GuardHook {
-    const { names, options } = splitRequirementArgs<GuardHandlers>(args)
+  function canAny(...args: readonly (GuardNames | RouteGuardOptions)[]): GuardHook {
+    const { names, options } = splitRequirementArgs<RouteGuardOptions>(args)
     return requirePermission(...names, { ...options, any: true })
   }
 
@@ -199,8 +213,8 @@ export function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = D
    *
    * - `canAll('edit articles', 'publish articles')`, `canAll(['edit articles', 'publish|review'])`
    */
-  function canAll(...args: readonly (GuardNames | GuardHandlers)[]): GuardHook {
-    const { names, options } = splitRequirementArgs<GuardHandlers>(args)
+  function canAll(...args: readonly (GuardNames | RouteGuardOptions)[]): GuardHook {
+    const { names, options } = splitRequirementArgs<RouteGuardOptions>(args)
     return requirePermission(...names, { ...options, any: false })
   }
 

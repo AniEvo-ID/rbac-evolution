@@ -149,7 +149,7 @@ Permission checks use `SubjectRbac.can()`, so `before` hooks, `superAdminRoles` 
 | `@RequireRoles('admin', 'editor')`               | **any** of them              |
 | `@RequireRoles('admin', 'editor', { all: true })` | **all** of them             |
 
-### `@RequireRoleOrPermission(...names)`
+### `@RequireRoleOrPermission(...names, options?)`
 
 Passes when the subject has **any** of the names, either as a role or as a permission:
 `@RequireRoleOrPermission('admin|articles.edit')`.
@@ -248,6 +248,30 @@ RbacModule.forRoot({
   guard: 'api',
   team: (ctx) => ctx.switchToHttp().getRequest().user?.teamId,
 })
+```
+
+### Another guard per route
+
+Every decorator also takes a trailing `{ guard }` option (`@RequireRoleOrPermission`, `@CanAny` and `@CanAll`
+included): `RbacGuard` checks that requirement in that guard (`subject.withScope({ guard })`) instead of the module's,
+like spatie's `role:admin,api` / `permission:edit articles,api`. `@CurrentRbac()` still injects the subject in the
+module's guard, and a guest still gets `401`.
+
+```ts
+@Controller('api')
+export class ApiController {
+  @Get('admin')
+  @RequireRoles('admin', { guard: 'api' }) // role:admin,api
+  admin() {}
+
+  @Post('articles')
+  @RequirePermissions('articles.edit', { guard: 'api' }) // permission:articles.edit,api
+  edit() {}
+
+  @Get('reports')
+  @CanAny('reports.view', 'reports.export', { guard: 'api' })
+  reports() {}
+}
 ```
 
 ## Other transports

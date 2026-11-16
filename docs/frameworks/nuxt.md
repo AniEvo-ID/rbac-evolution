@@ -248,9 +248,9 @@ export default defineEventHandler(async (event) => {
 | Helper                                          | Semantics                                                   |
 | ----------------------------------------------- | ----------------------------------------------------------- |
 | `requirePermission(event, ...names, options?)`  | all arguments; pipes = any; `{ any: true }`                 |
-| `canAny(event, ...names)` / `canAll(...)`       | any of the permissions / every entry (spatie v8.5)          |
+| `canAny(event, ...names, options?)` / `canAll(...)` | any of the permissions / every entry (spatie v8.5)      |
 | `requireRole(event, ...names, options?)`        | any of the roles; `{ all: true }`                           |
-| `requireRoleOrPermission(event, ...names)`      | any of the names, as a role or a permission                 |
+| `requireRoleOrPermission(event, ...names, options?)` | any of the names, as a role or a permission            |
 | `resolve(event)`                                | the `SubjectRbac` or `null` (cached per helper; the first one to resolve also sets `event.context.rbac`) |
 | `snapshot(event)`                               | `{ roles, permissions }` or `null`                          |
 
@@ -267,6 +267,21 @@ Failures throw an `RbacHttpError` that h3 / Nitro send as an HTTP error:
 
 A guest gets `401` with `data: { "error": "UNAUTHENTICATED", "message": "User is not logged in." }`.
 `data` is exactly the body of the Express and NestJS packages.
+
+### Another guard per route
+
+Every `require*` / `can*` helper also takes a trailing `{ guard }` option: that check runs in that guard
+(`subject.withScope({ guard })`) instead of the server's, like spatie's `role:admin,api` /
+`permission:edit articles,api`. The returned subject is in that guard; `event.context.rbac` is unchanged, and a guest
+still gets `401`.
+
+```ts
+// server/api/admin/index.get.ts
+export default defineEventHandler(async (event) => {
+  await rbacServer.requireRole(event, 'admin', { guard: 'api' }) // role:admin,api
+  await rbacServer.canAny(event, 'reports.view', 'reports.export', { guard: 'api' })
+})
+```
 
 ## Typed names
 

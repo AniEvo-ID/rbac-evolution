@@ -336,3 +336,62 @@ describe('canAny / canAll (spatie v8.5)', () => {
     expect(res.statusCode).toBe(status)
   })
 })
+
+/** User 10 has `admin` and `edit articles` only in guard `api` (spatie's `role:admin,api`). */
+async function seedApiGuard(rbac: Rbac): Promise<void> {
+  await rbac.createRole('admin')
+  await rbac.createRole('admin', { guard: 'api' })
+  await rbac.createPermission('edit articles', { guard: 'api' })
+  await rbac.for({ type: 'user', id: 10 }, { guard: 'api' }).assignRole('admin')
+  await rbac.for({ type: 'user', id: 10 }, { guard: 'api' }).givePermissionTo('edit articles')
+}
+
+const GUARD_CASES: [string, number | null, number][] = [
+  ['/api/role', 10, 200],
+  ['/api/role', null, 401],
+  ['/web/role', 10, 403],
+  ['/web/role', null, 401],
+  ['/api/permission', 10, 200],
+  ['/web/permission', 10, 403],
+  ['/api/role-or-permission', 10, 200],
+  ['/api/can-any', 10, 200],
+  ['/api/can-all', 10, 200],
+  ['/api/custom', 10, 200],
+]
+
+describe('per-route guard option', () => {
+  let app: FastifyInstance
+  beforeAll(async () => {
+    const rbac = createRbac({ adapter: new MemoryAdapter() })
+    await seedApiGuard(rbac)
+    app = Fastify()
+    await app.register(rbacPlugin, { rbac, getSubject: async (request) => userFrom(request) })
+    const guards = createGuards({ exposeRequirements: true })
+    app.get('/api/role', { preHandler: requireRole('admin', { guard: 'api' }) }, async (request) => ({
+      guard: request.rbac?.guardName,
+    }))
+    app.get('/web/role', { preHandler: requireRole('admin') }, ok)
+    app.get('/api/permission', { preHandler: requirePermission('edit articles', { guard: 'api' }) }, ok)
+    app.get('/web/permission', { preHandler: requirePermission('edit articles') }, ok)
+    app.get(
+      '/api/role-or-permission',
+      { preHandler: requireRoleOrPermission('admin|edit articles', { guard: 'api' }) },
+      ok,
+    )
+    app.get('/api/can-any', { preHandler: canAny('edit articles', 'publish articles', { guard: 'api' }) }, ok)
+    app.get('/api/can-all', { preHandler: canAll('edit articles', { guard: 'api' }) }, ok)
+    app.get('/api/custom', { preHandler: guards.requireRole('admin', { guard: 'api' }) }, ok)
+    await app.ready()
+  })
+  afterAll(() => app.close())
+
+  it.each(GUARD_CASES)('%s as user %s → %i', async (path, user, status) => {
+    const res = await app.inject({ url: path, headers: user ? { 'x-user': String(user) } : {} })
+    expect(res.statusCode).toBe(status)
+  })
+
+  it('leaves `request.rbac` in the request guard', async () => {
+    const res = await app.inject({ url: '/api/role', headers: { 'x-user': '10' } })
+    expect(res.json()).toEqual({ guard: 'web' })
+  })
+})

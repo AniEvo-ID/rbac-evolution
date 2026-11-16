@@ -53,6 +53,21 @@ export interface RbacServerOptions<E extends RbacEvent = RbacEvent, T extends Rb
   exposeRequirements?: boolean | undefined
 }
 
+/** The options every `require*` / `can*` helper takes (last argument). */
+export interface RequireGuardOptions {
+  /**
+   * Check in this guard instead of the server's (`subject.withScope({ guard })`), like spatie's
+   * `role:admin,api`. Default: the `guard` of `createRbacServer()`.
+   */
+  guard?: string | undefined
+}
+
+/** Options of `requirePermission()`: `{ any }` and `{ guard }`. */
+export interface RequirePermissionOptions extends PermissionRequirementOptions, RequireGuardOptions {}
+
+/** Options of `requireRole()`: `{ all }` and `{ guard }`. */
+export interface RequireRoleOptions extends RoleRequirementOptions, RequireGuardOptions {}
+
 /** The JSON body of a failed check — identical to `@anievo-id/rbac-evolution-express`. */
 export type RbacErrorBody =
   | { error: 'UNAUTHENTICATED'; message: string }
@@ -106,30 +121,33 @@ export interface RbacServer<E extends RbacEvent = RbacEvent, T extends RbacTypeC
   resolve(event: E): Promise<SubjectRbac<T> | null>
   /** The current subject's `{ roles, permissions }`, or `null` for guests. */
   snapshot(event: E): Promise<RbacSnapshot | null>
-  /** Like Express `requirePermission`: arguments are all required, pipes mean any, `{ any: true }`. */
-  requirePermission<const A extends readonly (RequirementNames | PermissionRequirementOptions)[]>(
+  /**
+   * Like Express `requirePermission`: arguments are all required, pipes mean any, `{ any: true }`.
+   * With `{ guard: 'api' }` the check (and the returned subject) is in that guard.
+   */
+  requirePermission<const A extends readonly (RequirementNames | RequirePermissionOptions)[]>(
     event: E,
-    ...args: A & RequirementArgs<A, PermissionName<T>, PermissionRequirementOptions>
+    ...args: A & RequirementArgs<A, PermissionName<T>, RequirePermissionOptions>
   ): Promise<SubjectRbac<T>>
-  /** Like Express `requireRole`: any of the roles, `{ all: true }` for all. */
-  requireRole<const A extends readonly (RequirementNames | RoleRequirementOptions)[]>(
+  /** Like Express `requireRole`: any of the roles, `{ all: true }` for all, `{ guard: 'api' }` (spatie's `role:admin,api`). */
+  requireRole<const A extends readonly (RequirementNames | RequireRoleOptions)[]>(
     event: E,
-    ...args: A & RequirementArgs<A, RoleName<T>, RoleRequirementOptions>
+    ...args: A & RequirementArgs<A, RoleName<T>, RequireRoleOptions>
   ): Promise<SubjectRbac<T>>
   /** Like Express `requireRoleOrPermission`: any of the names as a role OR a permission. */
-  requireRoleOrPermission<const A extends readonly RequirementNames[]>(
+  requireRoleOrPermission<const A extends readonly (RequirementNames | RequireGuardOptions)[]>(
     event: E,
-    ...names: A & RequirementArgs<A, PermissionName<T> | RoleName<T>, never>
+    ...args: A & RequirementArgs<A, PermissionName<T> | RoleName<T>, RequireGuardOptions>
   ): Promise<SubjectRbac<T>>
   /** spatie v8.5 `canAny()`: requires ANY of the listed permissions. */
-  canAny<const A extends readonly RequirementNames[]>(
+  canAny<const A extends readonly (RequirementNames | RequireGuardOptions)[]>(
     event: E,
-    ...names: A & RequirementArgs<A, PermissionName<T>, never>
+    ...args: A & RequirementArgs<A, PermissionName<T>, RequireGuardOptions>
   ): Promise<SubjectRbac<T>>
   /** spatie v8.5 `canAll()`: requires EVERY listed entry; a `'a|b'` entry still means "a or b". */
-  canAll<const A extends readonly RequirementNames[]>(
+  canAll<const A extends readonly (RequirementNames | RequireGuardOptions)[]>(
     event: E,
-    ...names: A & RequirementArgs<A, PermissionName<T>, never>
+    ...args: A & RequirementArgs<A, PermissionName<T>, RequireGuardOptions>
   ): Promise<SubjectRbac<T>>
 }
 
@@ -137,11 +155,11 @@ export interface RbacServer<E extends RbacEvent = RbacEvent, T extends RbacTypeC
 interface UntypedRbacServer<E extends RbacEvent> {
   resolve(event: E): Promise<SubjectRbac | null>
   snapshot(event: E): Promise<RbacSnapshot | null>
-  requirePermission(event: E, ...args: (RequirementNames | PermissionRequirementOptions)[]): Promise<SubjectRbac>
-  requireRole(event: E, ...args: (RequirementNames | RoleRequirementOptions)[]): Promise<SubjectRbac>
-  requireRoleOrPermission(event: E, ...names: RequirementNames[]): Promise<SubjectRbac>
-  canAny(event: E, ...names: RequirementNames[]): Promise<SubjectRbac>
-  canAll(event: E, ...names: RequirementNames[]): Promise<SubjectRbac>
+  requirePermission(event: E, ...args: (RequirementNames | RequirePermissionOptions)[]): Promise<SubjectRbac>
+  requireRole(event: E, ...args: (RequirementNames | RequireRoleOptions)[]): Promise<SubjectRbac>
+  requireRoleOrPermission(event: E, ...args: (RequirementNames | RequireGuardOptions)[]): Promise<SubjectRbac>
+  canAny(event: E, ...args: (RequirementNames | RequireGuardOptions)[]): Promise<SubjectRbac>
+  canAll(event: E, ...args: (RequirementNames | RequireGuardOptions)[]): Promise<SubjectRbac>
 }
 
 const CONTEXT_KEY = 'rbac'
@@ -198,10 +216,11 @@ function buildRbacServer<E extends RbacEvent>(options: RbacServerOptions<E>): Un
   }
 
   // Async so an empty requirement (TypeError) rejects the returned promise instead of throwing synchronously.
-  async function enforce(event: E, build: () => RbacRequirement): Promise<SubjectRbac> {
+  async function enforce(event: E, build: () => RbacRequirement, scope: RequireGuardOptions = {}): Promise<SubjectRbac> {
     const requirement = build()
-    const subject = await resolve(event)
-    if (subject === null) throw new RbacHttpError({ error: 'UNAUTHENTICATED', message: UNAUTHENTICATED_MESSAGE })
+    const resolvedSubject = await resolve(event)
+    if (resolvedSubject === null) throw new RbacHttpError({ error: 'UNAUTHENTICATED', message: UNAUTHENTICATED_MESSAGE })
+    const subject = scope.guard === undefined ? resolvedSubject : resolvedSubject.withScope({ guard: scope.guard })
     if (!(await satisfiesRequirement(subject, requirement))) {
       throw new RbacHttpError({
         error: 'FORBIDDEN',
@@ -220,21 +239,24 @@ function buildRbacServer<E extends RbacEvent>(options: RbacServerOptions<E>): Un
       return subject ? subject.snapshot() : null
     },
     requirePermission(event, ...args) {
-      const { names, options } = splitRequirementArgs<PermissionRequirementOptions>(args)
-      return enforce(event, () => permissionRequirement(names, options))
+      const { names, options } = splitRequirementArgs<RequirePermissionOptions>(args)
+      return enforce(event, () => permissionRequirement(names, options), options)
     },
     requireRole(event, ...args) {
-      const { names, options } = splitRequirementArgs<RoleRequirementOptions>(args)
-      return enforce(event, () => roleRequirement(names, options))
+      const { names, options } = splitRequirementArgs<RequireRoleOptions>(args)
+      return enforce(event, () => roleRequirement(names, options), options)
     },
-    requireRoleOrPermission(event, ...names) {
-      return enforce(event, () => roleOrPermissionRequirement(names))
+    requireRoleOrPermission(event, ...args) {
+      const { names, options } = splitRequirementArgs<RequireGuardOptions>(args)
+      return enforce(event, () => roleOrPermissionRequirement(names), options)
     },
-    canAny(event, ...names) {
-      return enforce(event, () => permissionRequirement(names, { any: true }))
+    canAny(event, ...args) {
+      const { names, options } = splitRequirementArgs<RequireGuardOptions>(args)
+      return enforce(event, () => permissionRequirement(names, { any: true }), options)
     },
-    canAll(event, ...names) {
-      return enforce(event, () => permissionRequirement(names))
+    canAll(event, ...args) {
+      const { names, options } = splitRequirementArgs<RequireGuardOptions>(args)
+      return enforce(event, () => permissionRequirement(names), options)
     },
   }
 }

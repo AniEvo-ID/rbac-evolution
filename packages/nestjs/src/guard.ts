@@ -1,5 +1,4 @@
 import {
-  type RbacRequirement,
   REQUIREMENT_MESSAGES,
   satisfiesRequirement,
   type SubjectRbac,
@@ -15,6 +14,7 @@ import {
 } from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { getResolved, hasResolved, requestKey, setResolved } from './context'
+import type { StoredRbacRequirement } from './decorators'
 import type { RbacModuleOptions } from './options'
 import { RBAC_MODULE_OPTIONS, RBAC_REQUIREMENTS } from './tokens'
 
@@ -31,6 +31,7 @@ const isPerCall = (context: ExecutionContext): boolean => ['http', 'rpc'].includ
 /**
  * Resolves the current subject (once per request) and enforces the `@RequirePermissions()`,
  * `@RequireRoles()` and `@RequireRoleOrPermission()` metadata of the class and the handler.
+ * A requirement with `{ guard }` is checked in that guard (`subject.withScope({ guard })`).
  *
  * - no subject → `UnauthorizedException` `401 { error: 'UNAUTHENTICATED', message }`
  * - missing access → `ForbiddenException` `403 { error: 'FORBIDDEN', reason, message }`
@@ -54,8 +55,8 @@ export class RbacGuard implements CanActivate {
     if (perCall && key !== undefined && enforced.get(key)?.has(handler)) return true
 
     const requirements = [
-      ...(this.reflector.get<RbacRequirement[] | undefined>(RBAC_REQUIREMENTS, context.getClass()) ?? []),
-      ...(this.reflector.get<RbacRequirement[] | undefined>(RBAC_REQUIREMENTS, handler) ?? []),
+      ...(this.reflector.get<StoredRbacRequirement[] | undefined>(RBAC_REQUIREMENTS, context.getClass()) ?? []),
+      ...(this.reflector.get<StoredRbacRequirement[] | undefined>(RBAC_REQUIREMENTS, handler) ?? []),
     ]
     if (requirements.length === 0) return true
 
@@ -64,7 +65,8 @@ export class RbacGuard implements CanActivate {
     }
 
     for (const requirement of requirements) {
-      if (!(await satisfiesRequirement(rbac, requirement))) {
+      const { guard } = requirement
+      if (!(await satisfiesRequirement(guard === undefined ? rbac : rbac.withScope({ guard }), requirement))) {
         throw new ForbiddenException({
           error: 'FORBIDDEN',
           reason: requirement.kind,

@@ -280,4 +280,16 @@ await app.register(
 )
 ```
 
+### Another guard per route
+
+Every guard also takes a `guard` option: the check runs in that guard (`request.rbac.withScope({ guard })`) instead
+of the plugin's, like spatie's `role:admin,api` / `permission:edit articles,api`. `request.rbac` itself is unchanged,
+and a guest still gets `401`. `guard` is per route only: it is not a `createGuards()` default.
+
+```ts
+app.get('/api/admin', { preHandler: requireRole('admin', { guard: 'api' }) }, handler) // role:admin,api
+app.get('/api/articles', { preHandler: requirePermission('articles.edit', { guard: 'api' }) }, handler)
+app.get('/api/reports', { preHandler: canAny('reports.view', 'reports.export', { guard: 'api' }) }, handler)
+```
+
 See [Multiple guards](/basic-usage/multiple-guards).

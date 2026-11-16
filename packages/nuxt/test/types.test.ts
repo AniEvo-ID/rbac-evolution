@@ -29,6 +29,9 @@ import type {
   RbacEvent,
   RbacServer,
   RbacServerOptions,
+  RequireGuardOptions,
+  RequirePermissionOptions,
+  RequireRoleOptions,
   RequirementKind,
   RequirementNames,
   RoleRequirementOptions,
@@ -307,6 +310,42 @@ describe('client runtime: useRbac() and auto-imported composables', () => {
       useCan(() => 'a')
       // @ts-expect-error -- names are strings
       useCan(1)
+    }
+  })
+})
+
+describe('nuxt server types: per-route guard option', () => {
+  type GuardTypes = { permissions: 'articles.edit' | 'articles.delete'; roles: 'writer' | 'admin' }
+
+  it('types the options', () => {
+    expectTypeOf<RequireGuardOptions>().toEqualTypeOf<{ guard?: string | undefined }>()
+    expectTypeOf<RequirePermissionOptions>().toEqualTypeOf<{ any?: boolean | undefined; guard?: string | undefined }>()
+    expectTypeOf<RequireRoleOptions>().toEqualTypeOf<{ all?: boolean | undefined; guard?: string | undefined }>()
+  })
+
+  it('every require*/can* takes a trailing `{ guard: string }`, typed names included; a non-string guard is rejected', () => {
+    const untyped = createRbacServer({ rbac: createRbac({ adapter: new MemoryAdapter() }), getSubject: () => null })
+    const typed = createRbacServer({ rbac: createRbac<GuardTypes>({ adapter: new MemoryAdapter() }), getSubject: () => null })
+    const event = { context: {} }
+    void async function neverCalled() {
+      await untyped.requirePermission(event, 'a', { guard: 'api' })
+      await untyped.requirePermission(event, 'a', 'b', { any: true, guard: 'api' })
+      await untyped.requireRole(event, 'admin', { guard: 'api', all: true })
+      await untyped.requireRoleOrPermission(event, 'admin|a', { guard: 'api' })
+      await untyped.canAny(event, 'a', 'b', { guard: 'api' })
+      await untyped.canAll(event, ['a'], { guard: undefined })
+      await typed.requireRole(event, 'admin', { guard: 'api' })
+      await typed.canAll(event, 'articles.edit', { guard: 'api' })
+      // @ts-expect-error -- `guard` is a string
+      await untyped.requireRole(event, 'admin', { guard: 1 })
+      // @ts-expect-error -- `guard` is a string
+      await untyped.canAny(event, 'a', { guard: 1 })
+      // @ts-expect-error -- `guard` is a string
+      await typed.requirePermission(event, 'articles.edit', { guard: 1 })
+      // @ts-expect-error -- `any` is not a role-or-permission option
+      await untyped.requireRoleOrPermission(event, 'admin', { any: true })
+      // @ts-expect-error -- typed names are still checked with options
+      await typed.requireRole(event, 'admn', { guard: 'api' })
     }
   })
 })
