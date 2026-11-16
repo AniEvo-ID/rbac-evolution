@@ -36,6 +36,54 @@ examples/      example apps (Next.js, Vue, ...)
    ```
 5. Open a pull request and fill in the PR template.
 
+## Running the database suites
+
+The adapter suites against real servers run when their URL is set, and are skipped otherwise. CI runs all of them.
+Locally, start the servers with Docker:
+
+```bash
+docker run -d --name rbac-pg -e POSTGRES_USER=rbac -e POSTGRES_PASSWORD=rbac -e POSTGRES_DB=rbac -p 5432:5432 postgres:16
+docker run -d --name rbac-mysql -e MYSQL_ROOT_PASSWORD=rbac -e MYSQL_DATABASE=rbac -p 3306:3306 mysql:8
+docker run -d --name rbac-mongo -p 27017:27017 mongo:7
+docker run -d --name rbac-mssql -e ACCEPT_EULA=Y -e MSSQL_SA_PASSWORD=Rbac_Test_2026 -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+```
+
+Then run the tests with the URLs (the same ones CI uses):
+
+```bash
+PG_URL=postgresql://rbac:rbac@localhost:5432/rbac \
+MYSQL_URL=mysql://root:rbac@127.0.0.1:3306/rbac \
+MONGO_URL=mongodb://localhost:27017/rbac \
+MSSQL_URL=mssql://sa:Rbac_Test_2026@localhost:1433/master \
+pnpm test
+```
+
+To see coverage against the floors in `coverage-floor.json`, run
+`node scripts/test-report.mjs --out=coverage-report.json --floor=coverage-floor.json` with the same variables.
+
+## Running the end-to-end tests
+
+Playwright runs the two example apps and the docs site:
+
+```bash
+pnpm turbo run build --filter=./packages/*
+pnpm --filter rbac-evolution-e2e exec playwright install chromium
+pnpm --filter rbac-evolution-e2e prepare:apps
+pnpm --filter rbac-evolution-e2e test:e2e
+```
+
+## Changesets
+
+Every change to a published package needs a changeset: run `pnpm changeset`, pick the packages and the bump
+(`patch` for fixes, `minor` for new features), and describe the change for users in one or two sentences. All
+packages share one version number. See [.changeset/README.md](./.changeset/README.md) and
+[versioning](https://creation.anievo.id/rbac-evolution/guide/versioning) for what each bump may contain.
+
+## Governance
+
+Who maintains the project, how changes are merged and released, and how decisions are made: see
+[GOVERNANCE.md](./GOVERNANCE.md).
+
 ## Commit messages
 
 We recommend [Conventional Commits](https://www.conventionalcommits.org/), e.g.:

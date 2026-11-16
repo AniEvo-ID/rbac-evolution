@@ -7,7 +7,7 @@
 | PostgreSQL | `PostgresDialect` (pg), PGlite, Neon, postgres.js, ... | Tested |
 | MySQL | `MysqlDialect` (mysql2), PlanetScale, ... | Tested (MySQL 8) |
 | SQLite | `SqliteDialect` (better-sqlite3), libsql / Turso, D1, Bun SQLite, ... | Tested |
-| SQL Server | `MssqlDialect` (tedious) | Experimental |
+| SQL Server | `MssqlDialect` (tedious) | Tested (SQL Server 2022) |
 
 The adapter detects the dialect family from your `Kysely` instance. Third-party dialects that reuse Kysely's built-in adapters (nearly all of them) are detected too. If detection fails, pass `{ dialect }` explicitly.
 
@@ -215,7 +215,7 @@ await user.can('edit articles') // true
 - **New ids** come from `RETURNING` on PostgreSQL and SQLite (3.35 or later), `OUTPUT` on SQL Server, and the driver's insert id on MySQL.
 - **Link cleanup.** `deleteRole` and `deletePermission` delete the link rows themselves before deleting the row, so cleanup works even when SQLite foreign keys are off (the default).
 - **Timestamps.** The adapter never writes or returns `created_at` / `updated_at`. They keep their default values.
-- **SQL Server is experimental.** The conformance suite runs against SQL Server 2022 in CI, but it has seen less real-world use than the other dialects.
+- **SQL Server** is covered like the other dialects: the full conformance suite, including exact matching of names and subject ids, runs against SQL Server 2022 in CI. SQL Server ignores trailing spaces when it compares text; the adapter compares every row again in JavaScript, so this can't mix up subjects.
 
 ## Transactions
 

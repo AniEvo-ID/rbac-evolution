@@ -66,6 +66,8 @@ export default defineConfig({
           { text: 'Coming from Laravel', link: '/guide/coming-from-laravel' },
           { text: 'Example apps', link: '/guide/examples' },
           { text: "What's new", link: '/guide/whats-new' },
+          { text: 'Upgrading to 1.0', link: '/guide/upgrading' },
+          { text: 'Versioning', link: '/guide/versioning' },
         ],
       },
       {

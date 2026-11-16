@@ -19,10 +19,10 @@ Goal: an authorization library people can trust in production, with the evidence
 - [x] **Fuzz the name parsers** (pipes, blanks, wildcards, unicode) with property-based tests (`fast-check`): no input may turn a deny into an allow. `packages/core/test/fuzz.test.ts`; checked by injecting four bugs, all caught. Plus "exact matching" tests in the adapter conformance suite (lookalike names, subject ids, subject types and team ids).
 - [x] **Multi-process cache test**: two `Rbac` instances sharing a Redis-like store; a revoke in one is seen by the other on the next check. `packages/core/test/shared-cache.test.ts`.
 - [ ] **Repository settings** (needs an owner): require 2FA for the org, restrict who can approve the release environment, enable secret scanning and push protection.
-- [ ] **Response time target** in `SECURITY.md` (for example: acknowledge within 3 days, fix or mitigation plan within 30).
+- [x] **Response time target** in `SECURITY.md` (for example: acknowledge within 3 days, fix or mitigation plan within 30).
 
 ## Done when
 
-- [ ] Threat model published and linked from the security page
+- [x] Threat model published and linked from the security page
 - [ ] Scorecard score recorded, high-impact findings resolved
-- [ ] `SECURITY.md` has supported versions and response times for 1.x
+- [x] `SECURITY.md` has supported versions and response times for 1.x

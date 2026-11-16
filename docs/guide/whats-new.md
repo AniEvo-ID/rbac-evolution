@@ -1,8 +1,30 @@
 # What's new
 
-The highlights of each minor release. Every package shares one version number, so `0.6.x` of one package works
-with `0.6.x` of all the others. Full details are in the
+The highlights of each minor release. Every package shares one version number, so `0.8.x` of one package works
+with `0.8.x` of all the others. Full details are in the
 [changelog](https://github.com/AniEvo-ID/rbac-evolution/blob/main/packages/core/CHANGELOG.md).
+
+## 0.8: typed names in every guard
+
+With `createRbac<AppTypes>()`, a typo in a route guard, a Nest decorator, a Next.js or Nuxt server helper or the CLI
+seed is now a compile error. Pipe lists are checked part by part:
+
+```ts
+const { requirePermission } = createGuards<AppTypes>()
+app.put('/articles/:id', requirePermission('articles.edit|articles.publish'), handler) // ok
+app.delete('/articles/:id', requirePermission('articles.delte'), handler) // type error
+```
+
+Guards called with no names or with options before a name are type errors everywhere, typed names or not. See
+[typed names](/basic-usage/typed-names#in-guards-middleware-and-the-cli) and the [upgrade guide](/guide/upgrading).
+
+## 0.7: hardening for 1.0
+
+- **Security:** on MySQL and SQL Server, lookalike subject ids (`'admin '`, and `'ADMIN'` with Prisma on MySQL) no
+  longer share another subject's roles. Upgrade if you use string subject ids that users can choose.
+- Engine internals are private, and every option accepts an explicit `undefined` (0.7.1).
+- New checks behind every release: type tests, package lint (publint, arethetypeswrong), property-based tests of the
+  name parsers, a coverage floor, CodeQL and OpenSSF Scorecard. See the [threat model](/best-practices/threat-model).
 
 ## 0.6: one set of guard rules everywhere
 

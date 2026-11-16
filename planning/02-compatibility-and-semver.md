@@ -12,10 +12,10 @@ Goal: users know exactly what a minor or patch upgrade can and cannot do.
 
 Decide and write down:
 
-- [ ] Is raising the minimum Node.js version breaking? (Common answer: only in a major.)
-- [ ] Is raising a peer dependency's minimum version breaking? (Common answer: only in a major, unless the old version is end-of-life.)
-- [ ] Is `moduleResolution: "node10"` (TypeScript's legacy `"node"`) supported? Main entry points resolve there, subpaths (`/testing`, `/pg`, `/middleware`, nuxt `/server`) don't, because it ignores `exports`. Either add `typesVersions` or say "node16, nodenext or bundler" in the docs. `pnpm lint:packages` skips node10 until this is decided.
-- [ ] Is a new required method on `RbacAdapter` breaking for custom adapters? (See [01-api-freeze.md](./01-api-freeze.md).)
+- [x] Is raising the minimum Node.js version breaking? (Common answer: only in a major.)
+- [x] Is raising a peer dependency's minimum version breaking? (Common answer: only in a major, unless the old version is end-of-life.)
+- [x] Is `moduleResolution: "node10"` (TypeScript's legacy `"node"`) supported? Main entry points resolve there, subpaths (`/testing`, `/pg`, `/middleware`, nuxt `/server`) don't, because it ignores `exports`. Either add `typesVersions` or say "node16, nodenext or bundler" in the docs. `pnpm lint:packages` skips node10 until this is decided.
+- [x] Is a new required method on `RbacAdapter` breaking for custom adapters? (See [01-api-freeze.md](./01-api-freeze.md).)
 
 ## Support matrix (draft)
 
@@ -45,10 +45,10 @@ Decide and write down:
 
 ## Deprecation policy
 
-- [ ] A deprecated API keeps working for at least one minor release, logs a one-time warning in development, and is removed only in the next major
-- [ ] Deprecations are listed in the changelog and in the upgrade guide
+- [x] A deprecated API keeps working for at least one minor release, logs a one-time warning in development, and is removed only in the next major
+- [x] Deprecations are listed in the changelog and in the upgrade guide
 
 ## Done when
 
-- [ ] `docs/guide/versioning.md` published with the promise, the matrix and the deprecation policy
-- [ ] `SECURITY.md` "Supported versions" updated: latest 1.x gets fixes; 0.x gets none after 1.0 (or a fixed window)
+- [x] `docs/guide/versioning.md` published with the promise, the matrix and the deprecation policy
+- [x] `SECURITY.md` "Supported versions" updated: latest 1.x gets fixes; 0.x gets none after 1.0 (or a fixed window)
