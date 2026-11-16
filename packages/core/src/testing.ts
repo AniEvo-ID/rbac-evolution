@@ -23,6 +23,15 @@ export interface AdapterTestOptions {
 
 const s = (ids: readonly Id[]): string[] => ids.map(String).sort()
 
+/**
+ * Skips the current test where the runner supports it (Vitest's `ctx.skip()`). Runners whose test context has no
+ * `skip`, such as Bun's `vitest` compatibility layer, just end the test early, so it counts as passed.
+ */
+const skip = (ctx: unknown): void => {
+  const fn = (ctx as { skip?: unknown } | null | undefined)?.skip
+  if (typeof fn === 'function') fn.call(ctx)
+}
+
 const ACCENTS: Record<string, string> = { a: 'à', e: 'é', i: 'í', o: 'ó', u: 'ú' }
 /** Other case, a trailing space, and an accent on the first vowel: `admin` → `ADMIN`, `admin `, `àdmin`. */
 const lookalikes = (value: string): string[] => [
@@ -366,7 +375,7 @@ export function runAdapterTests(
     // Optional methods: an adapter without one skips its tests (the engine falls back or throws a clear error).
     describe('bulk links (optional methods)', () => {
       it('getSubjectLinks: every link of the subject, in every team', async (ctx) => {
-        if (!adapter.getSubjectLinks) return ctx.skip()
+        if (!adapter.getSubjectLinks) return skip(ctx)
         const r1 = await adapter.createRole({ name: 'r1', guardName: 'web', teamId: null })
         const r2 = await adapter.createRole({ name: 'r2', guardName: 'api', teamId: null })
         const p = await adapter.createPermission({ name: 'p', guardName: 'web' })
@@ -388,7 +397,7 @@ export function runAdapterTests(
       })
 
       it('getSubjectLinks: never returns the links of a lookalike subject id or type', async (ctx) => {
-        if (!adapter.getSubjectLinks) return ctx.skip()
+        if (!adapter.getSubjectLinks) return skip(ctx)
         const admin = { type: 'user', id: 'admin' }
         const others = [...lookalikes('admin').map((id) => ({ type: 'user', id })), { type: 'USER', id: 'admin' }]
         const mine = await adapter.createRole({ name: 'mine', guardName: 'web', teamId: null })
@@ -426,7 +435,7 @@ export function runAdapterTests(
         }
 
         it('getTeamLinks: every link held in exactly that team, by any subject', async (ctx) => {
-          if (!adapter.getTeamLinks) return ctx.skip()
+          if (!adapter.getTeamLinks) return skip(ctx)
           const { owner, member, p } = await seedTeams()
 
           expect(rows(await adapter.getTeamLinks('acme'))).toEqual({
@@ -441,7 +450,7 @@ export function runAdapterTests(
         })
 
         it('detachTeamLinks: removes the links of exactly that team, and keeps its roles', async (ctx) => {
-          if (!adapter.detachTeamLinks) return ctx.skip()
+          if (!adapter.detachTeamLinks) return skip(ctx)
           const { member, p, strangers } = await seedTeams()
 
           await adapter.detachTeamLinks('acme')
@@ -464,7 +473,7 @@ export function runAdapterTests(
 
         // Adapters commonly store the global team as `''`: a team id `''` must never reach the global links.
         it("getTeamLinks / detachTeamLinks never touch the global scope, even for ''", async (ctx) => {
-          if (!adapter.getTeamLinks || !adapter.detachTeamLinks) return ctx.skip()
+          if (!adapter.getTeamLinks || !adapter.detachTeamLinks) return skip(ctx)
           const { member } = await seedTeams()
 
           expect(await adapter.getTeamLinks('')).toEqual({ roles: [], permissions: [] })
@@ -485,7 +494,7 @@ export function runAdapterTests(
         links.map((l) => `${String(l.roleId ?? l.permissionId)}:${String(ms(l.expiresAt))}`).sort()
 
       it('stores expiresAt on attach, and the latest attach wins', async (ctx) => {
-        if (adapter.supportsExpiry !== true) return ctx.skip()
+        if (adapter.supportsExpiry !== true) return skip(ctx)
         const r1 = await adapter.createRole({ name: 'r1', guardName: 'web', teamId: null })
         const r2 = await adapter.createRole({ name: 'r2', guardName: 'web', teamId: null })
         const p = await adapter.createPermission({ name: 'p', guardName: 'web' })
@@ -517,7 +526,7 @@ export function runAdapterTests(
       })
 
       it('keeps expiry per subject and per team, and never touches a lookalike subject', async (ctx) => {
-        if (adapter.supportsExpiry !== true) return ctx.skip()
+        if (adapter.supportsExpiry !== true) return skip(ctx)
         const r = await adapter.createRole({ name: 'r', guardName: 'web', teamId: null })
         const admin = { type: 'user', id: 'admin' }
         await adapter.attachSubjectRoles(admin, [r.id], null, { expiresAt: null })
@@ -540,7 +549,7 @@ export function runAdapterTests(
       })
 
       it('reverse lookups skip links expired at `now`', async (ctx) => {
-        if (adapter.supportsExpiry !== true) return ctx.skip()
+        if (adapter.supportsExpiry !== true) return skip(ctx)
         const r = await adapter.createRole({ name: 'r', guardName: 'web', teamId: null })
         const p = await adapter.createPermission({ name: 'p', guardName: 'web' })
         await adapter.attachSubjectRoles(alice, [r.id], null, { expiresAt: T })
@@ -555,7 +564,7 @@ export function runAdapterTests(
       })
 
       it('getSubjectLinks / getTeamLinks carry expiresAt', async (ctx) => {
-        if (adapter.supportsExpiry !== true || !adapter.getSubjectLinks) return ctx.skip()
+        if (adapter.supportsExpiry !== true || !adapter.getSubjectLinks) return skip(ctx)
         const r = await adapter.createRole({ name: 'r', guardName: 'web', teamId: null })
         const p = await adapter.createPermission({ name: 'p', guardName: 'web' })
         const scope = teams ? 'acme' : null
@@ -572,7 +581,7 @@ export function runAdapterTests(
       })
 
       it('deleteExpiredLinks removes only links expired at `now`, of every subject and team', async (ctx) => {
-        if (adapter.supportsExpiry !== true || !adapter.deleteExpiredLinks) return ctx.skip()
+        if (adapter.supportsExpiry !== true || !adapter.deleteExpiredLinks) return skip(ctx)
         const r1 = await adapter.createRole({ name: 'r1', guardName: 'web', teamId: null })
         const r2 = await adapter.createRole({ name: 'r2', guardName: 'api', teamId: null })
         const p = await adapter.createPermission({ name: 'p', guardName: 'web' })
@@ -594,7 +603,7 @@ export function runAdapterTests(
       })
 
       it('end to end: checks, queries and pruning follow the engine clock', async (ctx) => {
-        if (adapter.supportsExpiry !== true) return ctx.skip()
+        if (adapter.supportsExpiry !== true) return skip(ctx)
         let now = at(-3600)
         const rbac = createRbac({ adapter, teams, cache: false, now: () => now })
         await rbac.createPermission('impersonate')
@@ -673,7 +682,7 @@ export function runAdapterTests(
 
       if (teams) {
         it('teams(), deleteTeam() and revokeAll({ allTeams: true })', async (ctx) => {
-          if (!adapter.getSubjectLinks || !adapter.getTeamLinks) return ctx.skip()
+          if (!adapter.getSubjectLinks || !adapter.getTeamLinks) return skip(ctx)
           const rbac = createRbac({ adapter, teams: true, cache: false })
           await rbac.createPermission('edit')
           await rbac.createRole('member')
