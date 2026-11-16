@@ -1,5 +1,14 @@
 # @anievo-id/rbac-evolution-react
 
+## 1.2.0
+
+### Patch Changes
+
+- Updated dependencies [54bbcc9]
+- Updated dependencies [54bbcc9]
+- Updated dependencies [54bbcc9]
+  - @anievo-id/rbac-evolution@1.2.0
+
 ## 1.1.0
 
 ### Minor Changes
