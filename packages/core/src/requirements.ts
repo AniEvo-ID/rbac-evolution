@@ -71,7 +71,9 @@ export type RequirementArgs<A extends readonly unknown[], N extends string, O> =
     : A extends readonly [...infer Init, infer Last]
       ? Last extends RequirementNames
         ? { [K in keyof A]: CheckNames<A[K], N> }
-        : [...{ [K in keyof Init]: CheckNames<Init[K], N> }, O]
+        : Init extends readonly []
+          ? [names: NamesRequired, options: O]
+          : [...{ [K in keyof Init]: CheckNames<Init[K], N> }, O]
       : A
 
 /** A normalized requirement. Every group must pass; a group passes when ANY of its names matches. */

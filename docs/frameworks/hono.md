@@ -218,6 +218,26 @@ export const { requirePermission, requireRole, requireRoleOrPermission } = creat
 Options passed to an individual guard still override the shared defaults. `createGuards()` accepts
 `onUnauthenticated`, `onForbidden` and `exposeRequirements`.
 
+## Typed names
+
+If you pass a type to `createRbac<AppRbac>()`, pass the same type to `createGuards()`. Then a typo in a guard is a
+compile error. Every name is checked, including each part of a `'a|b'` list and each array item.
+
+```ts
+import { createGuards } from '@anievo-id/rbac-evolution-hono'
+import type { AppRbac } from './rbac' // the type you pass to createRbac<AppRbac>()
+
+export const { requirePermission, requireRole } = createGuards<AppRbac>()
+
+app.put('/articles/:id', requirePermission('edit articles|publish articles'), updateArticle)
+app.delete('/articles/:id', requirePermission('delete artcles'), deleteArticle) // type error
+```
+
+`createGuards<typeof rbac>()` works too. `createGuards()` also takes the shared options shown above.
+
+A guard without names, or with options before a name, is a type error too. The guards exported by the package
+still accept any string. See [Typed names](/basic-usage/typed-names).
+
 ## Teams
 
 When the engine is created with `teams: true`, resolve the current team per request:

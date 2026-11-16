@@ -300,7 +300,9 @@ describe('error handling, scopes, teams and guards', () => {
   })
 
   it('rejects guards without names', () => {
+    // @ts-expect-error -- no names is also a type error now; the runtime check stays for untyped callers
     expect(() => requirePermission()).toThrow(TypeError)
+    // @ts-expect-error options without names is a type error; checked here at runtime
     expect(() => requireRole({ all: true })).toThrow(TypeError)
     expect(() => requireRole(' | ')).toThrow(TypeError)
   })

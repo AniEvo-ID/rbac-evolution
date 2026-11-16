@@ -770,6 +770,8 @@ describe('RequirementArgs (typed guard arguments for integrations)', () => {
       loose()
       // @ts-expect-error options before a name
       loose({ any: true }, 'edit')
+      // @ts-expect-error options without any name
+      loose({ any: true })
     }
     expectTypeOf<CheckRequirementName<'edit|nope', Names>>().toEqualTypeOf<'edit|nope' & UnknownRequirementName<'nope'>>()
     expectTypeOf<CheckRequirementName<'edit|delete', Names>>().toEqualTypeOf<'edit|delete'>()

@@ -110,6 +110,22 @@ export const { requirePermission, requireRole, requireRoleOrPermission } = creat
 })
 ```
 
+## Typed names
+
+Pass the type you gave `createRbac<AppRbac>()` to `createGuards()`, and a typo in a guard name is a compile error:
+
+```ts
+import { createGuards } from '@anievo-id/rbac-evolution-fastify'
+import type { AppRbac } from './rbac' // the type you pass to createRbac<AppRbac>()
+
+export const { requirePermission, requireRole } = createGuards<AppRbac>()
+
+app.put('/articles/:id', { preHandler: requirePermission('edit articles|publish articles') }, updateArticle)
+app.delete('/articles/:id', { preHandler: requirePermission('delete artcles') }, deleteArticle) // type error
+```
+
+`createGuards<typeof rbac>()` works too. The guards exported by the package still accept any string.
+
 ## License
 
 MIT
