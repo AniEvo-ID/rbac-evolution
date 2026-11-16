@@ -118,7 +118,7 @@ describe('prisma: types', () => {
 
     // Never called: only type-checked.
     const _bad = () => {
-      // @ts-expect-error exactOptionalPropertyTypes: omit `skipDuplicates` instead of passing `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       new PrismaAdapter(fakeClient(), { skipDuplicates: undefined })
       // @ts-expect-error must be a boolean
       new PrismaAdapter(fakeClient(), { skipDuplicates: 'yes' })

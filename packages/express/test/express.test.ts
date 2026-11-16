@@ -83,6 +83,7 @@ describe('rbac-evolution-express', () => {
 
     const custom = createGuards({ onForbidden: (_req, res) => res.status(404).end() })
     app.get('/hidden', custom.requireRole('admin'), ok)
+    app.get('/hidden-undefined', custom.requireRole('admin', { onForbidden: undefined }), ok)
 
     const errors: ErrorRequestHandler = (err: Error & { code?: string }, _req, res, _next) => {
       res.status(500).json({ error: err.code ?? 'ERROR', message: err.message })
@@ -173,6 +174,8 @@ describe('rbac-evolution-express', () => {
     expect(await status('/hidden', 1)).toBe(404)
     expect(await status('/hidden', 3)).toBe(200)
     expect(await status('/hidden')).toBe(401)
+    // An option set to `undefined` keeps the createGuards() default instead of resetting it.
+    expect(await status('/hidden-undefined', 1)).toBe(404)
   })
 })
 

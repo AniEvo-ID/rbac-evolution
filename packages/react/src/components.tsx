@@ -15,9 +15,9 @@ export type RoleCondition =
   | { role?: never; anyOf?: never; allOf: readonly string[] }
 
 interface GateProps {
-  children?: ReactNode
+  children?: ReactNode | undefined
   /** Rendered when the check fails. Default: nothing. */
-  fallback?: ReactNode
+  fallback?: ReactNode | undefined
 }
 
 export type CanProps = PermissionCondition & GateProps

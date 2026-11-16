@@ -75,7 +75,7 @@ describe('express types: rbacMiddleware()', () => {
       rbacMiddleware({ rbac: {}, getSubject: guest })
       // @ts-expect-error -- team ids are string | number | null
       rbacMiddleware({ rbac, getSubject: guest, team: () => true })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `guard` is `?: string`, explicit `undefined` is rejected
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       rbacMiddleware({ rbac, getSubject: guest, guard: undefined })
       // @ts-expect-error -- exactOptionalPropertyTypes: `team` does not accept explicit `undefined`
       rbacMiddleware({ rbac, getSubject: guest, team: undefined })
@@ -147,9 +147,9 @@ describe('express types: guards', () => {
       canAny('a', { any: false })
       // @ts-expect-error -- options are booleans
       requirePermission('a', { any: 'yes' })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `any?: boolean` does not accept explicit `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       requirePermission('a', { any: undefined })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `onForbidden` does not accept explicit `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       requireRole('a', { onForbidden: undefined })
       // @ts-expect-error -- arrays of non-strings
       requireRole([1, 2])

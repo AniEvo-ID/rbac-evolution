@@ -29,12 +29,12 @@ import { parseWildcardPermission, wildcardImplies } from './wildcard'
 
 export interface GuardOptions {
   /** Guard name, e.g. `web` or `api`. Defaults to `defaultGuard`. */
-  guard?: string
+  guard?: string | undefined
 }
 
 export interface ScopeOptions extends GuardOptions {
   /** Team id. Only allowed when `teams` is enabled. */
-  team?: TeamId
+  team?: TeamId | undefined
 }
 
 /** Context passed to the {@link RbacOptions.before} hook. */
@@ -54,26 +54,26 @@ export interface RbacOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
   /** Storage adapter (e.g. `new MemoryAdapter()`, Prisma, Drizzle, ...). */
   adapter: RbacAdapter
   /** Guard used when none is given. Default: `web`. */
-  defaultGuard?: string
+  defaultGuard?: string | undefined
   /** Enable wildcard permissions like `articles.*`. Default: `false`. */
-  wildcard?: boolean
+  wildcard?: boolean | undefined
   /** Enable team-scoped roles & permissions (multi-tenancy). Default: `false`. */
-  teams?: boolean
+  teams?: boolean | undefined
   /** Cache store, or `false` to disable caching. Default: in-memory cache. */
-  cache?: CacheStore | false
+  cache?: CacheStore | false | undefined
   /** Cache TTL in milliseconds. Default: 24 hours. */
-  cacheTtl?: number
+  cacheTtl?: number | undefined
   /**
    * Runs before every `can()` / `cannot()` / `canAny()` / `canAll()` check (spatie's `Gate::before`).
    * Return `true` to allow, `false` to deny, `undefined` to fall through to the normal check.
    * Not applied to `hasPermissionTo()` & co., which stay pure data checks.
    */
-  before?: BeforeHook<T>
+  before?: BeforeHook<T> | undefined
   /**
    * Subjects having ANY of these roles pass every `can()` check (super-admin).
    * Evaluated after `before` (if `before` returned `undefined`).
    */
-  superAdminRoles?: readonly RoleName<T>[]
+  superAdminRoles?: readonly RoleName<T>[] | undefined
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000

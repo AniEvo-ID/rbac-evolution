@@ -50,9 +50,9 @@ describe('RbacProvider props', () => {
       )
       // @ts-expect-error -- snapshot must be passed explicitly (pass `null` for guests)
       void (<RbacProvider>x</RbacProvider>)
-      // @ts-expect-error -- exactOptionalPropertyTypes: `superAdminRoles` does not accept an explicit undefined
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       void (<RbacProvider snapshot={null} superAdminRoles={undefined} />)
-      // @ts-expect-error -- exactOptionalPropertyTypes: `wildcard` does not accept an explicit undefined
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       void (<RbacProvider snapshot={null} wildcard={undefined} />)
       // @ts-expect-error -- superAdminRoles is a list
       void (<RbacProvider snapshot={null} superAdminRoles="admin" />)
@@ -145,7 +145,7 @@ describe('createRbacChecker', () => {
     expectTypeOf(checker.canAll).parameters.toEqualTypeOf<(string | readonly string[])[]>()
 
     void function neverCalled() {
-      // @ts-expect-error -- exactOptionalPropertyTypes: `loading` does not accept an explicit undefined
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       createRbacChecker(null, { loading: undefined })
       // @ts-expect-error -- unknown option
       createRbacChecker(null, { wildCard: true })

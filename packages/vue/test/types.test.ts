@@ -63,9 +63,9 @@ describe('createRbacPlugin options', () => {
       createRbacPlugin({ snapshot: null })
       // @ts-expect-error -- unknown option
       createRbacPlugin({ wildCard: true })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `wildcard` does not accept an explicit undefined
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       createRbacPlugin({ wildcard: undefined })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `snapshot` accepts null, but not an explicit undefined
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       createRbacPlugin({ snapshot: undefined })
       // @ts-expect-error -- superAdminRoles is a list
       createRbacPlugin({ superAdminRoles: 'admin' })

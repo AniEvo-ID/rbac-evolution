@@ -9,7 +9,7 @@ Goal: people outside the team can ask, report and contribute without friction, a
 
 ## To add
 
-- [ ] **Issue forms**: convert the markdown templates in `.github/ISSUE_TEMPLATE/` to YAML issue forms with required fields (package, version, runtime, reproduction). GitHub's community profile does not count the current templates.
+- [x] **Issue forms**: convert the markdown templates in `.github/ISSUE_TEMPLATE/` to YAML issue forms with required fields (package, version, runtime, reproduction). GitHub's community profile does not count the current templates.
 - [ ] **GitHub Discussions**: enable it (currently off) for questions and ideas, and point "question" issues there from `config.yml`.
 - [ ] **Labels**: `package: <name>`, `type: bug|feature|docs`, `good first issue`, `help wanted`, `needs reproduction`. Seed a few `good first issue`s from [03-quality-gates.md](./03-quality-gates.md) and [05-docs.md](./05-docs.md).
 - [ ] **Maintainers and governance**: a short `GOVERNANCE.md`, or a section in `CONTRIBUTING.md`, covering who maintains, who can merge and release, and how decisions are made.

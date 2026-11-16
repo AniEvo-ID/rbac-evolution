@@ -565,30 +565,21 @@ describe('type tests', () => {
       expect(roleRequirement(['a'], { all: maybeBoolean }).kind).toBe('role')
     })
 
-    it('engine options do NOT accept explicit `undefined` (no `| undefined` in the source)', () => {
-      // These document the current shape of the types: optional props without `| undefined`,
-      // so `{ guard: maybeGuard }` must be written as `...(guard !== undefined && { guard })`.
-      // @ts-expect-error GuardOptions.guard is `?: string`
+    it('engine options accept explicit `undefined` too (declared `| undefined`)', () => {
+      // `{ guard: maybeGuard }` works under exactOptionalPropertyTypes; `undefined` means "use the default".
       const guard: GuardOptions = { guard: maybeString }
-      // @ts-expect-error ScopeOptions.team is `?: TeamId`
       const scope: ScopeOptions = { team: maybeTeam }
-      // @ts-expect-error RbacOptions.defaultGuard is `?: string`
       const options: RbacOptions = { adapter: new MemoryAdapter(), defaultGuard: maybeString }
-      // @ts-expect-error SyncOptions.dryRun is `?: boolean`
       const sync: SyncOptions = { dryRun: maybeBoolean }
-      // @ts-expect-error MemoryCacheOptions.maxEntries is `?: number`
       const cache: MemoryCacheOptions = { maxEntries: undefined }
-      // @ts-expect-error SyncDefinition.guard is `?: string`
       const definition: SyncDefinition = { guard: undefined }
-      // @ts-expect-error FindPermissionsQuery.guardName is `?: string`
       const query: FindPermissionsQuery = { guardName: maybeString }
 
-      // The supported patterns: omit the key, use `null` for "no team", or spread conditionally.
+      // The other patterns keep working: omit the key, use `null` for "no team", or spread conditionally.
       const omitted: ScopeOptions = {}
       const global: ScopeOptions = { team: null }
       const spread: ScopeOptions = { ...(maybeString !== undefined && { guard: maybeString }) }
       const typeOnly = (rbac: Rbac): void => {
-        // @ts-expect-error same restriction on the call sites
         rbac.for(alice, { guard: maybeString })
         rbac.for(alice, spread)
       }

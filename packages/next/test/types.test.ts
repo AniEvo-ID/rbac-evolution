@@ -55,7 +55,7 @@ describe('createNextRbac options', () => {
       options({ rbac })
       // @ts-expect-error -- `getSubject` returns a Subject, not a user id
       options({ rbac, getSubject: () => 1 })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `guard` does not accept an explicit undefined
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       options({ rbac, getSubject: () => null, guard: undefined })
       // @ts-expect-error -- `onUnauthorized` must throw (return `never`)
       options({ rbac, getSubject: () => null, onUnauthorized: () => 'nope' })
@@ -99,7 +99,7 @@ describe('server components & pages: require*()', () => {
       await nextRbac.requirePermission('a', 'b')
       // @ts-expect-error -- unknown option
       await nextRbac.requireRole('admin', { any: true })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `all` does not accept an explicit undefined
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       await nextRbac.requirePermission('a', { all: undefined })
       // @ts-expect-error -- team is an id or null, not an object
       await nextRbac.requireRole('admin', { team: { id: 1 } })
@@ -155,7 +155,7 @@ describe('server actions: withPermission() / withRole()', () => {
       await save(1)
       // @ts-expect-error -- the third argument is ScopeOptions, not a requirement
       nextRbac.withPermission('a', () => 1, { all: true })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `guard` does not accept an explicit undefined
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       nextRbac.withRole('a', () => 1, { guard: undefined })
     }
   })
@@ -241,7 +241,7 @@ describe('/middleware entry: createRbacMiddleware()', () => {
       options({ rules: [], rbac, getSubject: () => null, getSnapshot: () => null })
       // @ts-expect-error -- `wildcard` only applies to snapshot mode
       options({ rules: [], rbac, getSubject: () => null, wildcard: true })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `loginUrl` does not accept an explicit undefined
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       options({ rules: [], getSnapshot: () => null, loginUrl: undefined })
     }
   })
@@ -267,7 +267,7 @@ describe('/middleware entry: createRbacMiddleware()', () => {
       rule({ matcher: '/a', permissions: 'a' })
       // @ts-expect-error -- matcher is a pattern, not a function
       rule({ matcher: (p: string) => p.startsWith('/a') })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `all` does not accept an explicit undefined
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       rule({ matcher: '/a', role: 'x', all: undefined })
     }
   })

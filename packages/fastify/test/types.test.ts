@@ -87,9 +87,9 @@ describe('fastify types: rbacPlugin', () => {
       await app.register(rbacPlugin, { rbac, getSubject: () => ({ type: 'user' }) })
       // @ts-expect-error -- unknown hook
       await app.register(rbacPlugin, { rbac, getSubject: guest, hook: 'onSend' })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `hook` does not accept explicit `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       await app.register(rbacPlugin, { rbac, getSubject: guest, hook: undefined })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `guard` does not accept explicit `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       await app.register(rbacPlugin, { rbac, getSubject: guest, guard: undefined })
     }
     expectTypeOf(invalid).toBeFunction()
@@ -169,9 +169,9 @@ describe('fastify types: guards', () => {
       requireRoleOrPermission('admin', { all: true })
       // @ts-expect-error -- canAll is always "all"
       canAll('a', { any: true })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `all?: boolean` does not accept explicit `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       requireRole('a', { all: undefined })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `onUnauthenticated` does not accept explicit `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       requirePermission('a', { onUnauthenticated: undefined })
       // @ts-expect-error -- arrays of non-strings
       requireRole([1, 2])

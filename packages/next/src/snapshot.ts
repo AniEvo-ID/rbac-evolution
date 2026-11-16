@@ -4,9 +4,9 @@ import { type Requirement, requirementGroups } from './types'
 
 export interface SnapshotCheckOptions {
   /** Treat granted permissions as wildcard patterns. */
-  wildcard?: boolean
+  wildcard?: boolean | undefined
   /** Roles that pass every permission check. */
-  superAdminRoles?: readonly string[]
+  superAdminRoles?: readonly string[] | undefined
 }
 
 

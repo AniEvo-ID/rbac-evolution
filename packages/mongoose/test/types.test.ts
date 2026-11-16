@@ -50,9 +50,9 @@ describe('mongoose: types', () => {
 
     // Never called: only type-checked.
     const _bad = () => {
-      // @ts-expect-error exactOptionalPropertyTypes: omit `connection` instead of passing `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       mongooseAdapter({ connection: undefined })
-      // @ts-expect-error exactOptionalPropertyTypes: omit `prefix` instead of passing `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       createRbacModels({ prefix: undefined })
       // @ts-expect-error a URI is not a Connection
       mongooseAdapter({ connection: 'mongodb://localhost/test' })

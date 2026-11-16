@@ -10,24 +10,24 @@ export interface NextRbacOptions {
   /** Resolves the current user (e.g. from Auth.js `auth()`). Return `null` for guests. */
   getSubject: () => MaybePromise<Subject | null | undefined>
   /** Default guard for every check. Default: the rbac instance's `defaultGuard`. */
-  guard?: string
+  guard?: string | undefined
   /** Default team for every check — a value, or a function (e.g. reading the current tenant). */
   team?: TeamId | (() => MaybePromise<TeamId | undefined>)
   /** Where `require*()` redirects guests. Without it, guests get `notFound()`. */
-  loginUrl?: string
+  loginUrl?: string | undefined
   /** Replaces the default guest handling of `require*()` (must throw, e.g. `() => redirect('/login')`). */
-  onUnauthenticated?: () => never
+  onUnauthenticated?: (() => never) | undefined
   /** Replaces the default `notFound()` of `require*()` (must throw, e.g. `() => forbidden()`). */
-  onUnauthorized?: () => never
+  onUnauthorized?: (() => never) | undefined
 }
 
 /** Per-call options for `require*()`. */
 export interface RequireOptions extends ScopeOptions {
   /** `requirePermission` / `requireRole`: require EVERY listed name instead of any (spatie v8.5 `canAll()`). */
-  all?: boolean
-  loginUrl?: string
-  onUnauthenticated?: () => never
-  onUnauthorized?: () => never
+  all?: boolean | undefined
+  loginUrl?: string | undefined
+  onUnauthenticated?: (() => never) | undefined
+  onUnauthorized?: (() => never) | undefined
 }
 
 export type AuthorizeResult =
@@ -120,7 +120,7 @@ export function createNextRbac(options: NextRbacOptions) {
   function guardAction<Args extends unknown[], R>(
     requirement: Requirement,
     action: (...args: Args) => MaybePromise<R>,
-    scope?: ScopeOptions,
+    scope?: ScopeOptions | undefined,
   ): (...args: Args) => Promise<R> {
     return async (...args: Args): Promise<R> => {
       const result = await authorize(requirement, scope)
@@ -189,7 +189,7 @@ export function createNextRbac(options: NextRbacOptions) {
     withPermission<Args extends unknown[], R>(
       permission: Many<string>,
       action: (...args: Args) => MaybePromise<R>,
-      scope?: ScopeOptions,
+      scope?: ScopeOptions | undefined,
     ): (...args: Args) => Promise<R> {
       return guardAction({ permission }, action, scope)
     },
@@ -198,7 +198,7 @@ export function createNextRbac(options: NextRbacOptions) {
     withRole<Args extends unknown[], R>(
       role: Many<string>,
       action: (...args: Args) => MaybePromise<R>,
-      scope?: ScopeOptions,
+      scope?: ScopeOptions | undefined,
     ): (...args: Args) => Promise<R> {
       return guardAction({ role }, action, scope)
     },

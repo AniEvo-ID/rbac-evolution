@@ -16,14 +16,14 @@ export interface RbacPluginOptions {
    */
   getSubject: (request: FastifyRequest) => MaybePromise<Subject | null | undefined>
   /** Guard name (e.g. `web` or `api`). Defaults to the engine's `defaultGuard`. */
-  guard?: string
+  guard?: string | undefined
   /** Resolves the current team (only when the engine was created with `teams: true`). */
   team?: (request: FastifyRequest) => MaybePromise<TeamId | undefined>
   /**
    * Hook in which the subject is resolved. It must run after your authentication.
    * Default: `'preHandler'` (runs before route-level `preHandler` guards).
    */
-  hook?: RbacHook
+  hook?: RbacHook | undefined
 }
 
 declare module 'fastify' {
@@ -32,7 +32,7 @@ declare module 'fastify' {
      * Roles & permissions of the current subject, set by the rbac-evolution plugin.
      * `null` for guests, `undefined` when the plugin did not run for this request.
      */
-    rbac?: SubjectRbac | null
+    rbac?: SubjectRbac | null | undefined
   }
 }
 

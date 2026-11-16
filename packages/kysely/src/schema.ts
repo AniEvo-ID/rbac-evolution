@@ -4,7 +4,7 @@ import { type RbacTableOptions, tableNames } from './tables'
 
 export interface RbacMigrationOptions extends RbacTableOptions {
   /** Dialect family. Detected from the Kysely instance when omitted. */
-  dialect?: RbacDialect
+  dialect?: RbacDialect | undefined
 }
 
 type Col = (c: ColumnDefinitionBuilder) => ColumnDefinitionBuilder

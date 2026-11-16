@@ -66,9 +66,9 @@ describe('cli: types', () => {
       defineConfig({})
       // @ts-expect-error not an Rbac instance
       defineConfig({ rbac: new MemoryAdapter() })
-      // @ts-expect-error exactOptionalPropertyTypes: omit `subjectType` instead of passing `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       defineConfig({ rbac, subjectType: undefined })
-      // @ts-expect-error exactOptionalPropertyTypes: omit `seed` instead of passing `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       defineConfig({ rbac, seed: undefined })
       // @ts-expect-error `roles` maps role names to permission lists or '*'
       defineConfig({ rbac, seed: { roles: { admin: 'all' } } })
@@ -94,9 +94,9 @@ describe('cli: types', () => {
     const _bad = () => {
       // @ts-expect-error argv is an array of strings
       void run('list')
-      // @ts-expect-error exactOptionalPropertyTypes: omit `cwd` instead of passing `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       void run([], { cwd: undefined })
-      // @ts-expect-error exactOptionalPropertyTypes: omit `io` instead of passing `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       void run([], { io: undefined })
       // @ts-expect-error Io needs both `out` and `err`
       void run([], { io: { out: () => {} } })

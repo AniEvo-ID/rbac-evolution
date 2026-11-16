@@ -115,7 +115,7 @@ describe('hono types: rbacMiddleware()', () => {
       rbacMiddleware<UserEnv>({ rbac, getSubject: (c) => c.var.nope })
       // @ts-expect-error -- team ids are string | number | null
       rbacMiddleware({ rbac, getSubject: guest, team: () => ({}) })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `guard` does not accept explicit `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       rbacMiddleware({ rbac, getSubject: guest, guard: undefined })
     }
     expectTypeOf(invalid).toBeFunction()
@@ -174,9 +174,9 @@ describe('hono types: guards', () => {
       requireRole('admin', { any: true })
       // @ts-expect-error -- role-or-permission has no any/all option
       requireRoleOrPermission('admin', { any: true })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `any?: boolean` does not accept explicit `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       requirePermission('a', { any: undefined })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `onForbidden` does not accept explicit `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       requireRole('a', { onForbidden: undefined })
       // @ts-expect-error -- hooks must return a Response (unlike Express/Fastify)
       requireRole('a', { onForbidden: () => 'forbidden' })

@@ -295,3 +295,16 @@ describe('public surface', () => {
     expect(await b.for(alice).can('edit')).toBe(false)
   })
 })
+
+describe('options set to undefined', () => {
+  it('behave like options left out', async () => {
+    const rbac = createRbac({ adapter: new MemoryAdapter(), defaultGuard: undefined, cache: undefined, wildcard: undefined })
+    await rbac.createPermission('edit', { guard: undefined })
+    await rbac.createRole('writer', { guard: undefined, team: undefined })
+    await rbac.role('writer', { guard: undefined, team: undefined }).givePermissionTo('edit')
+    await rbac.for(alice, { guard: undefined, team: undefined }).assignRole('writer')
+    expect(await rbac.for(alice).can('edit')).toBe(true)
+    expect(await rbac.for(alice, { guard: undefined }).can('edit')).toBe(true)
+    expect((await rbac.sync({ guard: undefined, permissions: ['edit'] }, { dryRun: undefined })).dryRun).toBe(false)
+  })
+})

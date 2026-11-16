@@ -52,8 +52,8 @@ export type RoleInput<R extends string = string> = R | Role
  * Both keys are optional; a missing key accepts any string. TS string enums work too.
  */
 export interface RbacTypeConfig {
-  permissions?: string
-  roles?: string
+  permissions?: string | undefined
+  roles?: string | undefined
 }
 
 /** Default type configuration: any string is a valid permission / role name. */

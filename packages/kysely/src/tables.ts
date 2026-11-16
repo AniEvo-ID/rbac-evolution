@@ -67,7 +67,7 @@ export type RbacDatabase<Prefix extends string = ''> = {
 
 export interface RbacTableOptions {
   /** Prepended to every table, constraint and index name, e.g. `'rbac_'` → `rbac_permissions`. Default: `''`. */
-  prefix?: string
+  prefix?: string | undefined
 }
 
 export interface RbacTableNames {

@@ -11,14 +11,14 @@ export interface RbacCliConfig {
    */
   rbac: Rbac | (() => Rbac | Promise<Rbac>)
   /** Default subject type for `assign-role` / `give-permission` (spatie's user model). Default: `user`. */
-  subjectType?: string
+  subjectType?: string | undefined
   /**
    * Roles & permissions for `rbac-evolution sync` — the same shape as `rbac.sync()`:
    * one definition, or an array of definitions (one per guard / team).
    */
-  seed?: SyncDefinition | readonly SyncDefinition[]
+  seed?: SyncDefinition | readonly SyncDefinition[] | undefined
   /** Called after every command, e.g. to close the database connection. */
-  teardown?: () => void | Promise<void>
+  teardown?: (() => void | Promise<void>) | undefined
 }
 
 /** Type helper for `rbac.config.ts`. */

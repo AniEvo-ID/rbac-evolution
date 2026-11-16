@@ -91,11 +91,11 @@ describe('nestjs types: RbacModule options', () => {
       RbacModule.forRoot({ rbac, getSubject: () => ({ id: 1 }) })
       // @ts-expect-error -- `globalGuard` is a boolean
       RbacModule.forRoot({ rbac, getSubject: guest, globalGuard: 'yes' })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `guard` does not accept explicit `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       RbacModule.forRoot({ rbac, getSubject: guest, guard: undefined })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `exposeRequirements` does not accept explicit `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       RbacModule.forRoot({ rbac, getSubject: guest, exposeRequirements: undefined })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `globalGuard` does not accept explicit `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       RbacModule.forRoot({ rbac, getSubject: guest, globalGuard: undefined })
     }
     expectTypeOf(invalid).toBeFunction()

@@ -12,14 +12,14 @@ export interface RbacModuleOptions {
    */
   getSubject: (context: ExecutionContext) => MaybePromise<Subject | null | undefined>
   /** RBAC guard name (e.g. `web` or `api`) — not a Nest guard. Defaults to the engine's `defaultGuard`. */
-  guard?: string
+  guard?: string | undefined
   /** Resolves the current team (only when the engine was created with `teams: true`). */
   team?: (context: ExecutionContext) => MaybePromise<TeamId | undefined>
   /**
    * Include the required roles/permissions in the 403 body (`required`).
    * Default: `false` (like spatie's `display_permission_in_exception`).
    */
-  exposeRequirements?: boolean
+  exposeRequirements?: boolean | undefined
 }
 
 interface GlobalGuardOption {
@@ -27,14 +27,14 @@ interface GlobalGuardOption {
    * Register `RbacGuard` as a global guard (`APP_GUARD`), so every route resolves the subject
    * (and `@CurrentRbac()` works without a `@Require*` decorator). Default: `false`.
    */
-  globalGuard?: boolean
+  globalGuard?: boolean | undefined
 }
 
 export interface RbacModuleConfig extends RbacModuleOptions, GlobalGuardOption {}
 
 export interface RbacModuleAsyncConfig extends GlobalGuardOption, Pick<ModuleMetadata, 'imports'> {
   /** Providers to inject into `useFactory`. */
-  inject?: FactoryProvider['inject']
+  inject?: FactoryProvider['inject'] | undefined
   /** Builds the options, e.g. from a `ConfigService`. */
   useFactory: (...args: never[]) => MaybePromise<RbacModuleOptions>
 }

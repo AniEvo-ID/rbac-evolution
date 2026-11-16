@@ -15,7 +15,7 @@ import { type RbacTableNames, type RbacTableOptions, tableNames } from './tables
 
 export interface KyselyAdapterOptions extends RbacTableOptions {
   /** Dialect family. Detected from the Kysely instance when omitted. */
-  dialect?: RbacDialect
+  dialect?: RbacDialect | undefined
 }
 
 /**

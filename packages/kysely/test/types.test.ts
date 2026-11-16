@@ -114,9 +114,9 @@ describe('kysely: types', () => {
     const _bad = () => {
       // @ts-expect-error unknown dialect (use 'postgres', not 'pg')
       kyselyAdapter(db, { dialect: 'pg' })
-      // @ts-expect-error exactOptionalPropertyTypes: omit `dialect` instead of passing `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       kyselyAdapter(db, { dialect: undefined })
-      // @ts-expect-error exactOptionalPropertyTypes: omit `prefix` instead of passing `undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       kyselyAdapter(db, { prefix: undefined })
       // @ts-expect-error table names are not configurable, only the prefix
       kyselyAdapter(db, { tables: { roles: 'my_roles' } })
@@ -141,7 +141,7 @@ describe('kysely: types', () => {
     const _bad = () => {
       // @ts-expect-error dropRbacTables only takes the prefix (dialect is detected)
       void dropRbacTables(db, { dialect: 'postgres' })
-      // @ts-expect-error exactOptionalPropertyTypes
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       void createRbacTables(db, { dialect: undefined })
     }
     expect(typeof _bad).toBe('function')

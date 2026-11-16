@@ -6,17 +6,17 @@ export type NameList = string | readonly string[]
 
 export interface RbacStateOptions {
   /** Initial snapshot, usually `await rbac.for(user).snapshot()` sent by the server. `null` = guest. */
-  snapshot?: RbacSnapshot | null
+  snapshot?: RbacSnapshot | null | undefined
   /**
    * Start in the loading state (snapshot still being fetched): `<Can>`, `<HasRole>`, `v-can` and
    * `v-role` render nothing, not even the fallback or a `not` branch, until `setSnapshot()` is called.
    * Every check (`can`, `cannot`, `hasRole`, ...) returns `false` meanwhile. Default: `false`.
    */
-  loading?: boolean
+  loading?: boolean | undefined
   /** Match permissions with wildcard semantics (`articles.*` covers `articles.edit`). Default: `false`. */
-  wildcard?: boolean
+  wildcard?: boolean | undefined
   /** Roles that pass every permission check, like a `Gate::before` super-admin rule. Default: `[]`. */
-  superAdminRoles?: readonly string[]
+  superAdminRoles?: readonly string[] | undefined
 }
 
 /**

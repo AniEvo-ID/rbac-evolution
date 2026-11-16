@@ -127,7 +127,7 @@ describe('drizzle: types', () => {
 
     // Never called: only type-checked.
     const _badOptions = () => {
-      // @ts-expect-error exactOptionalPropertyTypes: `prefix` is `string`, not `string | undefined`
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       pgRbacSchema({ prefix: undefined })
       // @ts-expect-error table names are not configurable, only the prefix
       sqliteRbacSchema({ tables: { roles: 'my_roles' } })

@@ -14,21 +14,21 @@ export type { NuxtRbac, RbacPublicConfig } from './runtime/types.js'
 
 export interface ModuleOptions {
   /** Match permissions with wildcard semantics — must mirror `createRbac({ wildcard })`. Default: `false`. */
-  wildcard?: boolean
+  wildcard?: boolean | undefined
   /** Roles that pass every permission check on the client. Default: `[]`. */
-  superAdminRoles?: string[]
+  superAdminRoles?: string[] | undefined
   /** Register `v-can` / `v-role`. Default: `true`. */
-  directives?: boolean
+  directives?: boolean | undefined
   /** Register `<Can>` / `<HasRole>`. Default: `true`. */
-  components?: boolean
+  components?: boolean | undefined
   /** Add `$can`, `$hasRole`, … to templates. Default: `true`. */
-  globalProperties?: boolean
+  globalProperties?: boolean | undefined
   /** Register the global `rbac` route middleware for `definePageMeta({ rbac })`. Default: `true`. */
-  middleware?: boolean
+  middleware?: boolean | undefined
   /** Where the middleware sends guests. Default: `''` (show a 401 error). */
-  unauthenticatedRedirect?: string
+  unauthenticatedRedirect?: string | undefined
   /** Where the middleware sends users without access. Default: `''` (show a 403 error). */
-  forbiddenRedirect?: string
+  forbiddenRedirect?: string | undefined
 }
 
 /** Auto-imported composables. */
@@ -89,6 +89,6 @@ export default defineNuxtModule<ModuleOptions>({
 declare module '#app' {
   interface PageMeta {
     /** Access rule enforced by the `rbac` route middleware of `@anievo-id/rbac-evolution-nuxt`. */
-    rbac?: RbacRouteRule
+    rbac?: RbacRouteRule | undefined
   }
 }

@@ -38,11 +38,14 @@ import type * as composables from '../src/runtime/composables'
 
 type ModuleDefault = (typeof import('../src/module'))['default']
 
+/** Every key required and `undefined` removed: the shape of the options once defaults are applied. */
+type Defined<T> = { [K in keyof T]-?: Exclude<T[K], undefined> }
+
 describe('module options (`.`)', () => {
   it('the default export is a Nuxt module typed with ModuleOptions', () => {
     expectTypeOf<ModuleDefault>().toEqualTypeOf<NuxtModule<ModuleOptions>>()
     expectTypeOf<ModuleOptions>().not.toBeAny()
-    expectTypeOf<Required<ModuleOptions>>().toEqualTypeOf<{
+    expectTypeOf<Defined<ModuleOptions>>().toEqualTypeOf<{
       wildcard: boolean
       superAdminRoles: string[]
       directives: boolean
@@ -52,7 +55,7 @@ describe('module options (`.`)', () => {
       unauthenticatedRedirect: string
       forbiddenRedirect: string
     }>()
-    expectTypeOf<RbacPublicConfig>().toEqualTypeOf<Required<Omit<ModuleOptions, 'middleware'>>>()
+    expectTypeOf<RbacPublicConfig>().toEqualTypeOf<Defined<Omit<ModuleOptions, 'middleware'>>>()
 
     const options = (o: ModuleOptions) => o
     void function neverCalled() {
@@ -60,7 +63,7 @@ describe('module options (`.`)', () => {
       options({ wildcard: true, superAdminRoles: ['super-admin'], forbiddenRedirect: '/403' })
       // @ts-expect-error -- unknown option
       options({ wildCard: true })
-      // @ts-expect-error -- exactOptionalPropertyTypes: options do not accept an explicit undefined
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       options({ wildcard: undefined })
       // @ts-expect-error -- superAdminRoles is a list
       options({ superAdminRoles: 'super-admin' })
@@ -101,9 +104,9 @@ describe('route rules (`/rule`, re-exported from `.`)', () => {
       rootRule({ roles: 'admin' })
       // @ts-expect-error -- names are strings
       rule({ permission: 1 })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `any` does not accept an explicit undefined
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       rule({ permission: 'a', any: undefined })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `redirect` does not accept an explicit undefined
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       rule({ role: 'a', redirect: undefined })
     }
   })
@@ -164,7 +167,7 @@ describe('server helpers (`/server`)', () => {
     void function neverCalled() {
       // @ts-expect-error -- getSubject is required
       options({ rbac })
-      // @ts-expect-error -- exactOptionalPropertyTypes: `guard` does not accept an explicit undefined
+      // exactOptionalPropertyTypes: an explicit `undefined` is accepted, same as leaving the option out
       options({ rbac, getSubject: () => null, guard: undefined })
       // @ts-expect-error -- `team` is a resolver function, not a value
       options({ rbac, getSubject: () => null, team: 1 })

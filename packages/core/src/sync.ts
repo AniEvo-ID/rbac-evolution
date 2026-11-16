@@ -29,28 +29,28 @@ export type SyncRolePermissions<T extends RbacTypeConfig = DefaultRbacTypes> = r
  */
 export interface SyncDefinition<T extends RbacTypeConfig = DefaultRbacTypes> {
   /** Guard of this block. Default: the `guard` option, then `defaultGuard`. */
-  guard?: string
+  guard?: string | undefined
   /** Team of the roles in this block (requires `teams: true`). Default: the `team` option, then global (`null`). */
-  team?: TeamId
+  team?: TeamId | undefined
   /** Permissions of the guard. Permissions referenced by a role are created too, even if not listed here. */
-  permissions?: readonly PermissionName<T>[]
+  permissions?: readonly PermissionName<T>[] | undefined
   /** Roles and their permissions. Each role's permissions are synced (replaced) to exactly this list. */
-  roles?: { readonly [R in RoleName<T>]?: SyncRolePermissions<T> }
+  roles?: { readonly [R in RoleName<T>]?: SyncRolePermissions<T> } | undefined
 }
 
 export interface SyncOptions {
   /** Default guard for definitions without a `guard`. Default: `defaultGuard`. */
-  guard?: string
+  guard?: string | undefined
   /** Default team for definitions without a `team`. */
-  team?: TeamId
+  team?: TeamId | undefined
   /**
    * Delete roles & permissions that are not in the definition. Roles are pruned per guard + team
    * scope present in the definition; permissions (which are guard-wide) only for guards that have a
    * global (team-less) definition. Other guards and teams are never touched. Default: `false`.
    */
-  prune?: boolean
+  prune?: boolean | undefined
   /** Compute and return the plan without writing anything. Default: `false`. */
-  dryRun?: boolean
+  dryRun?: boolean | undefined
 }
 
 export interface SyncPermissionChange {

@@ -9,13 +9,13 @@ export interface RbacMiddlewareRule {
   /** Path pattern(s): `/admin`, `/users/:id`, `/admin/:path*`, or a RegExp. */
   matcher: PathMatcher
   /** Requires the permission (or ANY of them). */
-  permission?: Many<string>
+  permission?: Many<string> | undefined
   /** Requires the role (or ANY of them). */
-  role?: Many<string>
+  role?: Many<string> | undefined
   /** Requires ANY of the given roles or permissions. */
-  roleOrPermission?: Many<string>
+  roleOrPermission?: Many<string> | undefined
   /** Require EVERY listed permission / role instead of any (spatie v8.5 `canAll()`). */
-  all?: boolean
+  all?: boolean | undefined
   // A rule with none of the above only requires an authenticated user.
 }
 
@@ -26,18 +26,18 @@ interface BaseOptions<Req extends MiddlewareRequest> {
   /** Every matching rule must pass. Requests matching no rule pass through. */
   rules: readonly RbacMiddlewareRule[]
   /** Redirect guests here (relative to the request URL). Without it, guests get a `401` JSON response. */
-  loginUrl?: string | ((req: Req) => string | URL)
+  loginUrl?: string | ((req: Req) => string | URL) | undefined
   /** Custom response for guests. */
-  onUnauthenticated?: (req: Req, rule: RbacMiddlewareRule) => MaybePromise<Response>
+  onUnauthenticated?: ((req: Req, rule: RbacMiddlewareRule) => MaybePromise<Response>) | undefined
   /** Custom response for users missing a role/permission. Default: `403` JSON response. */
-  onUnauthorized?: (req: Req, rule: RbacMiddlewareRule) => MaybePromise<Response>
+  onUnauthorized?: ((req: Req, rule: RbacMiddlewareRule) => MaybePromise<Response>) | undefined
 }
 
 /** Loads roles & permissions through an `Rbac` instance (DB adapters need the Node.js middleware runtime). */
 export interface RbacMiddlewareWithRbac<Req extends MiddlewareRequest> extends BaseOptions<Req> {
   rbac: Rbac
   getSubject: (req: Req) => MaybePromise<Subject | null | undefined>
-  guard?: string
+  guard?: string | undefined
   team?: TeamId | ((req: Req) => MaybePromise<TeamId | undefined>)
   getSnapshot?: never
 }
@@ -47,9 +47,9 @@ export interface RbacMiddlewareWithSnapshot<Req extends MiddlewareRequest> exten
   /** Return `null` for guests. */
   getSnapshot: (req: Req) => MaybePromise<RbacSnapshot | null | undefined>
   /** Must match the server's `wildcard` setting. Default: `false`. */
-  wildcard?: boolean
+  wildcard?: boolean | undefined
   /** Roles that pass every permission check. */
-  superAdminRoles?: readonly string[]
+  superAdminRoles?: readonly string[] | undefined
   rbac?: never
   getSubject?: never
 }
