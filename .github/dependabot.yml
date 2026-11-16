@@ -1,0 +1,42 @@
+# Weekly dependency updates, grouped so each week opens a few PRs instead of dozens.
+# CI is the gate: a group only merges when build, typecheck, tests, package lint, databases, Bun and E2E pass.
+version: 2
+updates:
+  - package-ecosystem: npm
+    # pnpm workspace: the root lockfile covers every package, example, test suite and the docs.
+    directories:
+      - /
+      - /packages/*
+      - /examples/*
+      - /tests/*
+      - /docs
+    schedule:
+      interval: weekly
+      day: monday
+    # Keep each range as it is while the new version still satisfies it, so published
+    # peerDependencies (e.g. `express: >=4`) are never narrowed by an update.
+    versioning-strategy: increase-if-necessary
+    # Wait a week after a release before proposing it, so a compromised or broken
+    # version is usually caught and unpublished first.
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 10
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: ci
+    groups:
+      actions:
+        patterns: ['*']
