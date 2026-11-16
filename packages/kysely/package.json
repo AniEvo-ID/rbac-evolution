@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-kysely",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "Kysely storage adapter (PostgreSQL, MySQL, SQLite & SQL Server) for rbac-evolution.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
@@ -60,7 +60,7 @@
     "@anievo-id/rbac-evolution": "workspace:^"
   },
   "peerDependencies": {
-    "kysely": "^0.28.0"
+    "kysely": "^0.28.0 || ^0.29.0"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.3.0",

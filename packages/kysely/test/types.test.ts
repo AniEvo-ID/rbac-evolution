@@ -7,7 +7,7 @@ import { createRbac, type Rbac, type RbacAdapter } from '@anievo-id/rbac-evoluti
 import {
   DummyDriver,
   Kysely,
-  type Migration,
+  type Migration as RootMigration,
   type Selectable,
   type Insertable,
   type Transaction,
@@ -15,6 +15,8 @@ import {
   PostgresIntrospector,
   PostgresQueryCompiler,
 } from 'kysely'
+// @ts-ignore: `kysely/migration` only exists on 0.29 (on 0.28 this is `any`, and `Migration` comes from `kysely`).
+import type { Migration as SubpathMigration } from 'kysely/migration'
 import { describe, expect, expectTypeOf, it } from 'vitest'
 import {
   type KyselyAdapterOptions,
@@ -23,6 +25,7 @@ import {
   type PermissionsTable,
   type RbacDatabase,
   type RbacDialect,
+  type RbacMigration,
   type RbacMigrationOptions,
   type RbacTableNames,
   type RbacTableOptions,
@@ -133,10 +136,17 @@ describe('kysely: types', () => {
     expectTypeOf<RbacMigrationOptions>().toEqualTypeOf<{ dialect?: RbacDialect; prefix?: string; expiry?: boolean }>()
     expectTypeOf(addRbacExpiryColumns).parameter(1).toEqualTypeOf<RbacMigrationOptions | undefined>()
     expectTypeOf(dropRbacExpiryColumns).parameter(1).toEqualTypeOf<RbacTableOptions | undefined>()
-    expectTypeOf(rbacExpiryMigration).returns.toEqualTypeOf<Migration>()
+    expectTypeOf(rbacExpiryMigration).returns.toEqualTypeOf<RbacMigration>()
     expectTypeOf(dropRbacTables).returns.toEqualTypeOf<Promise<void>>()
     expectTypeOf(dropRbacTables).parameter(1).toEqualTypeOf<RbacTableOptions | undefined>()
-    expectTypeOf(rbacMigration).returns.toEqualTypeOf<Migration>()
+    expectTypeOf(rbacMigration).returns.toEqualTypeOf<RbacMigration>()
+    // Kysely's own `Migration`: from `kysely` on 0.28, from `kysely/migration` on 0.29 (where `kysely` exports a
+    // type error under that name). Both migrations can be passed wherever the installed version expects one.
+    type KyselyMigration = RootMigration extends { readonly __kyselyTypeError__: unknown }
+      ? SubpathMigration
+      : RootMigration
+    expectTypeOf<KyselyMigration>().not.toBeAny()
+    expectTypeOf<RbacMigration>().toEqualTypeOf<KyselyMigration>()
     expectTypeOf(detectDialect).returns.toEqualTypeOf<RbacDialect>()
 
     const db = dummyDb<AppDatabase>()

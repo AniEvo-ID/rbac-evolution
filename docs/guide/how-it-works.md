@@ -65,10 +65,10 @@ Most packages also have a peer dependency on the library they plug into, so you 
 
 | Package | Peer dependencies | Other dependencies |
 | --- | --- | --- |
-| `-prisma` | `@prisma/client` 5.12+ or 6 | |
+| `-prisma` | `@prisma/client` 5.12+, 6 or 7 | |
 | `-drizzle` | `drizzle-orm` 0.38+ | |
-| `-kysely` | `kysely` 0.28 | |
-| `-mongoose` | `mongoose` 8 | |
+| `-kysely` | `kysely` 0.28 or 0.29 | |
+| `-mongoose` | `mongoose` 8 or 9 | |
 | `-express` | `express` 4+ | |
 | `-fastify` | `fastify` 5+ | `fastify-plugin` |
 | `-hono` | `hono` 4+ | |

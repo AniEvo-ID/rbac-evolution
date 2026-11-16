@@ -24,7 +24,7 @@ bun add @anievo-id/rbac-evolution @anievo-id/rbac-evolution-mongoose mongoose
 
 :::
 
-`mongoose` 8 is a peer dependency. Mongoose 9 is not tested yet.
+`mongoose` 8 or 9 is a peer dependency (from 1.3). MongoDB 6 or later. See [Mongoose 9](#mongoose-9) for what changes when you upgrade.
 
 ## Collections
 
@@ -160,12 +160,39 @@ same in the background, if you prefer; it is not created for you.
 - **Invalid ids are ignored.** If the engine passes an id that isn't an ObjectId hex string, the adapter drops it instead of throwing, because no document could match it anyway.
 - **Idempotent attach.** Each link is written as an upsert with `$setOnInsert`, matched on its unique key. If two requests insert the same link at the same time, the resulting duplicate-key error is ignored.
 - **Link cleanup.** `deleteRole` and `deletePermission` delete the link documents first, then the role or permission.
-- **Reverse lookups** ([`subjectsWithRole` / `subjectsWithPermission`](/advanced/querying-subjects)) use `distinct('subjectId')` and return subject ids as strings.
+- **Reverse lookups** ([`subjectsWithRole` / `subjectsWithPermission`](/advanced/querying-subjects)) use an aggregate (`$group` on `subjectId`, streamed through a cursor, so there is no 16 MB result limit) and return subject ids as strings.
+
+## Mongoose 9
+
+The adapter works the same on Mongoose 8 and 9, and the data is the same: no migration, no index change. Upgrade
+Mongoose on its own schedule; the adapter needs no option for it. Mongoose 9 itself brings a few requirements:
+
+- **Node.js 20.19 or later.** Mongoose 9 uses the MongoDB Node.js driver 7, which needs it. Mongoose 8 still runs on
+  any Node.js 20.
+- **MongoDB server.** The same as with Mongoose 8: 6 or later. CI runs the adapter on MongoDB 7, and it has also
+  been tested on 6.0.
+- **Hooks you add to the schemas.** If you add middleware to the schemas of `rbacSchemas()`, Mongoose 9 no longer
+  passes `next()` to `pre` hooks. Write them as `async` functions:
+
+  ```ts
+  import { rbacSchemas } from '@anievo-id/rbac-evolution-mongoose'
+
+  const schemas = rbacSchemas()
+  schemas.role.pre('save', async function () {
+    // ...
+  })
+  ```
+
+- **Your own queries on the models.** `create()`, `insertOne()` and query filters are type-checked against the
+  document types in Mongoose 9 (`RoleDoc`, `ModelHasRoleDoc`, ...), and `FilterQuery` is renamed `QueryFilter`. The
+  adapter itself isn't affected. Nothing changes at runtime.
+- **TypeScript.** Mongoose 9's own type declarations need TypeScript 5.3 or later, unless `skipLibCheck` is on
+  (it usually is). The adapter's types are the same for Mongoose 8 and 9.
 
 ## Transactions
 
 Deletes run a few operations one after another and are **not** wrapped in a transaction, because MongoDB transactions need a replica set. Links are deleted first, so if a delete fails halfway, the role or permission still exists with some of its links removed. Running the same delete again finishes the job.
 
-The adapter doesn't take a session argument. Mongoose 8.4 and later can attach the session for you: with `mongoose.set('transactionAsyncLocalStorage', true)`, operations started inside `connection.transaction(async () => { ... })` use that transaction automatically. This setup isn't covered by the adapter's tests. If you use it, run the changes through a short-lived instance with `cache: false`, then call `forgetCachedPermissions()` on your long-lived instance. See [Cache](/advanced/cache).
+The adapter doesn't take a session argument. Mongoose 8.4 and later (9 included) can attach the session for you: with `mongoose.set('transactionAsyncLocalStorage', true)`, operations started inside `connection.transaction(async () => { ... })` use that transaction automatically. This setup isn't covered by the adapter's tests. If you use it, run the changes through a short-lived instance with `cache: false`, then call `forgetCachedPermissions()` on your long-lived instance. See [Cache](/advanced/cache).
 
 Full API: [reference](/api/mongoose/)

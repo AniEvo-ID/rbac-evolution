@@ -36,7 +36,7 @@ For real data, install the adapter for your ORM.
 
 | ORM | Package | Peer dependency |
 | --- | --- | --- |
-| Prisma | `@anievo-id/rbac-evolution-prisma` | `@prisma/client` 5.12+ or 6 |
+| Prisma | `@anievo-id/rbac-evolution-prisma` | `@prisma/client` 5.12+, 6 or 7 |
 | Drizzle | `@anievo-id/rbac-evolution-drizzle` | `drizzle-orm` 0.38+ (PostgreSQL or SQLite) |
 
 ::: code-group

@@ -1,7 +1,11 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "noEmit": true
+    "noEmit": true,
+    // Type-check only. Prisma 7's `prisma-client` generator writes TypeScript sources into test/generated*, and
+    // early 7.x output fails declaration checks (TS2742) under pnpm, which don't apply without emit.
+    "declaration": false,
+    "declarationMap": false
   },
   "include": [
     "src",

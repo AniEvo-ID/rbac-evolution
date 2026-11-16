@@ -158,12 +158,20 @@ jobs:
           - name: prisma 5.12
             pkg: '@anievo-id/rbac-evolution-prisma'
             deps: '@prisma/client@5.12.0 prisma@5.12.0'
+          # The dev dependency is Prisma 7 (driver adapters); this keeps the newest 6.x (Rust engine) covered.
+          # Pinned to a major: npm's `latest` tag of prisma points at an 8.0 release candidate.
+          - name: prisma 6
+            pkg: '@anievo-id/rbac-evolution-prisma'
+            deps: '@prisma/client@6 prisma@6'
           - name: drizzle-orm 0.38
             pkg: '@anievo-id/rbac-evolution-drizzle'
             deps: drizzle-orm@0.38.0
           - name: drizzle-orm 0.45
             pkg: '@anievo-id/rbac-evolution-drizzle'
             deps: drizzle-orm@0.45
+          - name: mongoose 8.0
+            pkg: '@anievo-id/rbac-evolution-mongoose'
+            deps: mongoose@8.0.0
           - name: kysely 0.28.0
             pkg: '@anievo-id/rbac-evolution-kysely'
             deps: kysely@0.28.0
@@ -171,6 +179,11 @@ jobs:
             # before 0.28.15: kysely's MysqlPool type rejects mysql2's Pool, and a select over a union of
             # table names isn't callable. Runtime tests still run.
             skip_typecheck: true
+          # Newer than the dev dependency, which stays on 0.28 because the `ci` job runs Node 20 and Kysely 0.29
+          # needs Node 22 (this job runs on 22).
+          - name: kysely 0.29
+            pkg: '@anievo-id/rbac-evolution-kysely'
+            deps: kysely@0.29
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1

@@ -1,9 +1,10 @@
 import { LibsqlDialect } from '@libsql/kysely-libsql'
 import { createRbac } from '@anievo-id/rbac-evolution'
 import { runAdapterTests } from '@anievo-id/rbac-evolution/testing'
-import { Kysely, Migrator, sql } from 'kysely'
+import { Kysely, sql } from 'kysely'
 import { describe, expect, it } from 'vitest'
 import { type RbacDatabase, createRbacTables, kyselyAdapter, rbacExpiryMigration, rbacMigration } from '../src'
+import { loadMigrator } from './migrator'
 import { count } from './shared'
 
 /** Fresh in-memory database per call. */
@@ -97,6 +98,7 @@ describe('kysely sqlite: specifics', () => {
 
   it('works as a Kysely Migration (up / down)', async () => {
     const db = await freshDb({ tables: false })
+    const Migrator = await loadMigrator()
     const migrator = new Migrator({
       db,
       provider: { getMigrations: async () => ({ '0001_rbac': rbacMigration({ prefix: 'acl_' }) }) },
@@ -113,6 +115,7 @@ describe('kysely sqlite: specifics', () => {
   it('upgrades a 1.1 database with rbacExpiryMigration (up / down), storing unix ms', async () => {
     const db = await freshDb({ tables: false })
     const migrations = { '0001_rbac': rbacMigration(), '0002_rbac_expiry': rbacExpiryMigration() }
+    const Migrator = await loadMigrator()
     const migrator = new Migrator({ db, provider: { getMigrations: async () => migrations } })
     expect((await migrator.migrateToLatest()).error).toBeUndefined()
 
