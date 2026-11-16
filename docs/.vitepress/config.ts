@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { type DefaultTheme, defineConfig } from 'vitepress'
+import { type DefaultTheme, defineConfig, type MarkdownRenderer } from 'vitepress'
 
 const repo = 'https://github.com/AniEvo-ID/rbac-evolution'
 // The docs deploy on every push to main, so this is always the version that main (and npm) carries.
@@ -27,6 +27,18 @@ const apiSidebars: DefaultTheme.SidebarMulti = {
   ),
 }
 
+// ```mermaid fences become a <MermaidDiagram> (theme/components/MermaidDiagram.vue), which renders the SVG in the
+// browser and loads `mermaid` only on the pages that have a diagram. The source is URI-encoded so it survives as a
+// Vue attribute.
+const mermaidFence = (md: MarkdownRenderer): void => {
+  const fence = md.renderer.rules.fence!
+  md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+    const token = tokens[idx]!
+    if (token.info.trim() !== 'mermaid') return fence(tokens, idx, options, env, self)
+    return `<MermaidDiagram code="${encodeURIComponent(token.content)}" />\n`
+  }
+}
+
 export default defineConfig({
   title: 'RBAC Evolution',
   description: 'Role & permission management (RBAC) for JavaScript & TypeScript — inspired by spatie/laravel-permission.',
@@ -37,6 +49,7 @@ export default defineConfig({
   // dark only: no light theme, no theme switch
   appearance: 'force-dark',
   lastUpdated: true,
+  markdown: { config: mermaidFence },
   head: [
     ['meta', { name: 'theme-color', content: '#0a0c0e' }],
     ['link', { rel: 'icon', type: 'image/png', href: '/rbac-evolution/brand/favicon.png' }],
@@ -89,6 +102,7 @@ export default defineConfig({
             { text: 'Runtimes (Node, Bun)', link: '/guide/runtimes' },
             { text: 'Quick start', link: '/guide/quick-start' },
             { text: 'Coming from Laravel', link: '/guide/coming-from-laravel' },
+            { text: 'How it works', link: '/guide/how-it-works' },
             { text: 'Example apps', link: '/guide/examples' },
             { text: "What's new", link: '/guide/whats-new' },
             { text: 'Upgrading to 1.0', link: '/guide/upgrading' },

@@ -7,6 +7,7 @@ import FeatureRows from './components/FeatureRows.vue'
 import GridPulse from './components/GridPulse.vue'
 import HomeCta from './components/HomeCta.vue'
 import HomeHero from './components/HomeHero.vue'
+import MermaidDiagram from './components/MermaidDiagram.vue'
 import MotionLayer from './components/MotionLayer.vue'
 import NotFound from './components/NotFound.vue'
 import PageGuide from './components/PageGuide.vue'
@@ -21,6 +22,7 @@ export default {
     app.component('QualityReport', QualityReport)
     app.component('E2eReport', E2eReport)
     app.component('ReleaseSync', ReleaseSync)
+    app.component('MermaidDiagram', MermaidDiagram)
   },
   Layout: () =>
     h(DefaultTheme.Layout, null, {

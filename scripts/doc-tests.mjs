@@ -53,6 +53,7 @@ const PAGES = [
   'docs/best-practices/*.md',
   'docs/recipes/*.md',
   'docs/guide/coming-from-laravel.md',
+  'docs/guide/how-it-works.md',
 ]
 
 /** Escapes every regular-expression metacharacter, backslash included. */

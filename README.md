@@ -131,6 +131,9 @@ The API follows [spatie/laravel-permission](https://spatie.be/docs/laravel-permi
 
 All packages share one version and run on **Node.js 20+** and **Bun**.
 
+To see how the packages fit together, how a check is decided and which tables the adapters use, read
+[How it works](https://creation.anievo.id/rbac-evolution/guide/how-it-works).
+
 ## Quality
 
 Every push to `main` refreshes the public [Test report](https://creation.anievo.id/rbac-evolution/quality):
