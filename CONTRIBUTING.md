@@ -28,6 +28,8 @@ examples/      example apps (Next.js, Vue, ...)
 1. Fork the repo and create a branch from `main` (e.g. `feat/wildcard-permissions`, `fix/cache-invalidation`).
 2. Make your changes, with tests where it makes sense.
 3. Run `pnpm build && pnpm typecheck && pnpm test` and make sure everything passes.
+   If you changed a `package.json`, the build config or the exports, also run `pnpm lint:packages`
+   (publint and arethetypeswrong: every entry point and its types resolve for consumers).
 4. If your change affects a published package, add a changeset:
    ```bash
    pnpm changeset

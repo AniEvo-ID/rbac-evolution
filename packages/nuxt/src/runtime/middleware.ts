@@ -1,7 +1,7 @@
 import { abortNavigation, createError, defineNuxtRouteMiddleware, navigateTo, useRuntimeConfig } from '#app'
-import { useRbac } from './composables'
-import { evaluateRouteRule, type RbacRouteRule } from './rule'
-import type { RbacPublicConfig } from './types'
+import { useRbac } from './composables.js'
+import { evaluateRouteRule, type RbacRouteRule } from './rule.js'
+import type { RbacPublicConfig } from './types.js'
 
 /**
  * Global route middleware: enforces `definePageMeta({ rbac: { ... } })` against the snapshot.

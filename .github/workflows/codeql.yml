@@ -1,0 +1,40 @@
+name: CodeQL
+
+# Static analysis of the TypeScript/JavaScript code and of the workflows themselves.
+# Findings show up under Security → Code scanning, and as annotations on pull requests.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "41 4 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript, actions]
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: github/codeql-action/init@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          languages: ${{ matrix.language }}
+          # No build needed: CodeQL reads the sources directly.
+          build-mode: none
+          queries: security-extended
+          config: |
+            paths-ignore:
+              - '**/dist/**'
+              - '**/node_modules/**'
+              - 'docs/public/**'
+      - uses: github/codeql-action/analyze@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          category: /language:${{ matrix.language }}

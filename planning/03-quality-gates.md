@@ -13,11 +13,11 @@ Goal: CI catches anything that would break the 1.0 promise before it is merged.
 ## To add
 
 - [ ] **API snapshot**: `@microsoft/api-extractor` (or a small script over the `.d.ts` files) writes `etc/<package>.api.md`; CI fails when it changes without a changeset. Makes every public API change visible in review.
-- [ ] **Package lint**: `publint` and `@arethetypeswrong/cli` on every package, so ESM/CJS entry points and types resolve correctly for every consumer setup.
+- [x] **Package lint**: `publint` and `@arethetypeswrong/cli` on every package, so ESM/CJS entry points and types resolve correctly for every consumer setup. `pnpm lint:packages` (`scripts/lint-packages.mjs`), run in the `ci` job on Node 22. The first run found that the nuxt types fell back to `any` under node16/nodenext; fixed.
 - [ ] **Type tests**: `expectTypeOf` (vitest) for typed names, the guard argument types and `exactOptionalPropertyTypes` users. Types are part of the public API.
 - [ ] **Coverage floor**: enable `vitest --coverage` (v8), publish the number on the test report page, and fail CI below the agreed floor per package (start at the current value, never lower it).
 - [ ] **Peer version matrix**: CI jobs for the oldest and newest supported major of each framework peer (from [02-compatibility-and-semver.md](./02-compatibility-and-semver.md)).
-- [ ] **Node 24** in the CI matrix.
+- [x] **Node 24** in the CI matrix.
 - [ ] **Bundle size**: record the size of each client package (react, vue) and fail on a large jump (`size-limit`).
 - [ ] **Benchmarks** (optional for 1.0): `can()` cold and cached, `syncRoles`, reverse lookups on 100k links. Run on demand, not on every PR.
 - [ ] **Make `databases` and `bun` required checks** once they have been stable for a few weeks.

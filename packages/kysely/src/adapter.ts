@@ -85,6 +85,23 @@ const TARGET: Record<SubjectTable, 'role_id' | 'permission_id'> = {
   modelHasPermissions: 'permission_id',
 }
 
+interface SubjectRow {
+  subject_type: string
+  subject_id: string
+  team_id: string
+}
+
+/**
+ * SQL compares text with the column's collation, which can ignore case or accents, or trailing spaces
+ * (MySQL's `utf8mb4_bin` is PAD SPACE, and SQL Server always ignores them). Every row read back is
+ * therefore checked again here, with exact string equality, so a subject `admin ` or `ADMIN` never gets
+ * the links of `admin`, whatever the schema's collation.
+ */
+const sameSubject = (row: SubjectRow, subjectType: string, subjectId: string | undefined, team: string): boolean =>
+  String(row.subject_type) === subjectType &&
+  (subjectId === undefined || String(row.subject_id) === subjectId) &&
+  String(row.team_id) === team
+
 /**
  * Kysely implementation of `RbacAdapter` for PostgreSQL, MySQL / MariaDB, SQLite and SQL Server.
  * Construct it with `kyselyAdapter(db, options?)`.
@@ -131,7 +148,15 @@ export class KyselyRbacAdapter implements RbacAdapter {
     }
     if (query.guardName !== undefined) q = q.where('guard_name', '=', query.guardName)
     const rows: PermissionRow[] = await q.orderBy('id').execute()
-    return rows.map(toPermission)
+    // Exact match, whatever the collation (see `sameSubject`).
+    const names = query.names === undefined ? undefined : new Set(query.names)
+    return rows
+      .filter(
+        (row) =>
+          (names === undefined || names.has(row.name)) &&
+          (query.guardName === undefined || row.guard_name === query.guardName),
+      )
+      .map(toPermission)
   }
 
   async deletePermission(id: Id): Promise<void> {
@@ -171,12 +196,22 @@ export class KyselyRbacAdapter implements RbacAdapter {
       q = q.where('name', 'in', [...query.names])
     }
     if (query.guardName !== undefined) q = q.where('guard_name', '=', query.guardName)
-    if (query.teamIds !== undefined) {
-      if (query.teamIds.length === 0) return []
-      q = q.where('team_id', 'in', [...new Set(query.teamIds.map(teamKey))])
+    const teams = query.teamIds === undefined ? undefined : new Set(query.teamIds.map(teamKey))
+    if (teams !== undefined) {
+      if (teams.size === 0) return []
+      q = q.where('team_id', 'in', [...teams])
     }
     const rows: RoleRow[] = await q.orderBy('id').execute()
-    return rows.map(toRole)
+    // Exact match, whatever the collation (see `sameSubject`).
+    const names = query.names === undefined ? undefined : new Set(query.names)
+    return rows
+      .filter(
+        (row) =>
+          (names === undefined || names.has(row.name)) &&
+          (query.guardName === undefined || row.guard_name === query.guardName) &&
+          (teams === undefined || teams.has(String(row.team_id))),
+      )
+      .map(toRole)
   }
 
   async deleteRole(id: Id): Promise<void> {
@@ -343,17 +378,20 @@ export class KyselyRbacAdapter implements RbacAdapter {
     }
   }
 
-  private async getLinks(table: SubjectTable, subject: Subject, teamId: TeamId): Promise<Id[]> {
+  /** Target ids of the subject's link rows, compared exactly (see `sameSubject`). */
+  private async getLinks(table: SubjectTable, subject: Subject, teamId: TeamId): Promise<number[]> {
     const s = this.subjectQuery(table, subject, teamId)
     const target = TARGET[table]
-    const rows: Record<string, number>[] = await this.db
+    const rows: (SubjectRow & Record<string, unknown>)[] = await this.db
       .selectFrom(s.name)
-      .select(target)
+      .select([target, 'subject_type', 'subject_id', 'team_id'])
       .where('subject_type', '=', s.subject_type)
       .where('subject_id', '=', s.subject_id)
       .where('team_id', '=', s.team_id)
       .execute()
-    return rows.map((row) => Number(row[target]))
+    return rows
+      .filter((row) => sameSubject(row, s.subject_type, s.subject_id, s.team_id))
+      .map((row) => Number(row[target]))
   }
 
   private async attach(table: SubjectTable, subject: Subject, targetIds: readonly Id[], teamId: TeamId): Promise<void> {
@@ -373,18 +411,21 @@ export class KyselyRbacAdapter implements RbacAdapter {
     targetIds: readonly Id[] | undefined,
     teamId: TeamId,
   ): Promise<void> {
+    const wanted = targetIds === undefined ? undefined : new Set(toIntIds(targetIds))
+    if (wanted !== undefined && wanted.size === 0) return
+    // Only delete the links this exact subject holds: with a collation that ignores case or trailing spaces,
+    // `subject_id = 'admin '` also matches the rows of `admin`. Restricting the delete to the target ids read
+    // back is exact, because the primary key stops a lookalike from holding the same target.
+    const ids = (await this.getLinks(table, subject, teamId)).filter((id) => wanted === undefined || wanted.has(id))
+    if (ids.length === 0) return
     const s = this.subjectQuery(table, subject, teamId)
-    let q = this.db
+    await this.db
       .deleteFrom(s.name)
       .where('subject_type', '=', s.subject_type)
       .where('subject_id', '=', s.subject_id)
       .where('team_id', '=', s.team_id)
-    if (targetIds !== undefined) {
-      const ids = toIntIds(targetIds)
-      if (ids.length === 0) return
-      q = q.where(TARGET[table], 'in', ids)
-    }
-    await q.execute()
+      .where(TARGET[table], 'in', ids)
+      .execute()
   }
 
   private async reverse(
@@ -395,15 +436,17 @@ export class KyselyRbacAdapter implements RbacAdapter {
   ): Promise<Id[]> {
     const ids = toIntIds(targetIds)
     if (ids.length === 0) return []
-    const rows: { subject_id: string }[] = await this.db
+    const team = teamKey(teamId)
+    const rows: SubjectRow[] = await this.db
       .selectFrom(this.tables[table])
-      .select('subject_id')
+      .select(['subject_type', 'subject_id', 'team_id'])
       .distinct()
       .where('subject_type', '=', subjectType)
-      .where('team_id', '=', teamKey(teamId))
+      .where('team_id', '=', team)
       .where(TARGET[table], 'in', ids)
       .execute()
-    return rows.map((row) => String(row.subject_id))
+    const exact = rows.filter((row) => sameSubject(row, subjectType, undefined, team))
+    return [...new Set(exact.map((row) => String(row.subject_id)))]
   }
 }
 

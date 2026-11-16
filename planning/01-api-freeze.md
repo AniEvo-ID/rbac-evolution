@@ -7,7 +7,7 @@ made internal or removed **before** 1.0, while breaking changes are still cheap.
 
 Generate the list of public exports per package and review it in one pull request.
 
-- [ ] Script `scripts/list-exports.mjs`: for each package, list every export of every `exports` entry (values and types)
+- [x] Script `scripts/list-exports.mjs`: for each package, list every export of every `exports` entry (values and types)
 - [ ] Commit the output as `planning/api-inventory.md` and mark each export: **keep**, **rename**, **internal**, **remove**
 
 Entry points today (from `package.json` `exports`):
@@ -17,12 +17,12 @@ Entry points today (from `package.json` `exports`):
 | core | 3 (main, `/testing`, `package.json`) |
 | drizzle | 8 (one per dialect schema) |
 | next | 3 (server, middleware, `package.json`) |
-| nuxt | 4 (module, server, runtime) |
+| nuxt | 3 (module, `/server`, `/rule`) |
 | the other 10 | 2 each |
 
 ## Questions to settle
 
-- [ ] **`@internal` members that are reachable.** `Rbac` has 10 members marked `@internal` that are still public on the class (`events`, `gate`, `permissionMatches`, `resolveGuard`, `resolveTeam`, `visibleTeams`, `resolveRoles`, `resolvePermissions`, ...). Make them truly private (`#`) or move them behind an internal module, so users can't depend on them.
+- [x] **`@internal` members that are reachable.** `Rbac` has 10 members marked `@internal` that are still public on the class (`events`, `gate`, `permissionMatches`, `resolveGuard`, `resolveTeam`, `visibleTeams`, `resolveRoles`, `resolvePermissions`, ...). Make them truly private (`#`) or move them behind an internal module, so users can't depend on them. Done: `#private`, reached inside core through a module-private accessor.
 - [ ] **Requirement helpers in core** (`permissionRequirement`, `satisfiesRequirement`, ...), added in 0.6. Keep them public, or move them to `@anievo-id/rbac-evolution/integration`, so the main entry stays small?
 - [ ] **Naming consistency** across integrations: `requirePermission` (Express, Fastify, Hono, Nuxt, Next), `@RequirePermissions` (NestJS, plural), `withRbac` (Next). Decide whether the plural is intentional (Nest convention) and document it.
 - [ ] **Option names**: `any` on permission guards and `all` on role guards. Keep the spatie-like asymmetry, but document it in one place.

@@ -1,7 +1,7 @@
 import type { RbacSnapshot } from '@anievo-id/rbac-evolution'
 import { createRbacPlugin, type RbacPluginOptions } from '@anievo-id/rbac-evolution-vue'
 import { defineNuxtPlugin, useRuntimeConfig, useState } from '#app'
-import { type NuxtRbac, type RbacPublicConfig, STATE_KEY } from './types'
+import { type NuxtRbac, type RbacPublicConfig, STATE_KEY } from './types.js'
 
 interface SnapshotSource {
   snapshot(): Promise<RbacSnapshot>
