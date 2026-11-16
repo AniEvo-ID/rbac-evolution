@@ -30,6 +30,8 @@ try {
   console.log(`etc/ does not exist on ${base} yet: the snapshot is new, no changeset needed.`)
   process.exit(0)
 }
+// New changesets are added at the root of .changeset/, also in pre mode. Changesets 3 moves the ones already
+// versioned into a prerelease to .changeset/pre/: those are not new, so they don't count.
 const changesets = diff('--diff-filter=A').filter((f) => /^\.changeset\/[^/]+\.md$/.test(f) && f !== '.changeset/README.md')
 if (changesets.length) {
   console.log(`API snapshot changed (${apiChanges.join(', ')}); changeset added: ${changesets.join(', ')}.`)
