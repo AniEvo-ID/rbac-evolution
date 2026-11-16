@@ -19,6 +19,7 @@ import { describe, expectTypeOf, it } from 'vitest'
 import {
   CanAll,
   CanAny,
+  createRbacDecorators,
   CurrentRbac,
   getRbac,
   type PermissionRequirementOptions,
@@ -30,6 +31,8 @@ import {
   RbacModule,
   type RbacModuleAsyncConfig,
   type RbacModuleConfig,
+  type RbacDecorator,
+  type RbacDecorators,
   type RbacModuleOptions,
   type RbacRequirement,
   type RequirementKind,
@@ -44,7 +47,7 @@ const rbac = createRbac({ adapter: new MemoryAdapter() })
 const guest = () => null
 
 /** The decorator type every `@Require*()` / `@Can*()` factory returns (usable on classes and methods). */
-type RbacDecorator = ReturnType<typeof applyDecorators>
+expectTypeOf<RbacDecorator>().toEqualTypeOf<ReturnType<typeof applyDecorators>>()
 
 describe('nestjs types: RbacModule options', () => {
   it('types RbacModuleOptions', () => {
@@ -153,12 +156,23 @@ describe('nestjs types: decorators', () => {
   })
 
   it('accept names, pipe strings, arrays and a trailing options object', () => {
-    expectTypeOf(RequirePermissions).parameters.toEqualTypeOf<(RequirementNames | PermissionRequirementOptions)[]>()
-    expectTypeOf(RequireRoles).parameters.toEqualTypeOf<(RequirementNames | RoleRequirementOptions)[]>()
-    expectTypeOf(RequireRoleOrPermission).parameters.toEqualTypeOf<RequirementNames[]>()
-    expectTypeOf(CanAny).parameters.toEqualTypeOf<RequirementNames[]>()
-    expectTypeOf(CanAll).parameters.toEqualTypeOf<RequirementNames[]>()
+    // Generic over the arguments (so names can be checked); the top-level decorators accept any name.
+    expectTypeOf(RequirePermissions).toEqualTypeOf<RbacDecorators['RequirePermissions']>()
+    expectTypeOf(RequireRoles).toEqualTypeOf<RbacDecorators['RequireRoles']>()
+    expectTypeOf(RequireRoleOrPermission).toEqualTypeOf<RbacDecorators['RequireRoleOrPermission']>()
+    expectTypeOf(CanAny).toEqualTypeOf<RbacDecorators['CanAny']>()
+    expectTypeOf(CanAll).toEqualTypeOf<RbacDecorators['CanAll']>()
+    expectTypeOf(createRbacDecorators()).toEqualTypeOf<RbacDecorators>()
     expectTypeOf<RequirementNames>().toEqualTypeOf<string | readonly string[]>()
+    // Spread arrays are not checked, so code that builds names at runtime still compiles.
+    const spread: (RequirementNames | PermissionRequirementOptions)[] = ['a']
+    const roleSpread: (RequirementNames | RoleRequirementOptions)[] = ['a']
+    const nameSpread: RequirementNames[] = ['a']
+    RequirePermissions(...spread)
+    RequireRoles(...roleSpread)
+    RequireRoleOrPermission(...nameSpread)
+    CanAny(...nameSpread)
+    CanAll(...nameSpread)
 
     function declare() {
       @Controller('articles')
@@ -206,6 +220,10 @@ describe('nestjs types: decorators', () => {
       RequireRoles([1, 2])
       // @ts-expect-error -- options are booleans
       RequireRoles('a', { all: 'yes' })
+      // @ts-expect-error -- at least one name is required
+      RequirePermissions()
+      // @ts-expect-error -- options must be the last argument
+      RequirePermissions({ any: true }, 'a')
     }
     expectTypeOf(invalid).toBeFunction()
   })
@@ -216,6 +234,69 @@ describe('nestjs types: decorators', () => {
     function valid(flag: boolean | undefined) {
       RequirePermissions('a', { any: flag })
       RequireRoles('a', { all: undefined })
+    }
+    expectTypeOf(valid).toBeFunction()
+  })
+})
+
+describe('nestjs types: createRbacDecorators() (typed names)', () => {
+  type AppTypes = { permissions: 'edit articles' | 'delete articles'; roles: 'admin' | 'writer' }
+  const typed = createRbacDecorators<AppTypes>()
+
+  it('returns typed versions of the requirement decorators', () => {
+    expectTypeOf(typed).toEqualTypeOf<RbacDecorators<AppTypes>>()
+    expectTypeOf(typed.RequirePermissions).returns.toEqualTypeOf<RbacDecorator>()
+    expectTypeOf(typed.CanAll).returns.toEqualTypeOf<RbacDecorator>()
+
+    function declare() {
+      const { RequirePermissions, RequireRoles, RequireRoleOrPermission, CanAny, CanAll } = typed
+      @Controller('articles')
+      @RequireRoles('admin|writer')
+      class ArticlesController {
+        @Get('a')
+        @RequirePermissions('edit articles')
+        @RequirePermissions('edit articles|delete articles', ['edit articles'], { any: true })
+        @RequireRoles(['admin', 'writer'], { all: true })
+        @RequireRoleOrPermission('admin|edit articles')
+        @CanAny('edit articles', 'delete articles')
+        @CanAll(['edit articles', 'delete articles'])
+        a() {}
+      }
+      return ArticlesController
+    }
+    expectTypeOf(declare).toBeFunction()
+  })
+
+  it('rejects typos, also inside pipe lists and arrays', () => {
+    function invalid() {
+      // @ts-expect-error -- typo
+      typed.RequirePermissions('edit artcles')
+      // @ts-expect-error -- typo inside a pipe list
+      typed.RequirePermissions('edit articles|delete artcles', { any: true })
+      // @ts-expect-error -- typo inside an array
+      typed.CanAny(['edit articles', 'nope'])
+      // @ts-expect-error -- a permission is not a role
+      typed.RequireRoles('edit articles')
+      // @ts-expect-error -- neither a role nor a permission
+      typed.RequireRoleOrPermission('admin', 'nope')
+      // @ts-expect-error -- typo
+      typed.CanAll('nope')
+      // @ts-expect-error -- no names
+      typed.RequireRoles()
+    }
+    expectTypeOf(invalid).toBeFunction()
+  })
+
+  it('the default (untyped) decorators still accept any string', () => {
+    const loose = createRbacDecorators()
+    function valid() {
+      loose.RequirePermissions('anything|else', { any: true })
+      RequirePermissions('anything|else', { any: true })
+      RequireRoles(['whatever'])
+      RequireRoleOrPermission('x')
+      // A `string` value is not checked, even with typed names.
+      const dynamic: string = 'edit articles'
+      typed.RequirePermissions(dynamic)
     }
     expectTypeOf(valid).toBeFunction()
   })

@@ -163,6 +163,27 @@ Passes when the subject has **any** of the names, either as a role or as a permi
   With `globalGuard: true` the guard runs on every route; it resolves the subject only once per request either way.
 - Declaring a decorator without any name throws a `TypeError` at startup.
 
+## Typed names
+
+If you pass a type to `createRbac<AppRbac>()`, pass the same type to `createRbacDecorators()`. Then a typo in a
+decorator is a compile error. Every name is checked, including each part of a `'a|b'` list and each array item.
+
+```ts
+import { createRbacDecorators } from '@anievo-id/rbac-evolution-nestjs'
+import type { AppRbac } from './rbac' // the type you pass to createRbac<AppRbac>()
+
+export const { RequirePermissions, RequireRoles } = createRbacDecorators<AppRbac>()
+
+@Controller('articles')
+class ArticlesController {
+  @Put(':id') @RequirePermissions('articles.edit|articles.publish') update() {} // ok
+  @Delete(':id') @RequirePermissions('articles.dleete') remove() {} // type error
+}
+```
+
+The top-level decorators still accept any string. Without names, or with options that are not last, every
+decorator is a type error. See [Typed names](/basic-usage/typed-names).
+
 ## `@CurrentRbac()`
 
 Injects the `SubjectRbac` that `RbacGuard` resolved — the same object as `rbac.for(subject, { guard, team })` — or

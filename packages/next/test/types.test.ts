@@ -3,7 +3,7 @@
 // Calls that would need a real Next.js runtime live in functions that are never invoked.
 import { describe, expectTypeOf, it } from 'vitest'
 import { createRbac, MemoryAdapter } from '@anievo-id/rbac-evolution'
-import type { Rbac, RbacSnapshot, ScopeOptions, Subject } from '@anievo-id/rbac-evolution'
+import type { DefaultRbacTypes, Rbac, RbacSnapshot, ScopeOptions, Subject } from '@anievo-id/rbac-evolution'
 import type {
   AuthorizeResult,
   FailureReason,
@@ -27,12 +27,18 @@ import { createRbacMiddleware, matchPath, snapshotSatisfies } from '../src/middl
 
 const rbac: Rbac = createRbac({ adapter: new MemoryAdapter() })
 const nextRbac = createNextRbac({ rbac, getSubject: () => null })
+type AppTypes = { permissions: 'articles.edit' | 'articles.delete'; roles: 'writer' | 'admin' }
+const typedRbac = createNextRbac({
+  rbac: createRbac<AppTypes>({ adapter: new MemoryAdapter() }),
+  getSubject: () => null,
+})
 const snapshot: RbacSnapshot = { roles: [], permissions: [] }
 
 describe('createNextRbac options', () => {
   it('accepts the documented shapes', () => {
-    expectTypeOf(createNextRbac).parameter(0).toEqualTypeOf<NextRbacOptions>()
-    expectTypeOf(createNextRbac).returns.toEqualTypeOf<NextRbac>()
+    expectTypeOf(createNextRbac<DefaultRbacTypes>).parameter(0).toEqualTypeOf<NextRbacOptions>()
+    expectTypeOf(createNextRbac<DefaultRbacTypes>).returns.toEqualTypeOf<NextRbac>()
+    expectTypeOf(nextRbac).toEqualTypeOf<NextRbac>()
 
     expectTypeOf({ rbac, getSubject: () => null }).toMatchTypeOf<NextRbacOptions>()
     expectTypeOf({
@@ -62,27 +68,120 @@ describe('createNextRbac options', () => {
     }
   })
 
-  it('is not generic over names: a typed Rbac is accepted and names stay `string`', () => {
+  it('infers the typed names of the rbac instance', () => {
     expectTypeOf<NextRbacOptions['rbac']>().toEqualTypeOf<Rbac>()
-    const typed = createRbac<{ permissions: 'articles.edit'; roles: 'writer' }>({ adapter: new MemoryAdapter() })
-    const fromTyped = createNextRbac({ rbac: typed, getSubject: () => null })
-    // Names are not narrowed by the typed instance: any string type-checks here.
-    expectTypeOf(fromTyped.requirePermission).parameter(0).toEqualTypeOf<string | readonly string[]>()
+    expectTypeOf<NextRbacOptions<AppTypes>['rbac']>().toEqualTypeOf<Rbac<AppTypes>>()
+    expectTypeOf(typedRbac).toEqualTypeOf<NextRbac<AppTypes>>()
+    expectTypeOf(typedRbac.rbac).toEqualTypeOf<Rbac<AppTypes>>()
     expectTypeOf<Parameters<NextRbac['can']>[0]>().toEqualTypeOf<string>()
+    expectTypeOf<Parameters<NextRbac<AppTypes>['can']>[0]>().toEqualTypeOf<'articles.edit' | 'articles.delete'>()
+    expectTypeOf<Parameters<NextRbac<AppTypes>['hasRole']>[0]>().toEqualTypeOf<
+      'writer' | 'admin' | readonly ('writer' | 'admin')[]
+    >()
+  })
+})
+
+describe('typed names', () => {
+  it('accepts typed names, pipe lists and arrays', () => {
+    void async function neverCalled() {
+      await typedRbac.requirePermission('articles.edit')
+      await typedRbac.requirePermission('articles.edit|articles.delete', { all: true })
+      await typedRbac.requirePermission(['articles.edit', 'articles.delete'])
+      await typedRbac.requireRole('writer | admin')
+      await typedRbac.requireRoleOrPermission(['admin', 'articles.edit'])
+      await typedRbac.can('articles.delete')
+      await typedRbac.canAny(['articles.edit', 'articles.delete'])
+      await typedRbac.canAll('articles.edit')
+      await typedRbac.hasRole(['writer', 'admin'])
+      await typedRbac.hasAllRoles('admin')
+      await typedRbac.authorize({ permission: 'articles.edit|articles.delete' })
+      await typedRbac.authorize({ roleOrPermission: ['writer', 'articles.edit'] })
+      typedRbac.withPermission('articles.edit', async () => 1)
+      typedRbac.withRole(['admin'], async () => 1)
+      typedRbac.withRbac(() => new Response(), { role: 'admin|writer', guard: 'api' })
+      // A `string` (or `string[]`) value is not checked.
+      const dynamic: string = 'articles.edit'
+      await typedRbac.requirePermission(dynamic)
+      await typedRbac.requireRole([dynamic])
+    }
+  })
+
+  it('rejects typos, also inside pipe lists and arrays', () => {
+    void async function neverCalled() {
+      // @ts-expect-error -- typo
+      await typedRbac.requirePermission('articles.edti')
+      // @ts-expect-error -- typo inside a pipe list
+      await typedRbac.requirePermission('articles.edit|articles.delte')
+      // @ts-expect-error -- typo inside an array
+      await typedRbac.requirePermission(['articles.edit', 'nope'], { all: true })
+      // @ts-expect-error -- a role is not a permission
+      await typedRbac.requirePermission('admin')
+      // @ts-expect-error -- a permission is not a role
+      await typedRbac.requireRole('articles.edit')
+      // @ts-expect-error -- neither a role nor a permission
+      await typedRbac.requireRoleOrPermission('admin|nope')
+      // @ts-expect-error -- typo
+      await typedRbac.can('articles.edti')
+      // @ts-expect-error -- typo inside an array
+      await typedRbac.canAny(['articles.edit', 'nope'])
+      // @ts-expect-error -- typo
+      await typedRbac.canAll('nope')
+      // @ts-expect-error -- typo
+      await typedRbac.hasRole('admn')
+      // @ts-expect-error -- typo
+      await typedRbac.hasAllRoles(['admin', 'nope'])
+      // @ts-expect-error -- typo inside a pipe list
+      await typedRbac.authorize({ permission: 'articles.edit|nope' })
+      // @ts-expect-error -- typo
+      await typedRbac.authorize({ role: 'nope' })
+      // @ts-expect-error -- typo
+      typedRbac.withPermission('nope', async () => 1)
+      // @ts-expect-error -- typo inside a pipe list
+      typedRbac.withRole('admin|nope', async () => 1)
+      // @ts-expect-error -- typo inside a pipe list
+      typedRbac.withRbac(() => new Response(), { permission: 'articles.edit|nope' })
+      // @ts-expect-error -- typo
+      typedRbac.withRbac(() => new Response(), { roleOrPermission: ['nope'] })
+    }
+  })
+
+  it('an untyped engine still accepts any string', () => {
+    void async function neverCalled() {
+      await nextRbac.requirePermission('anything|else')
+      await nextRbac.requireRole(['whatever'])
+      await nextRbac.requireRoleOrPermission('x')
+      await nextRbac.can('anything')
+      await nextRbac.hasRole(['x', 'y'])
+      await nextRbac.authorize({ permission: 'a|b', all: true })
+      nextRbac.withRbac(() => new Response(), { roleOrPermission: 'anything' })
+      // Requirement values typed as the (untyped) unions are accepted too.
+      const options: WithRbacOptions = { permission: ['a', 'b'], guard: 'api' }
+      nextRbac.withRbac(() => new Response(), options)
+      typedRbac.withRbac(() => new Response(), options)
+      const requirement: Requirement = { role: 'x' }
+      await typedRbac.authorize(requirement)
+      const names: readonly string[] = ['x']
+      await typedRbac.requirePermission(names)
+    }
+  })
+
+  it('wrapped server actions keep their parameter and return types', () => {
+    const save = typedRbac.withPermission('articles.edit', (id: number, data: { title: string }) => ({ id, ...data }))
+    expectTypeOf(save).toEqualTypeOf<(id: number, data: { title: string }) => Promise<{ title: string; id: number }>>()
+    const remove = typedRbac.withRole(['admin', 'writer'], async (id: string, ...rest: boolean[]) => id.length + rest.length)
+    expectTypeOf(remove).toEqualTypeOf<(id: string, ...rest: boolean[]) => Promise<number>>()
+    type Ctx = { params: Promise<{ id: string }> }
+    const GET = typedRbac.withRbac(async (_req: Request, _ctx: Ctx) => new Response(), { permission: 'articles.delete' })
+    expectTypeOf(GET).toEqualTypeOf<(req: Request, ctx: Ctx) => Promise<Response>>()
   })
 })
 
 describe('server components & pages: require*()', () => {
   it('takes a name, a pipe string or an array, plus trailing options, and resolves to the subject', () => {
-    expectTypeOf(nextRbac.requirePermission).parameters.toEqualTypeOf<
-      [permission: string | readonly string[], opts?: RequireOptions]
-    >()
-    expectTypeOf(nextRbac.requireRole).parameters.toEqualTypeOf<
-      [role: string | readonly string[], opts?: RequireOptions]
-    >()
-    expectTypeOf(nextRbac.requireRoleOrPermission).parameters.toEqualTypeOf<
-      [items: string | readonly string[], opts?: RequireOptions]
-    >()
+    // Generic over the names (so they can be checked); the options stay `RequireOptions`.
+    expectTypeOf<Parameters<NextRbac['requirePermission']>[1]>().toEqualTypeOf<RequireOptions | undefined>()
+    expectTypeOf<Parameters<NextRbac['requireRole']>[1]>().toEqualTypeOf<RequireOptions | undefined>()
+    expectTypeOf<Parameters<NextRbac['requireRoleOrPermission']>[1]>().toEqualTypeOf<RequireOptions | undefined>()
     expectTypeOf(nextRbac.requirePermission).returns.toEqualTypeOf<Promise<Subject>>()
     expectTypeOf(nextRbac.requireRole).returns.toEqualTypeOf<Promise<Subject>>()
 

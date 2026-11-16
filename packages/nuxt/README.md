@@ -86,3 +86,6 @@ export default defineEventHandler(async (event) => {
 
 `requirePermission`, `requireRole` and `requireRoleOrPermission` throw a 401 / 403 error whose `data` is the
 Express body (`{ error, reason, message }`).
+
+With a typed engine (`createRbac<AppRbac>()`), `createRbacServer` checks every name.
+`requirePermission(event, 'articles.edti')` is then a compile error. With an untyped engine, any string is accepted.

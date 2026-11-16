@@ -92,6 +92,7 @@ describe('createRbacServer', () => {
 
   it('rejects empty requirements', async () => {
     await expect(helpers().requireRole(fakeEvent(1), ' | ')).rejects.toThrow(TypeError)
+    // @ts-expect-error -- no names is also a type error; at runtime it rejects
     await expect(helpers().requirePermission(fakeEvent(1))).rejects.toThrow(TypeError)
   })
 

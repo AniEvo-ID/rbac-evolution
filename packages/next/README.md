@@ -161,6 +161,19 @@ Guests get `401 { "error": "UNAUTHENTICATED", "message": … }`, users without a
 bodies as `@anievo-id/rbac-evolution-express`.
 `withRbac` also accepts `guard` and `team`.
 
+## Typed names
+
+With a typed engine (`createRbac<AppRbac>()`), `createNextRbac` checks every name. A typo is a compile error:
+
+```ts
+const { requirePermission } = createNextRbac({ rbac, getSubject }) // rbac: Rbac<AppRbac>
+
+await requirePermission('articles.edit|articles.delete') // ok
+await requirePermission('articles.edti') // type error
+```
+
+With an untyped engine, any string is accepted.
+
 ## Guards & teams
 
 Every helper accepts `{ guard, team }` (passed to `rbac.for(subject, { guard, team })`). Defaults come from the
