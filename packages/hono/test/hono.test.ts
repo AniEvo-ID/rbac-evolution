@@ -354,3 +354,42 @@ describe('per-route guard option', () => {
     expect(await res.json()).toEqual({ guard: 'web' })
   })
 })
+
+describe('typed engine (RbacEnv<T>, rbacMiddleware() inference, createGuards<T>() handlers)', () => {
+  type AppRbac = {
+    permissions: 'edit articles' | 'delete articles' | 'publish articles'
+    roles: 'writer' | 'editor' | 'admin' | 'super-admin'
+  }
+  const rbac = createRbac<AppRbac>({ adapter: new MemoryAdapter() })
+  const app = new Hono<RbacEnv<typeof rbac>>()
+  const forbidden: unknown[] = []
+
+  beforeAll(async () => {
+    await seed(rbac)
+    app.use(rbacMiddleware({ rbac, getSubject: async (c) => userFrom(c) }))
+    const guards = createGuards<typeof rbac>({
+      onForbidden: async (c) => {
+        forbidden.push(c.var.rbac)
+        return c.json({ roles: ((await c.var.rbac?.getRoleNames()) ?? []).sort() }, 403)
+      },
+    })
+    app.get('/edit', guards.requirePermission('edit articles'), async (c) =>
+      c.json({ publish: await c.var.rbac?.can('publish articles') }),
+    )
+    app.get('/admin', guards.requireRole('admin'), ok)
+  })
+
+  it('sets c.var.rbac from a typed engine, the same as an untyped one', async () => {
+    expect(await (await app.request('/edit', { headers: { 'x-user': '1' } })).json()).toEqual({ publish: false })
+    expect(await (await app.request('/edit', { headers: { 'x-user': '2' } })).json()).toEqual({ publish: true })
+  })
+
+  it('hands the typed handlers of createGuards<T>() the request subject', async () => {
+    const res = await app.request('/admin', { headers: { 'x-user': '2' } })
+    expect(res.status).toBe(403)
+    expect(await res.json()).toEqual({ roles: ['editor', 'writer'] })
+    expect(forbidden).toHaveLength(1)
+    expect(forbidden[0]).toMatchObject({ subject: { type: 'user', id: 2 } })
+    expect((await app.request('/admin', { headers: { 'x-user': '3' } })).status).toBe(200)
+  })
+})

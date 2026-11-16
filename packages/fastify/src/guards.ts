@@ -17,6 +17,7 @@ import {
   UNAUTHENTICATED_MESSAGE,
 } from '@anievo-id/rbac-evolution'
 import type { FastifyReply, FastifyRequest, preHandlerAsyncHookHandler } from 'fastify'
+import type { RbacRequest, TypesOf } from './plugin'
 
 export type GuardKind = RequirementKind
 
@@ -27,17 +28,28 @@ export interface GuardContext {
   requirements: string[][]
 }
 
-/** Must send a reply (e.g. `reply.code(403).send(...)`) or throw (e.g. an `httpErrors` error). */
-export type GuardHandler = (request: FastifyRequest, reply: FastifyReply, context: GuardContext) => unknown
+/**
+ * The request the handlers of `createGuards<T>()` get: Fastify's `FastifyRequest` for an untyped `T` (any name),
+ * or an {@link RbacRequest} whose `request.rbac` has the names of `T`.
+ */
+export type GuardRequest<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes> =
+  DefaultRbacTypes extends TypesOf<T> ? FastifyRequest : RbacRequest<T>
+
+/**
+ * Must send a reply (e.g. `reply.code(403).send(...)`) or throw (e.g. an `httpErrors` error).
+ * `Req` is the request it gets: `GuardRequest<T>` in `createGuards<T>()`, so `request.rbac` has the names of `T`
+ * there.
+ */
+export type GuardHandler<Req = FastifyRequest> = (request: Req, reply: FastifyReply, context: GuardContext) => unknown
 
 /** A `preHandler` hook, usable in `preHandler: [...]` route options or with `addHook('preHandler', ...)`. */
 export type GuardHook = preHandlerAsyncHookHandler
 
-export interface GuardHandlers {
+export interface GuardHandlers<Req = FastifyRequest> {
   /** Called when there is no subject (`request.rbac` is `null`). Default: 401 JSON. */
-  onUnauthenticated?: GuardHandler | undefined
+  onUnauthenticated?: GuardHandler<Req> | undefined
   /** Called when the subject lacks access. Default: 403 JSON. */
-  onForbidden?: GuardHandler | undefined
+  onForbidden?: GuardHandler<Req> | undefined
   /**
    * Include the required roles/permissions in the default 403 body.
    * Default: `false` (like spatie's `display_permission_in_exception`).
@@ -51,7 +63,7 @@ export interface GuardHandlers {
  * `guard` is per guard only (like spatie's `role:admin,api`), not a `createGuards()` default:
  * the defaults are about handlers, and the request's guard is set on the middleware.
  */
-export interface RouteGuardOptions extends GuardHandlers {
+export interface RouteGuardOptions<Req = FastifyRequest> extends GuardHandlers<Req> {
   /**
    * Check in this guard instead of the request's (`subject.withScope({ guard })`), like spatie's
    * `role:admin,api`. Default: the guard of the request's subject.
@@ -59,17 +71,17 @@ export interface RouteGuardOptions extends GuardHandlers {
   guard?: string | undefined
 }
 
-export interface PermissionGuardOptions extends RouteGuardOptions {
+export interface PermissionGuardOptions<Req = FastifyRequest> extends RouteGuardOptions<Req> {
   /** Pass when the subject has ANY of the permissions (instead of all). Default: `false`. */
   any?: boolean | undefined
 }
 
-export interface RoleGuardOptions extends RouteGuardOptions {
+export interface RoleGuardOptions<Req = FastifyRequest> extends RouteGuardOptions<Req> {
   /** Require ALL of the roles (instead of any). Default: `false`. */
   all?: boolean | undefined
 }
 
-export type RoleOrPermissionGuardOptions = RouteGuardOptions
+export type RoleOrPermissionGuardOptions<Req = FastifyRequest> = RouteGuardOptions<Req>
 
 /** A name, a pipe-separated list (`'edit|delete'` = any of), or an array of names. */
 export type GuardNames = RequirementNames
@@ -122,7 +134,8 @@ async function respond(
   reply: FastifyReply,
   context: GuardContext,
 ): Promise<void> {
-  const result = handler(request, reply, context)
+  // The handlers are typed by `createGuards<T>()`; at runtime `request` is the same object either way.
+  const result = handler(request as never, reply, context)
   if (result !== reply && result instanceof Promise) await result
 }
 
@@ -144,25 +157,25 @@ export type Guard<N extends string, O> = <const A extends readonly (GuardNames |
 
 /** The guards returned by `createGuards<T>()`, with names narrowed by `T` (see `RbacTypeConfig`). */
 export interface Guards<T extends RbacTypeConfig = DefaultRbacTypes> {
-  requirePermission: Guard<PermissionName<T>, PermissionGuardOptions>
-  requireRole: Guard<RoleName<T>, RoleGuardOptions>
-  requireRoleOrPermission: Guard<PermissionName<T> | RoleName<T>, RoleOrPermissionGuardOptions>
-  canAny: Guard<PermissionName<T>, RouteGuardOptions>
-  canAll: Guard<PermissionName<T>, RouteGuardOptions>
+  requirePermission: Guard<PermissionName<T>, PermissionGuardOptions<GuardRequest<T>>>
+  requireRole: Guard<RoleName<T>, RoleGuardOptions<GuardRequest<T>>>
+  requireRoleOrPermission: Guard<PermissionName<T> | RoleName<T>, RoleOrPermissionGuardOptions<GuardRequest<T>>>
+  canAny: Guard<PermissionName<T>, RouteGuardOptions<GuardRequest<T>>>
+  canAll: Guard<PermissionName<T>, RouteGuardOptions<GuardRequest<T>>>
 }
-
-/** The type configuration of `T`: `T` itself, or the `X` of an `Rbac<X>` engine. */
-type TypesOf<T> = T extends Rbac<infer X> ? X : T extends RbacTypeConfig ? T : never
 
 /**
  * Builds the guards with shared defaults (e.g. a custom `onForbidden` that renders an HTML page).
  *
  * Pass the same type argument as `createRbac<AppTypes>()` (or `typeof rbac`) to check names at compile time:
- * `const { requirePermission } = createGuards<AppTypes>()`.
+ * `const { requirePermission } = createGuards<AppTypes>()`. The handlers (`defaults` and per-guard options)
+ * then get a `request` whose `request.rbac` has the same names.
  */
 export function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes>(
-  defaults: GuardHandlers = {},
+  defaults: GuardHandlers<GuardRequest<TypesOf<T>>> = {},
 ): Guards<TypesOf<T>> {
+  // The typed handlers only narrow `request.rbac`; the implementation below works on any request.
+  const shared = defaults as unknown as GuardHandlers
   /**
    * Requires permissions, like spatie's `permission:` middleware.
    *
@@ -173,7 +186,7 @@ export function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = D
    */
   function requirePermission(...args: readonly (GuardNames | PermissionGuardOptions)[]): GuardHook {
     const { names, options = {} } = splitRequirementArgs<PermissionGuardOptions>(args)
-    return createGuard(permissionRequirement(names, options), withDefaults(defaults, options), options.guard)
+    return createGuard(permissionRequirement(names, options), withDefaults(shared, options), options.guard)
   }
 
   /**
@@ -184,7 +197,7 @@ export function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = D
    */
   function requireRole(...args: readonly (GuardNames | RoleGuardOptions)[]): GuardHook {
     const { names, options = {} } = splitRequirementArgs<RoleGuardOptions>(args)
-    return createGuard(roleRequirement(names, options), withDefaults(defaults, options), options.guard)
+    return createGuard(roleRequirement(names, options), withDefaults(shared, options), options.guard)
   }
 
   /**
@@ -195,7 +208,7 @@ export function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = D
    */
   function requireRoleOrPermission(...args: readonly (GuardNames | RoleOrPermissionGuardOptions)[]): GuardHook {
     const { names, options = {} } = splitRequirementArgs<RoleOrPermissionGuardOptions>(args)
-    return createGuard(roleOrPermissionRequirement(names), withDefaults(defaults, options), options.guard)
+    return createGuard(roleOrPermissionRequirement(names), withDefaults(shared, options), options.guard)
   }
 
   /**
@@ -223,4 +236,11 @@ export function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = D
   return { requirePermission, requireRole, requireRoleOrPermission, canAny, canAll } as Guards<TypesOf<T>>
 }
 
-export const { requirePermission, requireRole, requireRoleOrPermission, canAny, canAll } = createGuards()
+const defaultGuards: Guards = createGuards()
+
+// Spelled out, so the declarations keep the 1.0 types (`Guard<string, PermissionGuardOptions>`, ...).
+export const requirePermission: Guard<string, PermissionGuardOptions> = defaultGuards.requirePermission
+export const requireRole: Guard<string, RoleGuardOptions> = defaultGuards.requireRole
+export const requireRoleOrPermission: Guard<string, RouteGuardOptions> = defaultGuards.requireRoleOrPermission
+export const canAny: Guard<string, RouteGuardOptions> = defaultGuards.canAny
+export const canAll: Guard<string, RouteGuardOptions> = defaultGuards.canAll

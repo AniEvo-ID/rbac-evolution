@@ -5,7 +5,7 @@
  */
 
 export { rbacPlugin } from './plugin'
-export type { RbacHook, RbacPluginOptions } from './plugin'
+export type { RbacHook, RbacPluginOptions, RbacRegister, RbacRequest, RegisteredRbacTypes } from './plugin'
 
 export {
   createGuards,
@@ -20,6 +20,7 @@ export type {
   GuardContext,
   GuardHandler,
   GuardHandlers,
+  GuardRequest,
   RouteGuardOptions,
   GuardHook,
   GuardKind,

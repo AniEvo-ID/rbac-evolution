@@ -49,9 +49,11 @@ literal type covers the `resource.*` names:
 
 ```ts
 // src/rbac.ts
-import { createRbac } from '@anievo-id/rbac-evolution'
+import { createRbac, type SubjectRbac } from '@anievo-id/rbac-evolution'
 import { createRbacDecorators } from '@anievo-id/rbac-evolution-nestjs'
 import { adapter } from './db' // e.g. new PrismaAdapter(prisma), see Adapters
+
+const roles = ['warehouse', 'cashier', 'support', 'manager'] as const
 
 type Resource = 'orders' | 'products' | 'inventory' | 'customers' | 'reports' | 'staff'
 
@@ -75,12 +77,15 @@ export type ShopRbac = {
     | 'reports.view'
     | 'reports.export'
     | 'staff.manage'
-  roles: 'warehouse' | 'cashier' | 'support' | 'manager'
+  roles: (typeof roles)[number]
 }
 
-export const rbac = createRbac<ShopRbac>({ adapter, wildcard: true })
+export const rbac = createRbac<ShopRbac>({ adapter, wildcard: true, names: { roles } })
 
-export const { RequirePermissions, CanAny } = createRbacDecorators<ShopRbac>()
+export const { RequirePermissions, CanAny } = createRbacDecorators<typeof rbac>()
+
+/** What `@CurrentRbac()` injects, with the shop's names: a typo in a check is a compile error. */
+export type Access = SubjectRbac<ShopRbac>
 ```
 
 ```ts
@@ -144,9 +149,9 @@ export class StaffService {
 
 ```ts
 // src/staff.controller.ts
-import { Body, Controller, Delete, Param, ParseIntPipe, Put } from '@nestjs/common'
-import type { RoleName } from '@anievo-id/rbac-evolution'
-import { RequirePermissions, type ShopRbac } from './rbac'
+import { BadRequestException, Body, Controller, Delete, Param, ParseIntPipe, Put } from '@nestjs/common'
+import { isRoleName } from '@anievo-id/rbac-evolution'
+import { rbac, RequirePermissions } from './rbac'
 import { StaffService } from './staff.service'
 
 @Controller('staff')
@@ -155,8 +160,10 @@ export class StaffController {
   constructor(private readonly staff: StaffService) {}
 
   @Put(':id/job')
-  setJob(@Param('id', ParseIntPipe) id: number, @Body() body: { role: RoleName<ShopRbac> }) {
-    return this.staff.setJob(id, body.role)
+  setJob(@Param('id', ParseIntPipe) id: number, @Body() body: { role?: unknown }) {
+    // The body is user input: an unknown role would make syncRoles() throw (a 500).
+    if (!isRoleName(rbac, body.role)) throw new BadRequestException('Unknown role')
+    return this.staff.setJob(id, body.role) // narrowed to RoleName<ShopRbac>
   }
 
   @Delete(':id')
@@ -166,8 +173,9 @@ export class StaffController {
 }
 ```
 
-Validate `body.role` with a pipe or DTO in a real app. `syncRoles()` throws `RoleDoesNotExist` for an unknown role,
-which Nest turns into a 500.
+`isRoleName()` checks the body against the `names.roles` of the engine, so an unknown role is a 400 instead of the
+500 that `RoleDoesNotExist` would be. It checks the list, not the database: see
+[Checking user input](/basic-usage/typed-names#checking-user-input).
 
 ## Guard the routes
 
@@ -204,10 +212,9 @@ The orders controller uses the typed decorators from `./rbac`. The refund route 
 ```ts
 // src/orders.controller.ts
 import { Body, Controller, ForbiddenException, Get, Param, Post } from '@nestjs/common'
-import type { SubjectRbac } from '@anievo-id/rbac-evolution'
 import { CurrentRbac } from '@anievo-id/rbac-evolution-nestjs'
 import { canRefund } from './policies'
-import { CanAny, RequirePermissions } from './rbac'
+import { type Access, CanAny, RequirePermissions } from './rbac'
 
 @Controller('orders')
 export class OrdersController {
@@ -232,7 +239,7 @@ export class OrdersController {
   async refund(
     @Param('id') id: string,
     @Body() body: { amountCents: number },
-    @CurrentRbac() access: SubjectRbac,
+    @CurrentRbac() access: Access,
   ) {
     if (!(await canRefund(access, body.amountCents))) {
       throw new ForbiddenException('Refunds over $100 need a manager.')
@@ -244,12 +251,12 @@ export class OrdersController {
 
 ```ts
 // src/policies.ts
-import type { SubjectRbac } from '@anievo-id/rbac-evolution'
+import type { Access } from './rbac'
 
 /** Refunds above this amount need `orders.refund.large`. */
 export const LARGE_REFUND_CENTS = 100_00
 
-export async function canRefund(access: SubjectRbac, amountCents: number): Promise<boolean> {
+export async function canRefund(access: Access, amountCents: number): Promise<boolean> {
   return access.can(amountCents > LARGE_REFUND_CENTS ? 'orders.refund.large' : 'orders.refund.small')
 }
 ```
@@ -264,14 +271,14 @@ The admin UI fetches the snapshot from an endpoint:
 ```ts
 // src/me.controller.ts
 import { Controller, Get, UseGuards } from '@nestjs/common'
-import type { SubjectRbac } from '@anievo-id/rbac-evolution'
 import { CurrentRbac, RbacGuard } from '@anievo-id/rbac-evolution-nestjs'
+import type { Access } from './rbac'
 
 @Controller('me')
 export class MeController {
   @Get('permissions')
   @UseGuards(RbacGuard)
-  permissions(@CurrentRbac() access: SubjectRbac | null) {
+  permissions(@CurrentRbac() access: Access | null) {
     return access ? access.snapshot() : null
   }
 }

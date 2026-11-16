@@ -4,7 +4,15 @@
  * Calls that would do real work live in functions that are never invoked.
  * Complements `types-check.ts` (custom env + chained app compile checks).
  */
-import { createRbac, MemoryAdapter, type Rbac, type Subject, type SubjectRbac, type TeamId } from '@anievo-id/rbac-evolution'
+import {
+  createRbac,
+  type DefaultRbacTypes,
+  MemoryAdapter,
+  type Rbac,
+  type Subject,
+  type SubjectRbac,
+  type TeamId,
+} from '@anievo-id/rbac-evolution'
 import { type Context, type Env, Hono, type MiddlewareHandler } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { describe, expectTypeOf, it } from 'vitest'
@@ -15,6 +23,7 @@ import {
   type Guard,
   type GuardContext,
   type GuardHandler,
+  type GuardHandlerContext,
   type GuardHandlers,
   type GuardKind,
   type GuardNames,
@@ -76,7 +85,7 @@ describe('hono types: rbacMiddleware()', () => {
   it('returns a middleware that adds RbacEnv to the given env', () => {
     expectTypeOf(rbacMiddleware<UserEnv>).parameter(0).toEqualTypeOf<RbacMiddlewareOptions<UserEnv>>()
     expectTypeOf(rbacMiddleware<UserEnv>).returns.toEqualTypeOf<MiddlewareHandler<UserEnv & RbacEnv>>()
-    expectTypeOf(rbacMiddleware).returns.toEqualTypeOf<MiddlewareHandler<Env & RbacEnv>>()
+    expectTypeOf(rbacMiddleware<Env, DefaultRbacTypes>).returns.toEqualTypeOf<MiddlewareHandler<Env & RbacEnv>>()
   })
 
   it('types the options', () => {
@@ -263,13 +272,15 @@ describe('hono types: typed names (createGuards<T>())', () => {
 
   it('types the guards with the names of T', () => {
     expectTypeOf(typed).toEqualTypeOf<Guards<AppTypes>>()
-    expectTypeOf(typed.requirePermission).toEqualTypeOf<Guard<AppPermission, PermissionGuardOptions>>()
-    expectTypeOf(typed.requireRole).toEqualTypeOf<Guard<AppRole, RoleGuardOptions>>()
+    type C = GuardHandlerContext<AppTypes>
+    type E = RbacEnv<AppTypes>
+    expectTypeOf(typed.requirePermission).toEqualTypeOf<Guard<AppPermission, PermissionGuardOptions<C>, E>>()
+    expectTypeOf(typed.requireRole).toEqualTypeOf<Guard<AppRole, RoleGuardOptions<C>, E>>()
     expectTypeOf(typed.requireRoleOrPermission).toEqualTypeOf<
-      Guard<AppPermission | AppRole, RoleOrPermissionGuardOptions>
+      Guard<AppPermission | AppRole, RoleOrPermissionGuardOptions<C>, E>
     >()
-    expectTypeOf(typed.canAny).toEqualTypeOf<Guard<AppPermission, RouteGuardOptions>>()
-    expectTypeOf(typed.canAll).toEqualTypeOf<Guard<AppPermission, RouteGuardOptions>>()
+    expectTypeOf(typed.canAny).toEqualTypeOf<Guard<AppPermission, RouteGuardOptions<C>, E>>()
+    expectTypeOf(typed.canAll).toEqualTypeOf<Guard<AppPermission, RouteGuardOptions<C>, E>>()
     // The defaults (and `createGuards()`) accept any string.
     expectTypeOf(createGuards()).toEqualTypeOf<Guards>()
     expectTypeOf(requirePermission).toEqualTypeOf<Guard<string, PermissionGuardOptions>>()
@@ -280,8 +291,9 @@ describe('hono types: typed names (createGuards<T>())', () => {
     expectTypeOf(createGuards<typeof engine>()).toEqualTypeOf<Guards<AppTypes>>()
     expectTypeOf(createGuards<typeof rbac>()).toEqualTypeOf<Guards>()
     // A config with only roles keeps permissions untyped.
-    expectTypeOf(createGuards<{ roles: AppRole }>().requirePermission).toEqualTypeOf<
-      Guard<string, PermissionGuardOptions>
+    type RolesOnly = { roles: AppRole }
+    expectTypeOf(createGuards<RolesOnly>().requirePermission).toEqualTypeOf<
+      Guard<string, PermissionGuardOptions<GuardHandlerContext<RolesOnly>>, RbacEnv<RolesOnly>>
     >()
     function invalid() {
       // @ts-expect-error -- not a type config
@@ -350,6 +362,91 @@ describe('hono types: typed names (createGuards<T>())', () => {
       requireRole({ all: true }, 'admin')
     }
     expectTypeOf(check).toBeFunction()
+  })
+})
+
+describe('hono types: typed request helpers', () => {
+  const engine = createRbac<AppTypes>({ adapter: new MemoryAdapter() })
+  type AppEnv = { Variables: RbacVariables<typeof engine> & { user: User | undefined } }
+
+  it('RbacVariables<T> / RbacEnv<T> take a names type or typeof rbac; untyped by default', () => {
+    expectTypeOf<RbacVariables<AppTypes>>().toEqualTypeOf<{ rbac: SubjectRbac<AppTypes> | null }>()
+    expectTypeOf<RbacVariables<typeof engine>>().toEqualTypeOf<{ rbac: SubjectRbac<AppTypes> | null }>()
+    expectTypeOf<RbacEnv<typeof engine>>().toEqualTypeOf<{ Variables: RbacVariables<AppTypes> }>()
+    expectTypeOf<RbacEnv<typeof rbac>['Variables']['rbac']>().toEqualTypeOf<SubjectRbac | null>()
+    // @ts-expect-error -- not a type config
+    expectTypeOf<RbacEnv<{ roles: 1 }>>()
+  })
+
+  it('rbacMiddleware() infers the names from `rbac` and adds a typed c.var.rbac', () => {
+    expectTypeOf(rbacMiddleware({ rbac: engine, getSubject: guest })).toEqualTypeOf<
+      MiddlewareHandler<Env & RbacEnv<AppTypes>>
+    >()
+    expectTypeOf<RbacMiddlewareOptions<UserEnv, AppTypes>['rbac']>().toEqualTypeOf<Rbac<AppTypes>>()
+    // A typed engine still fits the untyped options, as in 1.0.
+    expectTypeOf<RbacMiddlewareOptions<UserEnv, AppTypes>>().toMatchTypeOf<RbacMiddlewareOptions<UserEnv>>()
+    function routes() {
+      new Hono().use(rbacMiddleware({ rbac: engine, getSubject: guest })).get('/', async (c) => {
+        expectTypeOf(c.var.rbac).toEqualTypeOf<SubjectRbac<AppTypes> | null>()
+        await c.var.rbac?.can('edit articles')
+        // @ts-expect-error -- typo
+        await c.var.rbac?.can('edit artcles')
+        return c.text('ok')
+      })
+      new Hono<UserEnv>()
+        .use(rbacMiddleware<UserEnv, AppTypes>({ rbac: engine, getSubject: (c) => (c.var.user ? { type: 'user', id: c.var.user.id } : null) }))
+        .get('/', async (c) => {
+          // @ts-expect-error -- unknown role
+          await c.var.rbac?.hasRole('ghost')
+          return c.text(String(c.var.user?.id))
+        })
+    }
+    expectTypeOf(routes).toBeFunction()
+  })
+
+  it('a typed app keeps a typed c.var.rbac after the typed guards', () => {
+    const { requireRole: typedRole } = createGuards<typeof engine>()
+    function routes() {
+      const app = new Hono<AppEnv>()
+      app.use(rbacMiddleware<AppEnv, AppTypes>({ rbac: engine, getSubject: guest }))
+      app.get('/', async (c) => {
+        // @ts-expect-error -- typo
+        await c.var.rbac?.can('edit artcles')
+        return c.text('ok')
+      })
+      app.get('/guarded', typedRole('admin'), async (c) => {
+        expectTypeOf(c.var.user).toEqualTypeOf<User | undefined>()
+        await c.var.rbac?.can('edit articles')
+        // @ts-expect-error -- typo
+        await c.var.rbac?.can('edit artcles')
+        return c.text('ok')
+      })
+    }
+    expectTypeOf(routes).toBeFunction()
+  })
+
+  it('the handlers of createGuards<T>() get a typed c.var.rbac; untyped ones keep Context', () => {
+    expectTypeOf<GuardHandlerContext>().toEqualTypeOf<Context>()
+    expectTypeOf<GuardHandlerContext<AppTypes>>().toEqualTypeOf<Context<RbacEnv<AppTypes>>>()
+    expectTypeOf<GuardHandler>().parameters.toEqualTypeOf<[Context, GuardContext]>()
+    createGuards<typeof engine>({
+      onForbidden: async (c) => {
+        // @ts-expect-error -- typo
+        await c.var.rbac?.can('edit artcles')
+        return c.text('nope', 403)
+      },
+    })
+  })
+
+  it('the typed guards still fit the 1.0 types', () => {
+    const typed = createGuards<AppTypes>()
+    const asBefore: Guard<AppPermission, PermissionGuardOptions> = typed.requirePermission
+    const middleware: MiddlewareHandler<RbacEnv> = typed.requireRole('admin')
+    const untyped: GuardHandlers = { onForbidden: (c) => c.text('nope', 403) }
+    createGuards<AppTypes>(untyped)
+    typed.requireRole('admin', {} as RoleGuardOptions)
+    expectTypeOf(asBefore).toBeFunction()
+    expectTypeOf(middleware).toBeFunction()
   })
 })
 

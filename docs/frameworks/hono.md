@@ -76,7 +76,8 @@ If you do not need your own variables, `new Hono<RbacEnv>()` is enough.
 | `team`       | `(c) => TeamId \| undefined \| Promise<…>`          | Current team. Only for engines created with `teams: true`. |
 
 Pass your app's env as the type argument (`rbacMiddleware<AppEnv>(...)`) so `c` is typed inside `getSubject` and
-`team`.
+`team`. With a typed engine, pass its names too (`rbacMiddleware<AppEnv, AppRbac>(...)`), see
+[Typed `c.var.rbac`](#typed-c-var-rbac).
 
 ## `c.var.rbac`
 
@@ -85,8 +86,8 @@ After the middleware runs, `c.var.rbac` (or `c.get('rbac')`) is:
 - a `SubjectRbac` for the current subject (the same object `rbac.for(subject, { guard, team })` returns), or
 - `null` for guests.
 
-It is typed through the `RbacVariables` / `RbacEnv` types. Use it for checks inside handlers and to send a snapshot
-to the browser:
+It is typed through the `RbacVariables` / `RbacEnv` types, with your names when you give them the engine (see
+[Typed `c.var.rbac`](#typed-c-var-rbac)). Use it for checks inside handlers and to send a snapshot to the browser:
 
 ```ts
 // Feed the React / Vue packages
@@ -233,10 +234,50 @@ app.put('/articles/:id', requirePermission('edit articles|publish articles'), up
 app.delete('/articles/:id', requirePermission('delete artcles'), deleteArticle) // type error
 ```
 
-`createGuards<typeof rbac>()` works too. `createGuards()` also takes the shared options shown above.
+`createGuards<typeof rbac>()` works too. `createGuards()` also takes the shared options shown above, and their
+`c.var.rbac` has the same names.
 
 A guard without names, or with options before a name, is a type error too. The guards exported by the package
 still accept any string. See [Typed names](/basic-usage/typed-names).
+
+### Typed `c.var.rbac`
+
+Hono types `c` from the app's env, so the names can flow all the way: give `RbacVariables` (or `RbacEnv`) the
+engine, and `c.var.rbac` checks names like the engine does.
+
+```ts
+import { Hono } from 'hono'
+import { createRbac } from '@anievo-id/rbac-evolution'
+import { createGuards, rbacMiddleware, type RbacVariables } from '@anievo-id/rbac-evolution-hono'
+import type { AppRbac } from './rbac'
+
+const rbac = createRbac<AppRbac>({ adapter })
+const { requirePermission } = createGuards<typeof rbac>()
+
+type AppEnv = { Variables: RbacVariables<typeof rbac> & { user: { id: string } | undefined } }
+const app = new Hono<AppEnv>()
+
+app.use(
+  rbacMiddleware<AppEnv, AppRbac>({
+    rbac,
+    getSubject: (c) => (c.var.user ? { type: 'user', id: c.var.user.id } : null),
+  }),
+)
+
+app.post('/articles/:id/publish', requirePermission('edit articles'), async (c) => {
+  if (!(await c.var.rbac?.can('publish articles'))) return c.json({ error: 'FORBIDDEN' }, 403)
+  await c.var.rbac?.can('publish artcles') // type error
+  return c.json({ ok: true })
+})
+```
+
+`RbacVariables<T>` and `RbacEnv<T>` take the names type or `typeof rbac`. Without your own env,
+`new Hono<RbacEnv<typeof rbac>>()` is enough, and a chained `new Hono().use(rbacMiddleware({ rbac, ... }))` infers
+the names from `rbac`. With an explicit env, TypeScript does not infer the second type argument, so pass both:
+`rbacMiddleware<AppEnv, AppRbac>(...)`.
+
+Use the guards of `createGuards<T>()` on typed routes. The guards exported by the package add an untyped
+`c.var.rbac` to the route, and the two types merge into one that accepts any name again.
 
 ## Teams
 

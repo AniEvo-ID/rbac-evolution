@@ -9,6 +9,8 @@ import { version } from '../package.json'
 export { createRbac, Rbac, RoleRbac, SubjectRbac } from './rbac'
 export type { BeforeContext, BeforeHook, GuardOptions, RbacOptions, ScopeOptions } from './rbac'
 export type { RevokeAllOptions, SubjectTeamsOptions } from './bulk'
+export { isPermissionName, isRoleName } from './names'
+export type { RbacNames } from './names'
 export type {
   SyncDefinition,
   SyncOptions,

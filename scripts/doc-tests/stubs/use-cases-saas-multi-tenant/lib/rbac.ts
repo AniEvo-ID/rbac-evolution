@@ -6,6 +6,8 @@ import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { currentOrgId } from '@/lib/org'
 
+const roles = ['owner', 'admin', 'member', 'billing'] as const
+
 export type SaasRbac = {
   permissions:
     | 'projects.view'
@@ -19,10 +21,10 @@ export type SaasRbac = {
     | 'billing.manage'
     | 'org.settings'
     | 'org.delete'
-  roles: 'owner' | 'admin' | 'member' | 'billing'
+  roles: (typeof roles)[number]
 }
 
-export const rbac = createRbac<SaasRbac>({ adapter: new PrismaAdapter(prisma), teams: true })
+export const rbac = createRbac<SaasRbac>({ adapter: new PrismaAdapter(prisma), teams: true, names: { roles } })
 
 export const { getSnapshot, can, hasRole, requirePermission, withPermission } = createNextRbac({
   rbac,

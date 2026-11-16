@@ -4,7 +4,15 @@
  * Calls (and decorated classes) that would do real work live in functions that are never invoked.
  */
 import 'reflect-metadata'
-import { createRbac, MemoryAdapter, type Rbac, type Subject, type SubjectRbac, type TeamId } from '@anievo-id/rbac-evolution'
+import {
+  createRbac,
+  type DefaultRbacTypes,
+  MemoryAdapter,
+  type Rbac,
+  type Subject,
+  type SubjectRbac,
+  type TeamId,
+} from '@anievo-id/rbac-evolution'
 import {
   applyDecorators,
   type CanActivate,
@@ -69,7 +77,7 @@ describe('nestjs types: RbacModule options', () => {
   })
 
   it('forRoot() accepts sync and async getSubject and returns a DynamicModule', () => {
-    expectTypeOf(RbacModule.forRoot).parameter(0).toEqualTypeOf<RbacModuleConfig>()
+    expectTypeOf(RbacModule.forRoot<DefaultRbacTypes>).parameter(0).toEqualTypeOf<RbacModuleConfig>()
     expectTypeOf(RbacModule.forRoot).returns.toEqualTypeOf<DynamicModule>()
 
     RbacModule.forRoot({ rbac, getSubject: () => ({ type: 'user', id: 1 }) })
@@ -116,7 +124,7 @@ describe('nestjs types: RbacModule options', () => {
     @Module({ providers: [ConfigService], exports: [ConfigService] })
     class ConfigModule {}
 
-    expectTypeOf(RbacModule.forRootAsync).parameter(0).toEqualTypeOf<RbacModuleAsyncConfig>()
+    expectTypeOf(RbacModule.forRootAsync<DefaultRbacTypes>).parameter(0).toEqualTypeOf<RbacModuleAsyncConfig>()
     expectTypeOf(RbacModule.forRootAsync).returns.toEqualTypeOf<DynamicModule>()
     expectTypeOf<RbacModuleAsyncConfig['useFactory']>().toEqualTypeOf<
       (...args: never[]) => RbacModuleOptions | Promise<RbacModuleOptions>
@@ -303,6 +311,72 @@ describe('nestjs types: createRbacDecorators() (typed names)', () => {
     }
     expectTypeOf(valid).toBeFunction()
   })
+
+  it('also takes the engine type: createRbacDecorators<typeof rbac>()', () => {
+    const engine = createRbac<AppTypes>({ adapter: new MemoryAdapter() })
+    expectTypeOf(createRbacDecorators<typeof engine>()).toEqualTypeOf<RbacDecorators<AppTypes>>()
+    expectTypeOf(createRbacDecorators<typeof rbac>()).toEqualTypeOf<RbacDecorators>()
+    function invalid() {
+      // @ts-expect-error -- typo, names from the engine type
+      createRbacDecorators<typeof engine>().RequirePermissions('edit artcles')
+    }
+    expectTypeOf(invalid).toBeFunction()
+  })
+})
+
+describe('nestjs types: typed request helpers', () => {
+  type AppTypes = { permissions: 'edit articles' | 'delete articles'; roles: 'admin' | 'writer' }
+  const typedRbac = createRbac<AppTypes>({ adapter: new MemoryAdapter() })
+
+  it('the options are generic over the engine, untyped by default', () => {
+    expectTypeOf<RbacModuleOptions<AppTypes>['rbac']>().toEqualTypeOf<Rbac<AppTypes>>()
+    expectTypeOf<RbacModuleConfig<AppTypes>['rbac']>().toEqualTypeOf<Rbac<AppTypes>>()
+    expectTypeOf<RbacModuleAsyncConfig<AppTypes>['useFactory']>().toEqualTypeOf<
+      (...args: never[]) => RbacModuleOptions<AppTypes> | Promise<RbacModuleOptions<AppTypes>>
+    >()
+    expectTypeOf<RbacModuleOptions['rbac']>().toEqualTypeOf<Rbac>()
+    // A typed engine still fits the untyped options, as in 1.0.
+    expectTypeOf<RbacModuleOptions<AppTypes>>().toMatchTypeOf<RbacModuleOptions>()
+  })
+
+  it('forRoot() / forRootAsync() infer the names from `rbac`', () => {
+    function declare() {
+      RbacModule.forRoot({ rbac: typedRbac, getSubject: () => null })
+      RbacModule.forRootAsync({ useFactory: () => ({ rbac: typedRbac, getSubject: () => null }) })
+      RbacModule.forRoot<AppTypes>({ rbac: typedRbac, getSubject: () => null, globalGuard: true })
+    }
+    expectTypeOf(declare).toBeFunction()
+  })
+
+  it('getRbac<T>() types the resolved subject with the names of T (a names type or typeof rbac)', () => {
+    expectTypeOf(getRbac<AppTypes>).returns.toEqualTypeOf<SubjectRbac<AppTypes> | null>()
+    expectTypeOf(getRbac<typeof typedRbac>).returns.toEqualTypeOf<SubjectRbac<AppTypes> | null>()
+    function check(context: ExecutionContext) {
+      const access = getRbac<typeof typedRbac>(context)
+      void access?.can('edit articles')
+      // @ts-expect-error -- typo
+      void access?.can('edit artcles')
+      // Untyped by default.
+      void getRbac(context)?.can('anything')
+    }
+    expectTypeOf(check).toBeFunction()
+  })
+
+  it('@CurrentRbac() takes a parameter typed with the names', () => {
+    function declare() {
+      @Controller('articles')
+      class ArticlesController {
+        @Get()
+        async list(@CurrentRbac() access: SubjectRbac<AppTypes>) {
+          // @ts-expect-error -- typo
+          await access.can('edit artcles')
+          return access.can('edit articles')
+        }
+      }
+      return ArticlesController
+    }
+    expectTypeOf(declare).toBeFunction()
+  })
 })
 
 describe('nestjs types: guard & context', () => {
@@ -315,7 +389,7 @@ describe('nestjs types: guard & context', () => {
 
   it('getRbac() returns the resolved SubjectRbac or null', () => {
     expectTypeOf(getRbac).parameters.toEqualTypeOf<[ExecutionContext]>()
-    expectTypeOf(getRbac).returns.toEqualTypeOf<SubjectRbac | null>()
+    expectTypeOf(getRbac<DefaultRbacTypes>).returns.toEqualTypeOf<SubjectRbac | null>()
   })
 
   it('types requirements metadata', () => {

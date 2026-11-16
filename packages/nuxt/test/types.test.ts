@@ -257,6 +257,14 @@ describe('server helpers (`/server`)', () => {
       await server.canAll(event, 'nope')
       // @ts-expect-error -- typo, with an explicit event type
       await withEvent.requireRole({ context: {} }, 'admn')
+
+      // The request's subject has the names too: `resolve()` (and every `require*`) return a typed SubjectRbac.
+      const subject = await server.resolve(event)
+      await subject?.can('articles.edit')
+      // @ts-expect-error -- typo on the resolved subject
+      await subject?.can('articles.edti')
+      // @ts-expect-error -- unknown role on the subject a guard returns
+      await (await server.requirePermission(event, 'articles.edit')).hasRole('ghost')
     }
 
     // An untyped engine still accepts any string.

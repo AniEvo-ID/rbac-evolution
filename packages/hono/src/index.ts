@@ -19,6 +19,7 @@ export {
 export type {
   GuardContext,
   GuardHandler,
+  GuardHandlerContext,
   GuardHandlers,
   RouteGuardOptions,
   GuardKind,

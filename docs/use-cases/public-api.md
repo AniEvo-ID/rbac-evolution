@@ -178,6 +178,8 @@ dashboard.get('/keys/:id', requirePermission('api-keys.view'), async (c) => {
 
 `SCOPES` is the allow-list. Without it, a developer could send `"scopes": ["api-keys.manage"]`. (The `api` guard
 has no such permission, so `givePermissionTo()` would throw `PermissionDoesNotExist`, a 500 instead of a 422.)
+[`isPermissionName()`](/basic-usage/typed-names#checking-user-input) is not enough here: it checks against every
+name of the engine, `api-keys.manage` included, because typed names are per engine, not per guard.
 
 `getPermissionNames()` returns the scopes from the preset role and the direct ones together, which is what the
 dashboard shows.
@@ -198,7 +200,7 @@ import { requireScope, type ApiRbac } from './rbac'
 export type FindKey = (secret: string) => Promise<{ id: string } | null>
 
 export function createApi(rbac: Rbac<ApiRbac>, findKey: FindKey) {
-  const api = new Hono<RbacEnv>()
+  const api = new Hono<RbacEnv<ApiRbac>>() // c.var.rbac has the typed names
 
   api.use(
     rbacMiddleware({

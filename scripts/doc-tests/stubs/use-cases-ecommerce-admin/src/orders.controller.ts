@@ -1,9 +1,8 @@
 // Stub: a copy of the `src/orders.controller.ts` block of docs/use-cases/ecommerce-admin.md.
 import { Body, Controller, ForbiddenException, Get, Param, Post } from '@nestjs/common'
-import type { SubjectRbac } from '@anievo-id/rbac-evolution'
 import { CurrentRbac } from '@anievo-id/rbac-evolution-nestjs'
 import { canRefund } from './policies'
-import { CanAny, RequirePermissions } from './rbac'
+import { type Access, CanAny, RequirePermissions } from './rbac'
 
 @Controller('orders')
 export class OrdersController {
@@ -28,7 +27,7 @@ export class OrdersController {
   async refund(
     @Param('id') id: string,
     @Body() body: { amountCents: number },
-    @CurrentRbac() access: SubjectRbac,
+    @CurrentRbac() access: Access,
   ) {
     if (!(await canRefund(access, body.amountCents))) {
       throw new ForbiddenException('Refunds over $100 need a manager.')

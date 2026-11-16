@@ -4,7 +4,7 @@
 
 ## `@anievo-id/rbac-evolution`
 
-90 exports.
+93 exports.
 
 ```ts
 // ActorOptions: interface
@@ -307,6 +307,12 @@ interface RbacEventMap {
 // RbacEventName: type
 type RbacEventName = keyof RbacEventMap;
 
+// RbacNames: interface
+interface RbacNames<T extends RbacTypeConfig = DefaultRbacTypes> {
+    roles?: readonly RoleName<T>[] | undefined;
+    permissions?: readonly PermissionName<T>[] | undefined;
+}
+
 // RbacOptions: interface
 interface RbacOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
     adapter: RbacAdapter;
@@ -319,6 +325,7 @@ interface RbacOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
     superAdminRoles?: readonly RoleName<T>[] | undefined;
     wildcardPrefixCheck?: WildcardPrefixCheck | undefined;
     getActor?: ActorResolver | undefined;
+    names?: RbacNames<T> | undefined;
 }
 
 // RbacRequirement: interface
@@ -620,6 +627,12 @@ type WildcardPrefixCheck = 'warn' | 'error' | 'off';
 
 // createRbac: function
 declare function createRbac<T extends RbacTypeConfig = DefaultRbacTypes>(options: RbacOptions<T>): Rbac<T>;
+
+// isPermissionName: function
+declare function isPermissionName<T extends RbacTypeConfig>(rbac: Rbac<T>, value: unknown): value is PermissionName<T>;
+
+// isRoleName: function
+declare function isRoleName<T extends RbacTypeConfig>(rbac: Rbac<T>, value: unknown): value is RoleName<T>;
 
 // parseWildcardPermission: function
 declare function parseWildcardPermission(permission: string): string[][];

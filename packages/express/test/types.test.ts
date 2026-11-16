@@ -3,7 +3,15 @@
  * which includes `test/`; `expectTypeOf` and `@ts-expect-error` lines fail the typecheck when a type drifts.
  * Calls that would do real work live in functions that are never invoked.
  */
-import { createRbac, MemoryAdapter, type Rbac, type Subject, type SubjectRbac, type TeamId } from '@anievo-id/rbac-evolution'
+import {
+  createRbac,
+  type DefaultRbacTypes,
+  MemoryAdapter,
+  type Rbac,
+  type Subject,
+  type SubjectRbac,
+  type TeamId,
+} from '@anievo-id/rbac-evolution'
 import type { NextFunction, Request, RequestHandler, Response } from 'express'
 import { describe, expectTypeOf, it } from 'vitest'
 import {
@@ -17,11 +25,15 @@ import {
   type GuardHandlers,
   type GuardKind,
   type GuardNames,
+  type GuardRequest,
   type Guards,
   type PermissionGuardOptions,
   rbacMiddleware,
   type RbacMiddlewareOptions,
   RbacMiddlewareMissingError,
+  type RbacRegister,
+  type RbacRequest,
+  type RegisteredRbacTypes,
   requirePermission,
   requireRole,
   requireRoleOrPermission,
@@ -35,7 +47,7 @@ const guest = () => null
 
 describe('express types: rbacMiddleware()', () => {
   it('takes RbacMiddlewareOptions and returns a RequestHandler', () => {
-    expectTypeOf(rbacMiddleware).parameter(0).toEqualTypeOf<RbacMiddlewareOptions>()
+    expectTypeOf(rbacMiddleware<DefaultRbacTypes>).parameter(0).toEqualTypeOf<RbacMiddlewareOptions>()
     expectTypeOf(rbacMiddleware).returns.toEqualTypeOf<RequestHandler>()
   })
 
@@ -86,9 +98,15 @@ describe('express types: rbacMiddleware()', () => {
     expectTypeOf(invalid).toBeFunction()
   })
 
-  it('accepts an engine with narrowed names (the middleware itself is not generic; see `createGuards<T>()`)', () => {
-    const typed = createRbac<{ permissions: 'edit articles'; roles: 'writer' }>({ adapter: new MemoryAdapter() })
+  it('accepts an engine with narrowed names; the options are generic over it', () => {
+    type Names = { permissions: 'edit articles'; roles: 'writer' }
+    const typed = createRbac<Names>({ adapter: new MemoryAdapter() })
     rbacMiddleware({ rbac: typed, getSubject: guest })
+    rbacMiddleware<Names>({ rbac: typed, getSubject: guest })
+    expectTypeOf<RbacMiddlewareOptions<Names>['rbac']>().toEqualTypeOf<Rbac<Names>>()
+    // A typed engine still fits the untyped options, as in 1.0.
+    expectTypeOf<RbacMiddlewareOptions<Names>>().toMatchTypeOf<RbacMiddlewareOptions>()
+    expectTypeOf(rbacMiddleware<Names>).returns.toEqualTypeOf<RequestHandler>()
   })
 })
 
@@ -325,6 +343,86 @@ describe('express types: typed names (createGuards<T>())', () => {
       requireRole({ all: true }, 'admin')
     }
     expectTypeOf(check).toBeFunction()
+  })
+})
+
+describe('express types: typed request helpers', () => {
+  const engine = createRbac<AppTypes>({ adapter: new MemoryAdapter() })
+
+  it('without a registration, req.rbac stays untyped', () => {
+    expectTypeOf<RbacRegister>().toEqualTypeOf<{}>()
+    expectTypeOf<RegisteredRbacTypes>().toEqualTypeOf<DefaultRbacTypes>()
+    expectTypeOf<NonNullable<Request['rbac']>>().toEqualTypeOf<SubjectRbac>()
+  })
+
+  it('RbacRequest<T> types req.rbac with the names of T (a names type or typeof rbac)', () => {
+    expectTypeOf<RbacRequest<AppTypes>['rbac']>().toEqualTypeOf<SubjectRbac<AppTypes> | null | undefined>()
+    expectTypeOf<RbacRequest<typeof engine>['rbac']>().toEqualTypeOf<SubjectRbac<AppTypes> | null | undefined>()
+    expectTypeOf<RbacRequest['rbac']>().toEqualTypeOf<SubjectRbac | null | undefined>()
+    expectTypeOf<RbacRequest<AppTypes>['params']>().toEqualTypeOf<Request['params']>()
+    // @ts-expect-error -- not a type config
+    expectTypeOf<RbacRequest<{ roles: 1 }>>()
+  })
+
+  it('a handler can take an RbacRequest, and req.rbac.can() checks the names', () => {
+    function routes(app: import('express').Express) {
+      app.get('/articles/:id', async (req: RbacRequest<typeof engine>, res) => {
+        expectTypeOf(req.params).toEqualTypeOf<Request['params']>()
+        if (!req.rbac) return
+        await req.rbac.can('edit articles')
+        // @ts-expect-error -- typo
+        await req.rbac.can('edit artcles')
+        // @ts-expect-error -- unknown role
+        await req.rbac.hasRole('ghost')
+        res.json(await req.rbac.snapshot())
+      })
+      app.use(
+        asyncHandler(async (req) => {
+          // An untyped req.rbac accepts any name.
+          await req.rbac?.can('anything')
+        }),
+      )
+    }
+    expectTypeOf(routes).toBeFunction()
+  })
+
+  it('the handlers of createGuards<T>() get a typed req.rbac; untyped ones keep Request', () => {
+    expectTypeOf<GuardRequest>().toEqualTypeOf<Request>()
+    expectTypeOf<GuardRequest<{}>>().toEqualTypeOf<Request>()
+    expectTypeOf<GuardRequest<AppTypes>>().toEqualTypeOf<RbacRequest<AppTypes>>()
+    expectTypeOf<GuardRequest<typeof engine>>().toEqualTypeOf<RbacRequest<AppTypes>>()
+    expectTypeOf<GuardHandler>().parameters.toEqualTypeOf<[Request, Response, NextFunction, GuardContext]>()
+
+    const typed = createGuards<typeof engine>({
+      onForbidden: async (req, res) => {
+        expectTypeOf(req.rbac).toEqualTypeOf<SubjectRbac<AppTypes> | null | undefined>()
+        // @ts-expect-error -- typo
+        await req.rbac?.can('edit artcles')
+        res.sendStatus(403)
+      },
+    })
+    typed.requireRole('admin', {
+      onForbidden: async (req, res) => {
+        await req.rbac?.hasRole('editor')
+        // @ts-expect-error -- typo
+        await req.rbac?.hasRole('edtor')
+        res.sendStatus(404)
+      },
+    })
+  })
+
+  it('the typed guards still fit the 1.0 types', () => {
+    const typed = createGuards<AppTypes>()
+    const asBefore: Guard<AppPermission, PermissionGuardOptions> = typed.requirePermission
+    const handlers: GuardHandlers = {} as GuardHandlers<GuardRequest<AppTypes>>
+    const options: RouteGuardOptions<GuardRequest<AppTypes>> = {} as RouteGuardOptions
+    // Handlers written for the untyped types still fit createGuards<T>().
+    const untyped: GuardHandlers = { onForbidden: (_req, res) => res.sendStatus(403) }
+    createGuards<AppTypes>(untyped)
+    typed.requireRole('admin', {} as RoleGuardOptions)
+    expectTypeOf(asBefore).toBeFunction()
+    expectTypeOf(handlers).toBeObject()
+    expectTypeOf(options).toBeObject()
   })
 })
 

@@ -47,7 +47,8 @@ Why this split:
 
 ## Seed it
 
-Turn teams on and type the names. The team id is the organization id.
+Turn teams on and type the names. The team id is the organization id. The roles are also a value (`names`), so the
+server actions can check the roles a client sends.
 
 ```ts
 // lib/rbac.ts
@@ -57,6 +58,8 @@ import { PrismaAdapter } from '@anievo-id/rbac-evolution-prisma'
 import { prisma } from '@/lib/prisma'
 import { auth } from '@/auth'
 import { currentOrgId } from '@/lib/org'
+
+const roles = ['owner', 'admin', 'member', 'billing'] as const
 
 export type SaasRbac = {
   permissions:
@@ -71,10 +74,10 @@ export type SaasRbac = {
     | 'billing.manage'
     | 'org.settings'
     | 'org.delete'
-  roles: 'owner' | 'admin' | 'member' | 'billing'
+  roles: (typeof roles)[number]
 }
 
-export const rbac = createRbac<SaasRbac>({ adapter: new PrismaAdapter(prisma), teams: true })
+export const rbac = createRbac<SaasRbac>({ adapter: new PrismaAdapter(prisma), teams: true, names: { roles } })
 
 export const { getSnapshot, can, hasRole, requirePermission, withPermission } = createNextRbac({
   rbac,
@@ -201,10 +204,12 @@ An admin invites a colleague by email and picks a role. The invite stores the or
 import { randomUUID } from 'node:crypto'
 import { currentOrgId } from '@/lib/org'
 import { prisma } from '@/lib/prisma'
-import { hasRole, withPermission, type SaasRbac } from '@/lib/rbac'
-import type { RoleName } from '@anievo-id/rbac-evolution'
+import { hasRole, rbac, withPermission } from '@/lib/rbac'
+import { isRoleName } from '@anievo-id/rbac-evolution'
 
-export const inviteMember = withPermission('members.invite', async (email: string, role: RoleName<SaasRbac>) => {
+// A server action's arguments come from the client: check the role before you store it.
+export const inviteMember = withPermission('members.invite', async (email: string, role: unknown) => {
+  if (!isRoleName(rbac, role)) return { error: 'Unknown role.' }
   // Only an owner may create another owner.
   if (role === 'owner' && !(await hasRole('owner'))) return { error: 'Only owners can invite owners.' }
 
@@ -253,12 +258,13 @@ export async function acceptInvite(token: string) {
 
 import { currentOrgId } from '@/lib/org'
 import { isLastOwner } from '@/lib/members'
-import { hasRole, rbac, withPermission, type SaasRbac } from '@/lib/rbac'
-import type { RoleName } from '@anievo-id/rbac-evolution'
+import { hasRole, rbac, withPermission } from '@/lib/rbac'
+import { isRoleName } from '@anievo-id/rbac-evolution'
 
 export const setMemberRoles = withPermission(
   'members.roles',
-  async (userId: string, roles: RoleName<SaasRbac>[]) => {
+  async (userId: string, roles: unknown[]) => {
+    if (!roles.every((name) => isRoleName(rbac, name))) return { error: 'Unknown role.' }
     const orgId = await currentOrgId()
     if (!orgId) return { error: 'No organization selected.' }
     if (roles.includes('owner') && !(await hasRole('owner'))) return { error: 'Only owners can make owners.' }

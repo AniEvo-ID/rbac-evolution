@@ -1,3 +1,4 @@
+import type { DefaultRbacTypes, RbacTypeConfig } from '@anievo-id/rbac-evolution'
 import { type DynamicModule, Global, Module, type Provider } from '@nestjs/common'
 import { APP_GUARD } from '@nestjs/core'
 import { RbacGuard } from './guard'
@@ -40,13 +41,13 @@ function build(optionsProvider: Provider, globalGuard: boolean, imports: Dynamic
 @Global()
 @Module({})
 export class RbacModule {
-  static forRoot(config: RbacModuleConfig): DynamicModule {
+  static forRoot<T extends RbacTypeConfig = DefaultRbacTypes>(config: RbacModuleConfig<T>): DynamicModule {
     const { globalGuard = false, ...options } = config
     return build({ provide: RBAC_MODULE_OPTIONS, useValue: options }, globalGuard)
   }
 
   /** Like {@link forRoot}, with options built by a factory (e.g. from a `ConfigService`). */
-  static forRootAsync(config: RbacModuleAsyncConfig): DynamicModule {
+  static forRootAsync<T extends RbacTypeConfig = DefaultRbacTypes>(config: RbacModuleAsyncConfig<T>): DynamicModule {
     return build(
       { provide: RBAC_MODULE_OPTIONS, useFactory: config.useFactory, inject: config.inject ?? [] },
       config.globalGuard ?? false,

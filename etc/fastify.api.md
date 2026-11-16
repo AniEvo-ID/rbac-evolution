@@ -4,7 +4,7 @@
 
 ## `@anievo-id/rbac-evolution-fastify`
 
-22 exports.
+26 exports.
 
 ```ts
 // Guard: type
@@ -17,12 +17,12 @@ interface GuardContext {
 }
 
 // GuardHandler: type
-type GuardHandler = (request: FastifyRequest, reply: FastifyReply, context: GuardContext) => unknown;
+type GuardHandler<Req = FastifyRequest> = (request: Req, reply: FastifyReply, context: GuardContext) => unknown;
 
 // GuardHandlers: interface
-interface GuardHandlers {
-    onUnauthenticated?: GuardHandler | undefined;
-    onForbidden?: GuardHandler | undefined;
+interface GuardHandlers<Req = FastifyRequest> {
+    onUnauthenticated?: GuardHandler<Req> | undefined;
+    onForbidden?: GuardHandler<Req> | undefined;
     exposeRequirements?: boolean | undefined;
 }
 
@@ -35,17 +35,20 @@ type GuardKind = RequirementKind;
 // GuardNames: type
 type GuardNames = RequirementNames;
 
+// GuardRequest: type
+type GuardRequest<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes> = DefaultRbacTypes extends TypesOf<T> ? FastifyRequest : RbacRequest<T>;
+
 // Guards: interface
 interface Guards<T extends RbacTypeConfig = DefaultRbacTypes> {
-    requirePermission: Guard<PermissionName<T>, PermissionGuardOptions>;
-    requireRole: Guard<RoleName<T>, RoleGuardOptions>;
-    requireRoleOrPermission: Guard<PermissionName<T> | RoleName<T>, RoleOrPermissionGuardOptions>;
-    canAny: Guard<PermissionName<T>, RouteGuardOptions>;
-    canAll: Guard<PermissionName<T>, RouteGuardOptions>;
+    requirePermission: Guard<PermissionName<T>, PermissionGuardOptions<GuardRequest<T>>>;
+    requireRole: Guard<RoleName<T>, RoleGuardOptions<GuardRequest<T>>>;
+    requireRoleOrPermission: Guard<PermissionName<T> | RoleName<T>, RoleOrPermissionGuardOptions<GuardRequest<T>>>;
+    canAny: Guard<PermissionName<T>, RouteGuardOptions<GuardRequest<T>>>;
+    canAll: Guard<PermissionName<T>, RouteGuardOptions<GuardRequest<T>>>;
 }
 
 // PermissionGuardOptions: interface
-interface PermissionGuardOptions extends RouteGuardOptions {
+interface PermissionGuardOptions<Req = FastifyRequest> extends RouteGuardOptions<Req> {
     any?: boolean | undefined;
 }
 
@@ -60,24 +63,38 @@ declare class RbacMiddlewareMissingError extends Error {
 }
 
 // RbacPluginOptions: interface
-interface RbacPluginOptions {
-    rbac: Rbac;
+interface RbacPluginOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
+    rbac: Rbac<T>;
     getSubject: (request: FastifyRequest) => MaybePromise<Subject | null | undefined>;
     guard?: string | undefined;
     team?: (request: FastifyRequest) => MaybePromise<TeamId | undefined>;
     hook?: RbacHook | undefined;
 }
 
+// RbacRegister: interface
+interface RbacRegister {
+}
+
+// RbacRequest: type
+type RbacRequest<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes, Req = FastifyRequest> = Omit<Req, 'rbac'> & {
+    rbac?: SubjectRbac<TypesOf<T>> | null | undefined;
+};
+
+// RegisteredRbacTypes: type
+type RegisteredRbacTypes = RbacRegister extends {
+    rbac: infer R;
+} ? TypesOf<R> : DefaultRbacTypes;
+
 // RoleGuardOptions: interface
-interface RoleGuardOptions extends RouteGuardOptions {
+interface RoleGuardOptions<Req = FastifyRequest> extends RouteGuardOptions<Req> {
     all?: boolean | undefined;
 }
 
 // RoleOrPermissionGuardOptions: type
-type RoleOrPermissionGuardOptions = RouteGuardOptions;
+type RoleOrPermissionGuardOptions<Req = FastifyRequest> = RouteGuardOptions<Req>;
 
 // RouteGuardOptions: interface
-interface RouteGuardOptions extends GuardHandlers {
+interface RouteGuardOptions<Req = FastifyRequest> extends GuardHandlers<Req> {
     guard?: string | undefined;
 }
 
@@ -88,7 +105,7 @@ declare const canAll: Guard<string, RouteGuardOptions>;
 declare const canAny: Guard<string, RouteGuardOptions>;
 
 // createGuards: function
-declare function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes>(defaults?: GuardHandlers): Guards<TypesOf<T>>;
+declare function createGuards<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes>(defaults?: GuardHandlers<GuardRequest<TypesOf<T>>>): Guards<TypesOf<T>>;
 
 // rbacPlugin: const
 declare const rbacPlugin: FastifyPluginAsync<RbacPluginOptions>;
@@ -118,7 +135,7 @@ Module augmentations:
 ```ts
 declare module 'fastify' {
     interface FastifyRequest {
-        rbac?: SubjectRbac | null | undefined;
+        rbac?: SubjectRbac<RegisteredRbacTypes> | null | undefined;
     }
 }
 ```

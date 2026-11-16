@@ -44,14 +44,17 @@ Why this split:
 
 ## Seed it
 
-Define the names once, with [typed names](/basic-usage/typed-names). A typo in a route guard or a seed is then a
-compile error.
+Define the names once, with [typed names](/basic-usage/typed-names). A typo in a route guard, a seed or a
+`req.rbac.can()` check is then a compile error. The roles are also a value (`names`), so the admin screen can check
+user input against them.
 
 ```ts
 // src/rbac.ts
 import { createRbac } from '@anievo-id/rbac-evolution'
 import { createGuards } from '@anievo-id/rbac-evolution-express'
 import { adapter } from './db' // e.g. new PrismaAdapter(prisma), see Adapters
+
+const roles = ['writer', 'editor', 'moderator', 'admin'] as const
 
 export type BlogRbac = {
   permissions:
@@ -65,12 +68,19 @@ export type BlogRbac = {
     | 'users.ban'
     | 'users.manage'
     | 'settings.manage'
-  roles: 'writer' | 'editor' | 'moderator' | 'admin'
+  roles: (typeof roles)[number]
 }
 
-export const rbac = createRbac<BlogRbac>({ adapter })
+export const rbac = createRbac<BlogRbac>({ adapter, names: { roles } })
 
 export const { requirePermission, requireRole } = createGuards<BlogRbac>()
+
+// Types `req.rbac` with the same names in every handler (see Express, "Typed req.rbac")
+declare module '@anievo-id/rbac-evolution-express' {
+  interface RbacRegister {
+    rbac: typeof rbac
+  }
+}
 ```
 
 The seed is the table above, as data:
@@ -130,12 +140,9 @@ endpoint promotes, demotes and adds a second role:
 ```ts
 // src/admin.ts
 import express from 'express'
-import type { RoleName } from '@anievo-id/rbac-evolution'
+import { isRoleName } from '@anievo-id/rbac-evolution'
 import { asyncHandler } from '@anievo-id/rbac-evolution-express'
-import { rbac, requirePermission, type BlogRbac } from './rbac'
-
-const ROLES: readonly RoleName<BlogRbac>[] = ['writer', 'editor', 'moderator', 'admin']
-const isRole = (name: unknown): name is RoleName<BlogRbac> => ROLES.includes(name as RoleName<BlogRbac>)
+import { rbac, requirePermission } from './rbac'
 
 export const admin = express.Router()
 admin.use(requirePermission('users.manage'))
@@ -145,7 +152,7 @@ admin.put(
   '/users/:id/roles',
   asyncHandler(async (req, res) => {
     const roles: unknown[] = Array.isArray(req.body.roles) ? req.body.roles : []
-    if (!roles.every(isRole)) {
+    if (!roles.every((name) => isRoleName(rbac, name))) {
       res.status(422).json({ error: 'Unknown role' })
       return
     }
@@ -155,7 +162,9 @@ admin.put(
 )
 ```
 
-The request body is user input. Check it against the list of roles you know before you pass it on.
+The request body is user input. `isRoleName()` checks it against the `names.roles` of the engine and narrows it to
+the role type, so `syncRoles(roles)` compiles without a cast. It checks the list, not the database: see
+[Checking user input](/basic-usage/typed-names#checking-user-input).
 
 ## Guard the routes
 
@@ -165,16 +174,19 @@ Put the ownership rule in one function, so the API and the UI flags agree:
 // src/policies.ts
 import type { SubjectRbac } from '@anievo-id/rbac-evolution'
 import type { Post } from './db'
+import type { BlogRbac } from './rbac'
+
+type Access = SubjectRbac<BlogRbac> // what `req.rbac` is, so a typo here is a compile error
 
 /** Editors edit any post. Writers edit their own drafts. */
-export async function canEditPost(access: SubjectRbac, post: Post): Promise<boolean> {
+export async function canEditPost(access: Access, post: Post): Promise<boolean> {
   if (await access.can('posts.edit')) return true
   const isAuthor = post.authorId === access.subject.id
   return isAuthor && post.status === 'draft' && (await access.can('posts.edit.own'))
 }
 
 /** Admins delete any post. Authors delete their own drafts. */
-export async function canDeletePost(access: SubjectRbac, post: Post): Promise<boolean> {
+export async function canDeletePost(access: Access, post: Post): Promise<boolean> {
   if (await access.can('posts.delete')) return true
   const isAuthor = post.authorId === access.subject.id
   return isAuthor && post.status === 'draft' && (await access.can('posts.delete.own'))

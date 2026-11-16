@@ -8,7 +8,7 @@ import { requireScope, type ApiRbac } from './rbac'
 export type FindKey = (secret: string) => Promise<{ id: string } | null>
 
 export function createApi(rbac: Rbac<ApiRbac>, findKey: FindKey) {
-  const api = new Hono<RbacEnv>()
+  const api = new Hono<RbacEnv<ApiRbac>>() // c.var.rbac has the typed names
 
   api.use(
     rbacMiddleware({

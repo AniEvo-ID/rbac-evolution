@@ -73,8 +73,9 @@ After the middleware runs, `req.rbac` is:
 - a `SubjectRbac` for the current subject (the same object `rbac.for(subject, { guard, team })` returns), or
 - `null` for guests.
 
-It is typed through `Express.Request` augmentation, so no casts are needed. Use it for checks inside handlers and
-to send a snapshot to the browser:
+It is typed through `Express.Request` augmentation, so no casts are needed. With a typed engine, register it once to
+give `req.rbac` your names (see [Typed `req.rbac`](#typed-req-rbac)). Use it for checks inside handlers and to send
+a snapshot to the browser:
 
 ```ts
 // Feed the React / Vue packages
@@ -230,10 +231,56 @@ app.put('/articles/:id', requirePermission('edit articles|publish articles'), up
 app.delete('/articles/:id', requirePermission('delete artcles'), deleteArticle) // type error
 ```
 
-`createGuards<typeof rbac>()` works too. `createGuards()` also takes the shared options shown above.
+`createGuards<typeof rbac>()` works too. `createGuards()` also takes the shared options shown above, and their
+`req.rbac` has the same names.
 
 A guard without names, or with options before a name, is a type error too. The guards exported by the package
 still accept any string. See [Typed names](/basic-usage/typed-names).
+
+### Typed `req.rbac`
+
+Express types `req` globally (`Express.Request`), so the engine you pass to `rbacMiddleware()` can't reach it by
+itself: without more, `req.rbac` accepts any name. Register your engine once, next to `createRbac()`:
+
+```ts
+// src/rbac-register.ts (any file the compiler includes)
+import type { rbac } from './rbac'
+
+declare module '@anievo-id/rbac-evolution-express' {
+  interface RbacRegister {
+    rbac: typeof rbac // or the names type: AppRbac
+  }
+}
+```
+
+Now `req.rbac` has your names in every handler, the `onForbidden` / `onUnauthenticated` handlers included, so
+`req.rbac?.can('edit artcles')` is a compile error everywhere.
+
+A registration is global: one names type for the whole app. When two routers use different engines, or you'd rather
+not declare a module, type the request of a handler with `RbacRequest` instead:
+
+```ts
+import type { RbacRequest } from '@anievo-id/rbac-evolution-express'
+import type { AppRbac } from './rbac'
+
+app.post('/articles/:id/publish', async (req: RbacRequest<AppRbac>, res) => {
+  if (!(await req.rbac?.can('publish articles'))) {
+    res.sendStatus(403)
+    return
+  }
+  await req.rbac?.can('publish artcles') // type error
+  res.json({ ok: true })
+})
+```
+
+`RbacRequest<T>` takes the names type or `typeof rbac`. Its second argument is the request type to start from, for
+typed params or body: `RbacRequest<AppRbac, Request<{ id: string }>>`.
+
+| | `RbacRegister` | `RbacRequest<T>` |
+| --- | --- | --- |
+| Where | once per app | on each handler |
+| Engines | one names type for every `req` | one per handler |
+| Route params | inferred by Express as usual | pass the request type yourself |
 
 ## Teams
 

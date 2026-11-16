@@ -1,7 +1,7 @@
 // Stub: a copy of the `src/staff.controller.ts` block of docs/use-cases/ecommerce-admin.md.
-import { Body, Controller, Delete, Param, ParseIntPipe, Put } from '@nestjs/common'
-import type { RoleName } from '@anievo-id/rbac-evolution'
-import { RequirePermissions, type ShopRbac } from './rbac'
+import { BadRequestException, Body, Controller, Delete, Param, ParseIntPipe, Put } from '@nestjs/common'
+import { isRoleName } from '@anievo-id/rbac-evolution'
+import { rbac, RequirePermissions } from './rbac'
 import { StaffService } from './staff.service'
 
 @Controller('staff')
@@ -10,8 +10,10 @@ export class StaffController {
   constructor(private readonly staff: StaffService) {}
 
   @Put(':id/job')
-  setJob(@Param('id', ParseIntPipe) id: number, @Body() body: { role: RoleName<ShopRbac> }) {
-    return this.staff.setJob(id, body.role)
+  setJob(@Param('id', ParseIntPipe) id: number, @Body() body: { role?: unknown }) {
+    // The body is user input: an unknown role would make syncRoles() throw (a 500).
+    if (!isRoleName(rbac, body.role)) throw new BadRequestException('Unknown role')
+    return this.staff.setJob(id, body.role) // narrowed to RoleName<ShopRbac>
   }
 
   @Delete(':id')

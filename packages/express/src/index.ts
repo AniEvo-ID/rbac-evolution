@@ -5,7 +5,7 @@
  */
 
 export { asyncHandler, rbacMiddleware } from './middleware'
-export type { RbacMiddlewareOptions } from './middleware'
+export type { RbacMiddlewareOptions, RbacRegister, RbacRequest, RegisteredRbacTypes } from './middleware'
 
 export {
   createGuards,
@@ -20,6 +20,7 @@ export type {
   GuardContext,
   GuardHandler,
   GuardHandlers,
+  GuardRequest,
   RouteGuardOptions,
   GuardKind,
   Guard,

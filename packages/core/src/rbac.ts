@@ -17,6 +17,7 @@ import {
   type RbacEventName,
 } from './events'
 import { expandWildcardPermissions, type SubjectsWithPermissionOptions } from './query'
+import { type RbacNames, registerNames } from './names'
 import { type SyncDefinition, type SyncOptions, type SyncResult, syncDefinition } from './sync'
 import { deleteTeam, type RevokeAllOptions, revokeAll, subjectTeams, type SubjectTeamsOptions } from './bulk'
 import type {
@@ -104,6 +105,11 @@ export interface RbacOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
    * event has listeners. Default: none, and events carry no `actor` unless a call passes one.
    */
   getActor?: ActorResolver | undefined
+  /**
+   * The typed names as values, for `isRoleName(rbac, value)` / `isPermissionName(rbac, value)`, which check user
+   * input against them. Optional; the engine itself does not use them.
+   */
+  names?: RbacNames<T> | undefined
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -245,6 +251,7 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
       createPermission: (name, options, check) => this.#createPermission(name, options, check),
     }
     INTERNALS.set(this, this.#internals)
+    registerNames(this, options.names)
   }
 
   /** Work with the roles & permissions of a subject (usually a user). */

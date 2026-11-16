@@ -56,23 +56,23 @@ declare class RbacGuardMissingError extends Error {
 
 // RbacModule: class
 declare class RbacModule {
-    static forRoot(config: RbacModuleConfig): DynamicModule;
-    static forRootAsync(config: RbacModuleAsyncConfig): DynamicModule;
+    static forRoot<T extends RbacTypeConfig = DefaultRbacTypes>(config: RbacModuleConfig<T>): DynamicModule;
+    static forRootAsync<T extends RbacTypeConfig = DefaultRbacTypes>(config: RbacModuleAsyncConfig<T>): DynamicModule;
 }
 
 // RbacModuleAsyncConfig: interface
-interface RbacModuleAsyncConfig extends GlobalGuardOption, Pick<ModuleMetadata, 'imports'> {
+interface RbacModuleAsyncConfig<T extends RbacTypeConfig = DefaultRbacTypes> extends GlobalGuardOption, Pick<ModuleMetadata, 'imports'> {
     inject?: FactoryProvider['inject'] | undefined;
-    useFactory: (...args: never[]) => MaybePromise<RbacModuleOptions>;
+    useFactory: (...args: never[]) => MaybePromise<RbacModuleOptions<T>>;
 }
 
 // RbacModuleConfig: interface
-interface RbacModuleConfig extends RbacModuleOptions, GlobalGuardOption {
+interface RbacModuleConfig<T extends RbacTypeConfig = DefaultRbacTypes> extends RbacModuleOptions<T>, GlobalGuardOption {
 }
 
 // RbacModuleOptions: interface
-interface RbacModuleOptions {
-    rbac: Rbac;
+interface RbacModuleOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
+    rbac: Rbac<T>;
     getSubject: (context: ExecutionContext) => MaybePromise<Subject | null | undefined>;
     guard?: string | undefined;
     team?: (context: ExecutionContext) => MaybePromise<TeamId | undefined>;
@@ -102,10 +102,10 @@ interface StoredRbacRequirement extends RbacRequirement {
 }
 
 // createRbacDecorators: function
-declare function createRbacDecorators<T extends RbacTypeConfig = DefaultRbacTypes>(): RbacDecorators<T>;
+declare function createRbacDecorators<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes>(): RbacDecorators<TypesOf<T>>;
 
 // getRbac: function
-declare function getRbac(context: ExecutionContext): SubjectRbac | null;
+declare function getRbac<T extends RbacTypeConfig | Rbac<RbacTypeConfig> = DefaultRbacTypes>(context: ExecutionContext): SubjectRbac<TypesOf<T>> | null;
 ```
 
 Re-exported from other packages:
@@ -122,4 +122,7 @@ interface GlobalGuardOption {
 
 // MaybePromise: type (not exported)
 type MaybePromise<T> = T | Promise<T>;
+
+// TypesOf: type (not exported)
+type TypesOf<T> = T extends Rbac<infer X> ? X : T extends RbacTypeConfig ? T : never;
 ```

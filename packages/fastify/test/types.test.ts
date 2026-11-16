@@ -3,7 +3,15 @@
  * which includes `test/`; `expectTypeOf` and `@ts-expect-error` lines fail the typecheck when a type drifts.
  * Calls that would do real work live in functions that are never invoked.
  */
-import { createRbac, MemoryAdapter, type Rbac, type Subject, type SubjectRbac, type TeamId } from '@anievo-id/rbac-evolution'
+import {
+  createRbac,
+  type DefaultRbacTypes,
+  MemoryAdapter,
+  type Rbac,
+  type Subject,
+  type SubjectRbac,
+  type TeamId,
+} from '@anievo-id/rbac-evolution'
 import Fastify, {
   type FastifyPluginAsync,
   type FastifyReply,
@@ -22,12 +30,16 @@ import {
   type GuardHook,
   type GuardKind,
   type GuardNames,
+  type GuardRequest,
   type Guards,
   type PermissionGuardOptions,
   type RbacHook,
   RbacMiddlewareMissingError,
   rbacPlugin,
   type RbacPluginOptions,
+  type RbacRegister,
+  type RbacRequest,
+  type RegisteredRbacTypes,
   requirePermission,
   requireRole,
   requireRoleOrPermission,
@@ -345,6 +357,80 @@ describe('fastify types: typed names (createGuards<T>())', () => {
       requireRole({ all: true }, 'admin')
     }
     expectTypeOf(check).toBeFunction()
+  })
+})
+
+describe('fastify types: typed request helpers', () => {
+  const engine = createRbac<AppTypes>({ adapter: new MemoryAdapter() })
+
+  it('the plugin options are generic over the engine, untyped by default', () => {
+    expectTypeOf<RbacPluginOptions<AppTypes>['rbac']>().toEqualTypeOf<Rbac<AppTypes>>()
+    expectTypeOf<RbacPluginOptions<DefaultRbacTypes>>().toEqualTypeOf<RbacPluginOptions>()
+    // A typed engine still fits the untyped options (and app.register(rbacPlugin, ...)), as in 1.0.
+    expectTypeOf<RbacPluginOptions<AppTypes>>().toMatchTypeOf<RbacPluginOptions>()
+    async function register() {
+      await Fastify().register(rbacPlugin, { rbac: engine, getSubject: guest })
+    }
+    expectTypeOf(register).toBeFunction()
+  })
+
+  it('without a registration, request.rbac stays untyped', () => {
+    expectTypeOf<RbacRegister>().toEqualTypeOf<{}>()
+    expectTypeOf<RegisteredRbacTypes>().toEqualTypeOf<DefaultRbacTypes>()
+    expectTypeOf<NonNullable<FastifyRequest['rbac']>>().toEqualTypeOf<SubjectRbac>()
+  })
+
+  it('RbacRequest<T> types request.rbac with the names of T (a names type or typeof rbac)', () => {
+    expectTypeOf<RbacRequest<AppTypes>['rbac']>().toEqualTypeOf<SubjectRbac<AppTypes> | null | undefined>()
+    expectTypeOf<RbacRequest<typeof engine>['rbac']>().toEqualTypeOf<SubjectRbac<AppTypes> | null | undefined>()
+    expectTypeOf<RbacRequest['rbac']>().toEqualTypeOf<SubjectRbac | null | undefined>()
+    function routes() {
+      const app = Fastify()
+      app.get('/articles', async (request: RbacRequest<typeof engine>) => {
+        await request.rbac?.can('edit articles')
+        // @ts-expect-error -- typo
+        await request.rbac?.can('edit artcles')
+        return request.rbac?.snapshot()
+      })
+      type Route = { Params: { id: string } }
+      app.get<Route>('/articles/:id', async (request: RbacRequest<AppTypes, FastifyRequest<Route>>) => {
+        expectTypeOf(request.params.id).toBeString()
+        // @ts-expect-error -- unknown role
+        await request.rbac?.hasRole('ghost')
+        return null
+      })
+    }
+    expectTypeOf(routes).toBeFunction()
+  })
+
+  it('the handlers of createGuards<T>() get a typed request.rbac; untyped ones keep FastifyRequest', () => {
+    expectTypeOf<GuardRequest>().toEqualTypeOf<FastifyRequest>()
+    expectTypeOf<GuardRequest<AppTypes>>().toEqualTypeOf<RbacRequest<AppTypes>>()
+    expectTypeOf<GuardRequest<typeof engine>>().toEqualTypeOf<RbacRequest<AppTypes>>()
+    expectTypeOf<GuardHandler>().parameters.toEqualTypeOf<[FastifyRequest, FastifyReply, GuardContext]>()
+    const typed = createGuards<typeof engine>({
+      onForbidden: async (request, reply) => {
+        // @ts-expect-error -- typo
+        await request.rbac?.can('edit artcles')
+        return reply.code(403).send()
+      },
+    })
+    typed.requireRole('admin', {
+      onForbidden: async (request, reply) => {
+        // @ts-expect-error -- typo
+        await request.rbac?.hasRole('edtor')
+        return reply.code(404).send()
+      },
+    })
+  })
+
+  it('the typed guards still fit the 1.0 types', () => {
+    const typed = createGuards<AppTypes>()
+    const asBefore: Guard<AppPermission, PermissionGuardOptions> = typed.requirePermission
+    const untyped: GuardHandlers = { onForbidden: (_request, reply) => reply.code(403).send() }
+    createGuards<AppTypes>(untyped)
+    typed.requireRole('admin', {} as RoleGuardOptions)
+    expectTypeOf(asBefore).toBeFunction()
   })
 })
 

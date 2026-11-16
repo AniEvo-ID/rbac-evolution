@@ -1,13 +1,24 @@
 import 'reflect-metadata'
 import { createRbac, MemoryAdapter, type Rbac, type SubjectRbac } from '@anievo-id/rbac-evolution'
-import { Controller, type ExecutionContext, Get, Inject, Injectable, type INestApplication, Module } from '@nestjs/common'
+import {
+  Controller,
+  type ExecutionContext,
+  Get,
+  Inject,
+  Injectable,
+  type INestApplication,
+  Module,
+  UseGuards,
+} from '@nestjs/common'
 import { Reflector } from '@nestjs/core'
 import { Test } from '@nestjs/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   CanAll,
   CanAny,
+  createRbacDecorators,
   CurrentRbac,
+  getRbac,
   RBAC,
   RBAC_REQUIREMENTS,
   RbacGuard,
@@ -461,5 +472,61 @@ describe('per-route guard option', () => {
     expect(Reflect.getMetadata(RBAC_REQUIREMENTS, proto.canAll!)).toEqual([
       { kind: 'permission', requirements: [['edit articles']], guard: 'api' },
     ])
+  })
+})
+
+describe('typed engine (RbacModuleOptions<T>, createRbacDecorators<typeof rbac>(), getRbac<T>())', () => {
+  type AppRbac = {
+    permissions: 'edit articles' | 'delete articles' | 'publish articles'
+    roles: 'writer' | 'editor' | 'admin'
+  }
+  const rbac = createRbac<AppRbac>({ adapter: new MemoryAdapter() })
+  const typed = createRbacDecorators<typeof rbac>()
+  let app: INestApplication
+  let url: string
+
+  @Injectable()
+  class PublishGuard {
+    async canActivate(context: ExecutionContext): Promise<boolean> {
+      return (await getRbac<typeof rbac>(context)?.can('publish articles')) ?? false
+    }
+  }
+
+  @Controller('typed')
+  class TypedController {
+    @Get('edit')
+    @typed.RequirePermissions('edit articles')
+    async edit(@CurrentRbac() access: SubjectRbac<AppRbac>) {
+      return { publish: await access.can('publish articles') }
+    }
+
+    @Get('publish')
+    @UseGuards(PublishGuard) // runs after RbacGuard: decorators apply bottom-up
+    @typed.RequireRoles('writer|editor|admin')
+    publish() {
+      return { ok: true }
+    }
+  }
+
+  beforeAll(async () => {
+    await seed(rbac)
+    @Module({ imports: [RbacModule.forRoot({ rbac, getSubject })], controllers: [TypedController] })
+    class AppModule {}
+    ;({ app, url } = await start(AppModule))
+  })
+
+  afterAll(async () => {
+    await app.close()
+  })
+
+  it('resolves the subject of a typed engine, the same as an untyped one', async () => {
+    expect(await get(url, '/typed/edit', 1)).toEqual({ status: 200, body: { publish: false } })
+    expect(await get(url, '/typed/edit', 2)).toEqual({ status: 200, body: { publish: true } })
+    expect((await get(url, '/typed/edit')).status).toBe(401)
+  })
+
+  it('getRbac<T>() returns the subject RbacGuard resolved', async () => {
+    expect((await get(url, '/typed/publish', 1)).status).toBe(403)
+    expect((await get(url, '/typed/publish', 2)).status).toBe(200)
   })
 })
