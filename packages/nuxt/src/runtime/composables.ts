@@ -1,7 +1,7 @@
 import type { NameList } from '@anievo-id/rbac-evolution-vue'
 import { type ComputedRef, computed, type MaybeRefOrGetter, toValue } from 'vue'
 import { useNuxtApp } from '#app'
-import type { NuxtRbac } from './types'
+import type { NuxtRbac } from './types.js'
 
 /**
  * Returns the RBAC instance (`$rbac`). Works in components, plugins and route middleware.

@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [20, 22]
+        node: [20, 22, 24]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -22,6 +22,10 @@ jobs:
       - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm test
+      # publint + attw: every package's exports, types and formats resolve for its consumers.
+      # The packed tarball is the same on every Node version, so check it once.
+      - if: matrix.node == 22
+        run: pnpm lint:packages
 
   # Runs every package's tests against real PostgreSQL and MySQL servers (the PG_URL / MYSQL_URL suites,
   # which are skipped when those variables are absent).

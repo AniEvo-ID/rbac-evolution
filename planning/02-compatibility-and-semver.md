@@ -14,13 +14,14 @@ Decide and write down:
 
 - [ ] Is raising the minimum Node.js version breaking? (Common answer: only in a major.)
 - [ ] Is raising a peer dependency's minimum version breaking? (Common answer: only in a major, unless the old version is end-of-life.)
+- [ ] Is `moduleResolution: "node10"` (TypeScript's legacy `"node"`) supported? Main entry points resolve there, subpaths (`/testing`, `/pg`, `/middleware`, nuxt `/server`) don't, because it ignores `exports`. Either add `typesVersions` or say "node16, nodenext or bundler" in the docs. `pnpm lint:packages` skips node10 until this is decided.
 - [ ] Is a new required method on `RbacAdapter` breaking for custom adapters? (See [01-api-freeze.md](./01-api-freeze.md).)
 
 ## Support matrix (draft)
 
 | Area | Supported in 1.x | Tested in CI today |
 | --- | --- | --- |
-| Node.js | 20, 22, 24 | 20, 22 |
+| Node.js | 20, 22, 24 | 20, 22, 24 |
 | Bun | latest | latest |
 | Deno | not supported | — |
 | PostgreSQL | 13+ | 16 |
@@ -38,7 +39,7 @@ Decide and write down:
 | Prisma / Drizzle / Kysely / Mongoose | current major | current major |
 
 - [ ] Fill the "?" cells from the lockfile and the peer ranges in each `package.json`
-- [ ] Add Node 24 to the CI matrix
+- [x] Add Node 24 to the CI matrix
 - [ ] Every "Supported" cell has a matching CI job, or the cell is narrowed until it does
 - [ ] Peer dependency ranges in every `package.json` match this table
 

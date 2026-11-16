@@ -6,11 +6,11 @@
  */
 
 import { addImports, addPlugin, addRouteMiddleware, createResolver, defineNuxtModule } from '@nuxt/kit'
-import type { RbacRouteRule } from './runtime/rule'
-import type { RbacPublicConfig } from './runtime/types'
+import type { RbacRouteRule } from './runtime/rule.js'
+import type { RbacPublicConfig } from './runtime/types.js'
 
-export type { RbacRouteRule, RouteRuleResult } from './runtime/rule'
-export type { NuxtRbac, RbacPublicConfig } from './runtime/types'
+export type { RbacRouteRule, RouteRuleResult } from './runtime/rule.js'
+export type { NuxtRbac, RbacPublicConfig } from './runtime/types.js'
 
 export interface ModuleOptions {
   /** Match permissions with wildcard semantics — must mirror `createRbac({ wildcard })`. Default: `false`. */
