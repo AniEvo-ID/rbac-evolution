@@ -140,8 +140,8 @@ Every push to `main` refreshes the public [Test report](https://creation.anievo.
 
 - **Unit and integration tests** for all 14 packages, with code coverage, including the adapter suites against real
   PostgreSQL 16, MySQL 8 and MongoDB 7 servers.
-- **End-to-end tests** with Playwright on the two [example apps](./examples) (Vue + Express + Drizzle,
-  Next.js + Prisma) and the docs site: `401` for guests, `403` without access, a revoked role denied on the next
+- **End-to-end tests** with Playwright on the three [example apps](./examples) (Vue + Express + Drizzle,
+  Next.js + Prisma, NestJS + Kysely) and the docs site: `401` for guests, `403` without access, a revoked role denied on the next
   request, and the right UI shown per role.
 - **Release sync**: merging the "version packages" pull request publishes to npm with
   [provenance](https://docs.npmjs.com/generating-provenance-statements), tags the commit and creates the GitHub

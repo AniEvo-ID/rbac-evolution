@@ -20,7 +20,7 @@ ever raised.
 
 ## End-to-end tests
 
-[Playwright](https://playwright.dev) runs the two [example apps](/guide/examples) and this site in a real browser:
+[Playwright](https://playwright.dev) runs the three [example apps](/guide/examples) and this site in a real browser:
 guests get `401`, users without access get `403`, a revoked role is denied on the next request, and `<Can>` /
 `v-can` show or hide the right parts of the UI.
 

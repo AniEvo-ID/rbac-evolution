@@ -1,0 +1,12 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"],
+    // Nest decorators. No emitDecoratorMetadata: injections name their token with @Inject(), so the app also
+    // builds with esbuild (tsup, tsx), which can't emit that metadata.
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": false
+  },
+  "include": ["src", "tsup.config.ts"]
+}

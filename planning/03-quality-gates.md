@@ -7,7 +7,7 @@ Goal: CI catches anything that would break the 1.0 promise before it is merged.
 - Build, typecheck and unit tests on Node 20 and 22 (required check)
 - Adapter conformance suite on real PostgreSQL, MySQL, MongoDB and SQL Server
 - Bun suite
-- E2E with Playwright on two example apps and the docs site (required check)
+- E2E with Playwright on three example apps and the docs site (required check)
 - Branch protection with up-to-date branches
 
 ## To add
@@ -25,7 +25,7 @@ Goal: CI catches anything that would break the 1.0 promise before it is merged.
 ## Known gaps to close
 
 - [x] Kysely SQL Server inserts links one row at a time; now that SQL Server runs in CI, batch them and keep the duplicate-safety. One `INSERT ... SELECT ... FROM (VALUES ...) WHERE NOT EXISTS` per 1000 links (and under 2100 parameters); a duplicate-key error from a concurrent insert retries that chunk row by row. SQL pinned in `compile.test.ts`; 1200-link attach test in the shared database suite.
-- [ ] Next.js and Nuxt are only exercised end-to-end through the Next example; add a Nuxt or NestJS example app to E2E.
+- [x] Next.js and Nuxt are only exercised end-to-end through the Next example; add a Nuxt or NestJS example app to E2E. `examples/nestjs-kysely` (NestJS 12 API, Kysely on SQLite) with `tests/e2e/specs/nestjs-kysely.spec.ts`: the global guard, `@RequirePermissions`, `@RequireRoles` on a controller, `@RequireRoleOrPermission`, `@CurrentRbac()` and a revoked role. Nuxt still has no example app.
 
 ## Done when
 

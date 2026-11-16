@@ -63,7 +63,7 @@ To see coverage against the floors in `coverage-floor.json`, run
 
 ## Running the end-to-end tests
 
-Playwright runs the two example apps and the docs site:
+Playwright runs the three example apps and the docs site:
 
 ```bash
 pnpm turbo run build --filter=./packages/*
