@@ -55,10 +55,13 @@ const PAGES = [
   'docs/guide/coming-from-laravel.md',
 ]
 
+/** Escapes every regular-expression metacharacter, backslash included. */
+const escapeRegExp = (text) => text.replace(/[\\^$.*+?()[\]{}|/-]/g, '\\$&')
+
 function expand(pattern) {
   if (!pattern.includes('*')) return [pattern]
   const dir = path.dirname(pattern)
-  const re = new RegExp('^' + path.basename(pattern).replace(/\./g, '\\.').replace(/\*/g, '.*') + '$')
+  const re = new RegExp('^' + path.basename(pattern).split('*').map(escapeRegExp).join('.*') + '$')
   return fs
     .readdirSync(path.join(root, dir))
     .filter((f) => re.test(f))

@@ -15,6 +15,9 @@ const repoRoot = resolve(docsRoot, '..')
 const packagesDir = join(repoRoot, 'packages')
 const outRoot = join(docsRoot, 'api')
 
+/** Escapes every regular-expression metacharacter, backslash included. */
+const escapeRegExp = (text) => text.replace(/[\\^$.*+?()[\]{}|/-]/g, '\\$&')
+
 /** `./dist/runtime/rule.d.ts` -> `src/runtime/rule.ts` (or the tsup entry it was built from). */
 function sourceFor(pkgDir, typesPath) {
   const stem = typesPath.replace(/^\.\/dist\//, '').replace(/\.d\.c?ts$/, '')
@@ -23,7 +26,7 @@ function sourceFor(pkgDir, typesPath) {
     if (existsSync(file)) return file
   }
   const tsup = readFileSync(join(pkgDir, 'tsup.config.ts'), 'utf8')
-  const escaped = stem.replace(/[/.-]/g, '\\$&')
+  const escaped = escapeRegExp(stem)
   const match = tsup.match(new RegExp(`['"]?${escaped}['"]?\\s*:\\s*['"]([^'"]+)['"]`))
   if (match) return join(pkgDir, match[1])
   throw new Error(`No source file for ${typesPath} in ${pkgDir}`)
