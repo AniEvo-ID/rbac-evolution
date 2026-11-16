@@ -1,0 +1,35 @@
+name: Feature request
+description: Suggest an idea, an adapter or a framework integration
+title: "[Feature]: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do, and what gets in the way today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API
+      description: How should it look? Code you'd like to write is the most useful thing here.
+      render: ts
+    validations:
+      required: true
+  - type: input
+    id: spatie
+    attributes:
+      label: spatie/laravel-permission equivalent
+      description: If Laravel has this feature, link the spatie docs. The API follows spatie where it can.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Contributing
+      options:
+        - label: I'd like to open a pull request for this

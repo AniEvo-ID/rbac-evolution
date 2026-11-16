@@ -1,0 +1,92 @@
+name: Bug report
+description: Something doesn't work as documented
+title: "[Bug]: "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug. **Security issues** go to a
+        [private advisory](https://github.com/AniEvo-ID/rbac-evolution/security/advisories/new), not here.
+  - type: dropdown
+    id: packages
+    attributes:
+      label: Package(s)
+      multiple: true
+      options:
+        - "@anievo-id/rbac-evolution (core)"
+        - "@anievo-id/rbac-evolution-cli"
+        - "@anievo-id/rbac-evolution-drizzle"
+        - "@anievo-id/rbac-evolution-kysely"
+        - "@anievo-id/rbac-evolution-mongoose"
+        - "@anievo-id/rbac-evolution-prisma"
+        - "@anievo-id/rbac-evolution-express"
+        - "@anievo-id/rbac-evolution-fastify"
+        - "@anievo-id/rbac-evolution-hono"
+        - "@anievo-id/rbac-evolution-nestjs"
+        - "@anievo-id/rbac-evolution-next"
+        - "@anievo-id/rbac-evolution-nuxt"
+        - "@anievo-id/rbac-evolution-react"
+        - "@anievo-id/rbac-evolution-vue"
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: All packages share one version number. `npm ls @anievo-id/rbac-evolution` shows it.
+      placeholder: "0.7.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: runtime
+    attributes:
+      label: Runtime
+      options:
+        - Node.js 20
+        - Node.js 22
+        - Node.js 24
+        - Bun
+        - Other (say below)
+    validations:
+      required: true
+  - type: dropdown
+    id: database
+    attributes:
+      label: Database
+      options:
+        - Not relevant
+        - PostgreSQL
+        - MySQL / MariaDB
+        - SQLite
+        - SQL Server
+        - MongoDB
+        - In memory (MemoryAdapter)
+    validations:
+      required: true
+  - type: input
+    id: framework
+    attributes:
+      label: Framework and versions
+      placeholder: "Next.js 15.2, Prisma 6.19"
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: |
+        The smallest code that shows the bug, ideally with `MemoryAdapter` so it runs without a database.
+        A link to a repository or StackBlitz works too.
+      render: ts
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error output
+      render: shell

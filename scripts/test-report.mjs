@@ -2,16 +2,25 @@
 // Runs every package's vitest suite with coverage and writes one summary for the docs
 // "Test report" page: docs/public/reports/unit.json.
 //
-// Usage (repo root, after `pnpm build`): node scripts/test-report.mjs
-// Set PG_URL / MYSQL_URL / MONGO_URL to include the real-database adapter suites.
-// Exits 1 when any suite failed, after the report has been written.
+// Usage (repo root, after `pnpm build`): node scripts/test-report.mjs [--out=<file>] [--floor=<file>]
+// Set PG_URL / MYSQL_URL / MONGO_URL / MSSQL_URL to include the real-database adapter suites.
+//
+// --out=<file>    write the report there instead of docs/public/reports/unit.json
+// --floor=<file>  also fail when a package's coverage drops below its floor in that JSON file
+//                 (`{ "<package name>": { "lines": 90, "branches": 80, ... } }`). A package without
+//                 an entry only prints its numbers, so a new package can be added to the file later.
+//                 Raise a floor when coverage goes up; never lower one.
+//
+// Exits 1 when any suite failed or a floor was missed, after the report has been written.
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { delimiter, join } from 'node:path'
+import { delimiter, dirname, join, resolve } from 'node:path'
 
 const root = process.cwd()
+const arg = (name) => process.argv.find((a) => a.startsWith(`--${name}=`))?.slice(name.length + 3)
 const tmp = join(root, '.test-report')
-const out = join(root, 'docs/public/reports')
+const outFile = arg('out') ? resolve(root, arg('out')) : join(root, 'docs/public/reports/unit.json')
+const out = dirname(outFile)
 rmSync(tmp, { recursive: true, force: true })
 mkdirSync(tmp, { recursive: true })
 mkdirSync(out, { recursive: true })
@@ -75,7 +84,27 @@ const report = {
   ok: packages.every((p) => p.ok),
   packages,
 }
-writeFileSync(join(out, 'unit.json'), `${JSON.stringify(report, null, 2)}\n`)
+writeFileSync(outFile, `${JSON.stringify(report, null, 2)}\n`)
 rmSync(tmp, { recursive: true, force: true })
-console.log(`\nTest report: ${report.totals.passed}/${report.totals.total} passed, ${report.totals.failed} failed → docs/public/reports/unit.json`)
-process.exit(report.ok ? 0 : 1)
+console.log(`\nTest report: ${report.totals.passed}/${report.totals.total} passed, ${report.totals.failed} failed → ${outFile}`)
+
+// ------------------------------------------------------------------------------ coverage floor
+let floorOk = true
+if (arg('floor')) {
+  const floors = readJson(resolve(root, arg('floor'))) ?? {}
+  const METRICS = ['lines', 'branches', 'functions', 'statements']
+  console.log('\nCoverage (floor in brackets):')
+  for (const p of packages) {
+    const floor = floors[p.name]
+    const cells = METRICS.map((m) => {
+      const value = p.coverage[m]
+      const min = floor?.[m]
+      const below = min !== undefined && (value === null || value < min)
+      if (below) floorOk = false
+      return `${m} ${value ?? '-'}%${min === undefined ? '' : ` [${min}]`}${below ? ' ✗' : ''}`
+    })
+    console.log(`  ${p.name.padEnd(36)} ${cells.join('  ')}${floor ? '' : '  (no floor yet)'}`)
+  }
+  if (!floorOk) console.error('\nCoverage dropped below the floor in ' + arg('floor') + '. Add tests, or explain in the PR.')
+}
+process.exit(report.ok && floorOk ? 0 : 1)

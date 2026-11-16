@@ -20,3 +20,4 @@ tests/bun/.tmp-cli-*/
 docs/public/reports/
 tests/e2e/test-results/
 tests/e2e/playwright-report/
+coverage-report.json
