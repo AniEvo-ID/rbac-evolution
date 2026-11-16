@@ -19,6 +19,7 @@ const truncate = (prefix = ''): Promise<unknown> =>
 beforeAll(async () => {
   await client.exec(ddl('pg'))
   await client.exec(ddl('pg', 'rbac_'))
+  await client.exec(ddl('pg', 'exp_', { expiry: true }))
 })
 
 afterAll(async () => {
@@ -28,6 +29,11 @@ afterAll(async () => {
 runAdapterTests('drizzle (PostgreSQL via PGlite)', async () => {
   await truncate()
   return drizzlePgAdapter(db)
+})
+
+runAdapterTests('drizzle (PostgreSQL via PGlite, expiry)', async () => {
+  await truncate('exp_')
+  return drizzlePgAdapter(db, pgRbacSchema({ prefix: 'exp_', expiry: true }), { expiry: true })
 })
 
 describe('drizzle pg: specifics', () => {

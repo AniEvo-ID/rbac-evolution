@@ -314,6 +314,8 @@ erDiagram
 
 All foreign keys use `ON DELETE CASCADE`, so deleting a role or a permission also deletes its links. Each adapter can add a prefix to every table name, for example `rbac_permissions`.
 
+For [temporary access](/basic-usage/temporary-access) (1.2), `model_has_roles` and `model_has_permissions` can have one more, nullable column, `expires_at`. It is optional: an adapter only reads and writes it when created with `{ expiry: true }`, and `NULL` means the link never ends.
+
 ### Compared with spatie
 
 The table names are the same as in spatie/laravel-permission: `permissions`, `roles`, `role_has_permissions`, `model_has_roles` and `model_has_permissions`. The differences:
@@ -336,7 +338,7 @@ The engine caches two kinds of entries in its `CacheStore` (a `MemoryCache` by d
 | `rbac:["<guard>",<team>,"<type>","<id>"]` | The subject state: roles, direct permissions, permissions via roles | Every read on `rbac.for(subject)`: `can()`, `hasRole()`, `getAllPermissions()`, `snapshot()`, ... |
 | `rbac:permissions:["<guard>"]` | All permission names of the guard | The "permission exists" step of `can()` and `hasPermissionTo()` when wildcards are off |
 
-Entries live for `cacheTtl` (24 hours by default). The cache is not split by subject when it is cleared: every change clears **all** entries.
+Entries live for `cacheTtl` (24 hours by default), or less when a subject state holds a [temporary](/basic-usage/temporary-access) role or permission: then the entry ends at the earliest `expiresAt` in it, and the state carries that moment so a later hit past it is recomputed. The cache is not split by subject when it is cleared: every change clears **all** entries.
 
 ```mermaid
 flowchart TD

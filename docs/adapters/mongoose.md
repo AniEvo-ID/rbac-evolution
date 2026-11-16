@@ -35,8 +35,8 @@ The adapter uses five collections, one for each of the [five tables](/adapters/o
 | `permissions` | `_id`, `name`, `guardName`, `createdAt`, `updatedAt` | unique `(name, guardName)` |
 | `roles` | `_id`, `name`, `guardName`, `teamId`, `createdAt`, `updatedAt` | unique `(name, guardName, teamId)` |
 | `role_has_permissions` | `_id`, `roleId`, `permissionId` | unique `(roleId, permissionId)`; `(permissionId)` |
-| `model_has_roles` | `_id`, `roleId`, `subjectType`, `subjectId`, `teamId` | unique `(subjectType, subjectId, teamId, roleId)`; `(roleId, subjectType, teamId)` |
-| `model_has_permissions` | `_id`, `permissionId`, `subjectType`, `subjectId`, `teamId` | unique `(subjectType, subjectId, teamId, permissionId)`; `(permissionId, subjectType, teamId)` |
+| `model_has_roles` | `_id`, `roleId`, `subjectType`, `subjectId`, `teamId`, optional `expiresAt` | unique `(subjectType, subjectId, teamId, roleId)`; `(roleId, subjectType, teamId)` |
+| `model_has_permissions` | `_id`, `permissionId`, `subjectType`, `subjectId`, `teamId`, optional `expiresAt` | unique `(subjectType, subjectId, teamId, permissionId)`; `(permissionId, subjectType, teamId)` |
 
 Links are separate documents rather than arrays embedded in roles or users. Each link is small, has its own unique index, and can be looked up from either side (which subjects hold a role, which roles a subject holds).
 
@@ -51,11 +51,12 @@ Links are separate documents rather than arrays embedded in roles or users. Each
 
 <!-- doc-test: skip -->
 ```ts
-mongooseAdapter(options?: { connection?: Connection; prefix?: string }): MongooseRbacAdapter
+mongooseAdapter(options?: { connection?: Connection; prefix?: string; expiry?: boolean }): MongooseRbacAdapter
 ```
 
 - `connection`: the Mongoose connection to use. Default: the default connection, `mongoose.connection`.
 - `prefix`: added to every collection name, for example `'rbac_'` gives `rbac_permissions`, `rbac_roles`, and so on. Default: `''`.
+- `expiry`: store an expiry per role assignment and direct permission, for [temporary access](/basic-usage/temporary-access). Default: `false`. See [Expiry (1.2)](#expiry-1-2).
 
 ::: code-group
 
@@ -121,11 +122,35 @@ import { createRbacModels, syncRbacIndexes } from '@anievo-id/rbac-evolution-mon
 await syncRbacIndexes(createRbacModels())
 ```
 
+### Expiry (1.2)
+
+[Temporary access](/basic-usage/temporary-access) stores when a link ends in the `expiresAt` field of the
+`model_has_roles` and `model_has_permissions` documents. **There is nothing to migrate**: from 1.2 the link schemas
+declare the optional field (with no default), and a document without it is permanent. Turn it on with the option:
+
+```ts
+import { createRbac } from '@anievo-id/rbac-evolution'
+import { MongooseRbacAdapter, createRbacModels, mongooseAdapter } from '@anievo-id/rbac-evolution-mongoose'
+
+export const rbac = createRbac({ adapter: mongooseAdapter({ expiry: true }) })
+
+// or, with models you registered yourself:
+const adapter = new MongooseRbacAdapter(createRbacModels(), { expiry: true })
+```
+
+Without the option, the adapter never reads or writes `expiresAt` and an `expiresAt` throws `EXPIRY_NOT_SUPPORTED`.
+With it, the models must declare the field (Mongoose drops undeclared fields); `new MongooseRbacAdapter(models,
+{ expiry: true })` throws a `TypeError` when they don't, for example with link schemas of your own from before 1.2.
+
+`rbac.pruneExpired()` deletes the expired documents. A MongoDB
+[TTL index](https://www.mongodb.com/docs/manual/core/index-ttl/) on `expiresAt` (`expireAfterSeconds: 0`) does the
+same in the background, if you prefer; it is not created for you.
+
 ### Exports
 
 | Export | Kind |
 | --- | --- |
-| `mongooseAdapter(options?)`, `MongooseRbacAdapter` | function / class |
+| `mongooseAdapter(options?)`, `MongooseRbacAdapter`, `MongooseAdapterOptions` | function / class / type |
 | `createRbacModels(options?)`, `rbacSchemas()`, `syncRbacIndexes(models)`, `collectionNames(options?)` | functions |
 | `RbacModels`, `RbacModelOptions`, `RbacCollectionNames` | types |
 | `PermissionDoc`, `RoleDoc`, `RoleHasPermissionDoc`, `ModelHasRoleDoc`, `ModelHasPermissionDoc` | types |

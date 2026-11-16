@@ -1,5 +1,6 @@
 // Builds the test schemas from the shipped models (schema/rbac.prisma) and generates one client per provider:
 // - SQLite     → test/generated        (always pushed: throwaway file test/.tmp/test.db, deleted and re-pushed)
+// - SQLite, 1.1 models (no `expiresAt`) → test/generated-legacy (always pushed: test/.tmp/legacy.db)
 // - PostgreSQL → test/generated-pg     (pushed only when PG_URL is set)
 // - MySQL      → test/generated-mysql  (pushed only when MYSQL_URL is set)
 // The PostgreSQL / MySQL clients are always generated (typecheck needs them); generating needs no database.
@@ -14,6 +15,11 @@ const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
 const tmp = join(here, '.tmp')
 const models = readFileSync(join(root, 'schema', 'rbac.prisma'), 'utf8')
+/** The shipped models without the optional `expiresAt` fields: the schema of a 1.1 install. */
+const legacyModels = models
+  .split('\n')
+  .filter((line) => !/^\s*expiresAt\s/.test(line))
+  .join('\n')
 const generateOnly = process.argv.includes('--generate-only')
 
 /** Keep in sync with test/servers.ts. */
@@ -25,7 +31,15 @@ const withDatabase = (url, database) => {
 }
 
 const targets = [
-  { file: 'schema.prisma', provider: 'sqlite', output: '../generated', url: '"file:./test.db"' },
+  { file: 'schema.prisma', provider: 'sqlite', output: '../generated', url: '"file:./test.db"', db: 'test.db' },
+  {
+    file: 'schema.legacy.prisma',
+    provider: 'sqlite',
+    output: '../generated-legacy',
+    url: '"file:./legacy.db"',
+    db: 'legacy.db',
+    legacy: true,
+  },
   { file: 'schema.pg.prisma', provider: 'postgresql', output: '../generated-pg', url: 'env("PG_URL")', env: 'PG_URL' },
   {
     file: 'schema.mysql.prisma',
@@ -53,7 +67,7 @@ datasource db {
   url      = ${target.url}
 }
 
-${models}`,
+${target.legacy ? legacyModels : models}`,
   )
 
   const serverUrl = target.env === undefined ? undefined : process.env[target.env]
@@ -73,7 +87,7 @@ ${models}`,
   if (generateOnly) continue
 
   if (target.provider === 'sqlite') {
-    for (const f of ['test.db', 'test.db-journal']) rmSync(join(tmp, f), { force: true })
+    for (const f of [target.db, `${target.db}-journal`]) rmSync(join(tmp, f), { force: true })
     prisma('db', 'push', '--skip-generate')
   } else if (serverUrl) {
     prisma('db', 'push', '--skip-generate', '--force-reset', '--accept-data-loss')

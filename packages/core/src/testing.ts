@@ -474,6 +474,162 @@ export function runAdapterTests(
       }
     })
 
+    // Expiry: only for adapters that declare `supportsExpiry: true` (the others skip these tests).
+    describe('expiry (supportsExpiry)', () => {
+      // Whole seconds, so every column precision (MySQL datetime(3), SQLite ms, ...) stores them exactly.
+      const T = new Date('2030-01-01T00:00:00.000Z')
+      const at = (seconds: number): Date => new Date(T.getTime() + seconds * 1000)
+      const ms = (date: Date | null | undefined): number | null =>
+        date === undefined || date === null ? null : new Date(date).getTime()
+      const expiries = (links: readonly { roleId?: Id; permissionId?: Id; expiresAt?: Date | null | undefined }[]) =>
+        links.map((l) => `${String(l.roleId ?? l.permissionId)}:${String(ms(l.expiresAt))}`).sort()
+
+      it('stores expiresAt on attach, and the latest attach wins', async (ctx) => {
+        if (adapter.supportsExpiry !== true) return ctx.skip()
+        const r1 = await adapter.createRole({ name: 'r1', guardName: 'web', teamId: null })
+        const r2 = await adapter.createRole({ name: 'r2', guardName: 'web', teamId: null })
+        const p = await adapter.createPermission({ name: 'p', guardName: 'web' })
+
+        await adapter.attachSubjectRoles(alice, [r1.id, r2.id], null, { expiresAt: T })
+        await adapter.attachSubjectPermissions(alice, [p.id], null, { expiresAt: T })
+        expect(expiries(await adapter.getSubjectRoleLinks!(alice, null))).toEqual(
+          [`${String(r1.id)}:${T.getTime()}`, `${String(r2.id)}:${T.getTime()}`].sort(),
+        )
+        expect(expiries(await adapter.getSubjectPermissionLinks!(alice, null))).toEqual([`${String(p.id)}:${T.getTime()}`])
+
+        // Extend one, make the other permanent: still one row each.
+        await adapter.attachSubjectRoles(alice, [r1.id], null, { expiresAt: at(3600) })
+        await adapter.attachSubjectRoles(alice, [r2.id], null, { expiresAt: null })
+        await adapter.attachSubjectPermissions(alice, [p.id], null, { expiresAt: at(-3600) })
+        expect(expiries(await adapter.getSubjectRoleLinks!(alice, null))).toEqual(
+          [`${String(r1.id)}:${at(3600).getTime()}`, `${String(r2.id)}:null`].sort(),
+        )
+        expect(expiries(await adapter.getSubjectPermissionLinks!(alice, null))).toEqual([
+          `${String(p.id)}:${at(-3600).getTime()}`,
+        ])
+        // The id reads keep returning every stored link, expired ones included.
+        expect(s(await adapter.getSubjectRoleIds(alice, null))).toEqual(s([r1.id, r2.id]))
+        expect(s(await adapter.getSubjectPermissionIds(alice, null))).toEqual(s([p.id]))
+        // A plain attach (no options, as a 1.1 engine would call it) writes a permanent link.
+        await adapter.attachSubjectRoles(bob, [r1.id], null)
+        expect(expiries(await adapter.getSubjectRoleLinks!(bob, null))).toEqual([`${String(r1.id)}:null`])
+        expect(await adapter.getSubjectRoleLinks!(carol, null)).toEqual([])
+      })
+
+      it('keeps expiry per subject and per team, and never touches a lookalike subject', async (ctx) => {
+        if (adapter.supportsExpiry !== true) return ctx.skip()
+        const r = await adapter.createRole({ name: 'r', guardName: 'web', teamId: null })
+        const admin = { type: 'user', id: 'admin' }
+        await adapter.attachSubjectRoles(admin, [r.id], null, { expiresAt: null })
+        for (const id of lookalikes('admin')) {
+          // Under a collation that ignores case or trailing spaces the primary key rejects this link; either
+          // way, the exact subject's link must stay permanent.
+          await adapter.attachSubjectRoles({ type: 'user', id }, [r.id], null, { expiresAt: T })
+          for (const link of await adapter.getSubjectRoleLinks!({ type: 'user', id }, null)) {
+            expect(String(link.subject.id)).toBe(id)
+          }
+        }
+        expect(expiries(await adapter.getSubjectRoleLinks!(admin, null))).toEqual([`${String(r.id)}:null`])
+        if (teams) {
+          await adapter.attachSubjectRoles(alice, [r.id], 'acme', { expiresAt: T })
+          await adapter.attachSubjectRoles(alice, [r.id], null, { expiresAt: at(60) })
+          expect(expiries(await adapter.getSubjectRoleLinks!(alice, 'acme'))).toEqual([`${String(r.id)}:${T.getTime()}`])
+          expect(expiries(await adapter.getSubjectRoleLinks!(alice, null))).toEqual([`${String(r.id)}:${at(60).getTime()}`])
+          expect(team((await adapter.getSubjectRoleLinks!(alice, 'acme'))[0]!.teamId)).toBe('acme')
+        }
+      })
+
+      it('reverse lookups skip links expired at `now`', async (ctx) => {
+        if (adapter.supportsExpiry !== true) return ctx.skip()
+        const r = await adapter.createRole({ name: 'r', guardName: 'web', teamId: null })
+        const p = await adapter.createPermission({ name: 'p', guardName: 'web' })
+        await adapter.attachSubjectRoles(alice, [r.id], null, { expiresAt: T })
+        await adapter.attachSubjectRoles(bob, [r.id], null, { expiresAt: null })
+        await adapter.attachSubjectPermissions(alice, [p.id], null, { expiresAt: T })
+
+        expect(s(await adapter.getSubjectIdsWithRoles('user', [r.id], null, { now: at(-1) }))).toEqual(['1', '2'])
+        expect(s(await adapter.getSubjectIdsWithRoles('user', [r.id], null, { now: T }))).toEqual(['2'])
+        expect(s(await adapter.getSubjectIdsWithRoles('user', [r.id], null))).toEqual(['1', '2'])
+        expect(s(await adapter.getSubjectIdsWithPermissions('user', [p.id], null, { now: at(-1) }))).toEqual(['1'])
+        expect(await adapter.getSubjectIdsWithPermissions('user', [p.id], null, { now: at(1) })).toEqual([])
+      })
+
+      it('getSubjectLinks / getTeamLinks carry expiresAt', async (ctx) => {
+        if (adapter.supportsExpiry !== true || !adapter.getSubjectLinks) return ctx.skip()
+        const r = await adapter.createRole({ name: 'r', guardName: 'web', teamId: null })
+        const p = await adapter.createPermission({ name: 'p', guardName: 'web' })
+        const scope = teams ? 'acme' : null
+        await adapter.attachSubjectRoles(alice, [r.id], scope, { expiresAt: T })
+        await adapter.attachSubjectPermissions(alice, [p.id], scope, { expiresAt: null })
+        const links = await adapter.getSubjectLinks(alice)
+        expect(expiries(links.roles)).toEqual([`${String(r.id)}:${T.getTime()}`])
+        expect(expiries(links.permissions)).toEqual([`${String(p.id)}:null`])
+        if (teams && adapter.getTeamLinks) {
+          const teamLinks = await adapter.getTeamLinks('acme')
+          expect(expiries(teamLinks.roles)).toEqual([`${String(r.id)}:${T.getTime()}`])
+          expect(expiries(teamLinks.permissions)).toEqual([`${String(p.id)}:null`])
+        }
+      })
+
+      it('deleteExpiredLinks removes only links expired at `now`, of every subject and team', async (ctx) => {
+        if (adapter.supportsExpiry !== true || !adapter.deleteExpiredLinks) return ctx.skip()
+        const r1 = await adapter.createRole({ name: 'r1', guardName: 'web', teamId: null })
+        const r2 = await adapter.createRole({ name: 'r2', guardName: 'api', teamId: null })
+        const p = await adapter.createPermission({ name: 'p', guardName: 'web' })
+        const scope = teams ? 7 : null
+        await adapter.attachSubjectRoles(alice, [r1.id], null, { expiresAt: at(-10) })
+        await adapter.attachSubjectRoles(alice, [r2.id], null, { expiresAt: T })
+        await adapter.attachSubjectRoles(bob, [r1.id], scope, { expiresAt: at(10) })
+        await adapter.attachSubjectRoles(carol, [r1.id], null)
+        await adapter.attachSubjectPermissions(robot, [p.id], scope, { expiresAt: at(-1) })
+        await adapter.attachSubjectPermissions(alice, [p.id], null, { expiresAt: null })
+
+        expect(await adapter.deleteExpiredLinks(T)).toEqual({ roles: 2, permissions: 1 })
+        expect(await adapter.getSubjectRoleIds(alice, null)).toEqual([])
+        expect(s(await adapter.getSubjectRoleIds(bob, scope))).toEqual(s([r1.id]))
+        expect(s(await adapter.getSubjectRoleIds(carol, null))).toEqual(s([r1.id]))
+        expect(await adapter.getSubjectPermissionIds(robot, scope)).toEqual([])
+        expect(s(await adapter.getSubjectPermissionIds(alice, null))).toEqual(s([p.id]))
+        expect(await adapter.deleteExpiredLinks(T)).toEqual({ roles: 0, permissions: 0 })
+      })
+
+      it('end to end: checks, queries and pruning follow the engine clock', async (ctx) => {
+        if (adapter.supportsExpiry !== true) return ctx.skip()
+        let now = at(-3600)
+        const rbac = createRbac({ adapter, teams, cache: false, now: () => now })
+        await rbac.createPermission('impersonate')
+        await rbac.createPermission('read')
+        await rbac.createRole('on-call')
+        await rbac.role('on-call').givePermissionTo('read')
+        const user = rbac.for(alice)
+        await user.assignRole('on-call', { expiresAt: T })
+        await user.givePermissionTo('impersonate', { expiresAt: at(-1800) })
+
+        expect(await user.hasRole('on-call')).toBe(true)
+        expect(await user.can('read')).toBe(true)
+        expect(await user.can('impersonate')).toBe(true)
+        expect((await user.getRoleAssignments()).map((a) => ms(a.expiresAt))).toEqual([T.getTime()])
+        expect(s(await rbac.subjectsWithPermission('user', 'impersonate'))).toEqual(['1'])
+
+        now = at(-1800)
+        expect(await user.can('impersonate')).toBe(false)
+        expect(await rbac.subjectsWithPermission('user', 'impersonate')).toEqual([])
+        expect(await user.can('read')).toBe(true)
+
+        now = T
+        expect(await user.hasRole('on-call')).toBe(false)
+        expect(await user.can('read')).toBe(false)
+        expect(await rbac.subjectsWithRole('user', 'on-call')).toEqual([])
+        expect(await user.snapshot()).toEqual({ roles: [], permissions: [] })
+
+        if (adapter.deleteExpiredLinks) expect(await rbac.pruneExpired()).toEqual({ roles: 1, permissions: 1 })
+        // Assigning again (no expiry) makes the role permanent.
+        await user.assignRole('on-call')
+        now = at(10 * 365 * 24 * 3600)
+        expect(await user.hasRole('on-call')).toBe(true)
+      })
+    })
+
     describe('engine integration', () => {
       it('runs a full flow through createRbac', async () => {
         const rbac = createRbac({ adapter, teams, cache: false })

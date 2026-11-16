@@ -42,8 +42,8 @@ Why this split:
   including permissions you add next month. Compare the [blog](/use-cases/blog-cms), where `admin: '*'` stores every
   permission instead.
 - **Some things nobody may do.** A `before` hook denies `audit-log.delete` to everyone, super-admins too.
-- **Temporary access is a direct permission.** "Impersonate customers until 6 pm" belongs to one person for a few
-  hours. A role would be the wrong tool. See [Direct permissions](/basic-usage/direct-permissions).
+- **Temporary access is a direct permission with an expiry.** "Impersonate customers until 6 pm" belongs to one
+  person for a few hours. A role would be the wrong tool. See [Temporary access](/basic-usage/temporary-access).
 
 ## Seed it
 
@@ -51,7 +51,7 @@ Why this split:
 // src/rbac.ts
 import { createRbac } from '@anievo-id/rbac-evolution'
 import { createGuards } from '@anievo-id/rbac-evolution-fastify'
-import { adapter } from './db' // e.g. new DrizzleAdapter(db), see Adapters
+import { adapter } from './db' // created with { expiry: true }, see Temporary access
 
 export type ToolsRbac = {
   permissions:
@@ -138,8 +138,10 @@ const superAdmins = await rbac.subjectsWithRole('staff', 'super-admin') // ids, 
 ### Temporary access
 
 A support agent needs to log in as a customer to reproduce a bug. A super-admin grants
-`customers.impersonate` for two hours, with a reason. The engine stores the permission. Your own table stores
-**when it ends**, because the engine has no expiry:
+`customers.impersonate` for two hours. The grant ends **on its own**: the adapter is created with
+`{ expiry: true }` (see [Temporary access](/basic-usage/temporary-access) for the column it needs), so the
+permission is given with an `expiresAt`, and every check after that moment treats it as gone. No table of grants,
+no revoke job.
 
 ```ts
 // src/access-grants.ts
@@ -149,46 +151,21 @@ import type { ToolsRbac } from './rbac'
 /** What can be granted for a while. Keep the list short. */
 export type TemporaryPermission = Extract<PermissionName<ToolsRbac>, 'customers.impersonate' | 'orders.refund'>
 
-export interface AccessGrant {
-  id: number
-  staffId: number
-  permission: TemporaryPermission
-  reason: string
-  grantedBy: number
-  expiresAt: Date
-  revokedAt: Date | null
-}
-
-/** Your table of grants (any database). */
-export interface GrantStore {
-  create(grant: Omit<AccessGrant, 'id' | 'revokedAt'>): Promise<AccessGrant>
-  /** Grants with `expiresAt <= now` that are not revoked yet. */
-  findExpired(now: Date): Promise<AccessGrant[]>
-  /** Whether the staff member has another grant of this permission that is still running. */
-  hasActive(staffId: number, permission: TemporaryPermission, now: Date): Promise<boolean>
-  markRevoked(id: number, at: Date): Promise<void>
-}
-
+/** Grants the permission until `now + hours`. Returns when it ends (`null`: the person has it for good). */
 export async function grantTemporaryAccess(
   rbac: Rbac<ToolsRbac>,
-  grants: GrantStore,
-  input: { staffId: number; permission: TemporaryPermission; hours: number; reason: string; grantedBy: number },
+  input: { staffId: number; permission: TemporaryPermission; hours: number; grantedBy: number },
   now = new Date(),
-): Promise<AccessGrant> {
-  const { hours, ...rest } = input
-  const grant = await grants.create({ ...rest, expiresAt: new Date(now.getTime() + hours * 3_600_000) })
-  await rbac.for({ type: 'staff', id: input.staffId }).givePermissionTo(input.permission)
-  return grant
-}
+): Promise<Date | null> {
+  const staff = rbac.for({ type: 'staff', id: input.staffId }, { actor: { type: 'staff', id: input.grantedBy } })
+  const expiresAt = new Date(now.getTime() + input.hours * 3_600_000)
 
-/** Run every minute. Takes back what has expired. */
-export async function revokeExpiredGrants(rbac: Rbac<ToolsRbac>, grants: GrantStore, now = new Date()) {
-  for (const grant of await grants.findExpired(now)) {
-    await grants.markRevoked(grant.id, now)
-    // a second, longer grant of the same permission keeps it
-    if (await grants.hasActive(grant.staffId, grant.permission, now)) continue
-    await rbac.for({ type: 'staff', id: grant.staffId }).revokePermissionTo(grant.permission)
-  }
+  // Granting again replaces the end time (the latest call wins), so never shorten a running grant.
+  const current = (await staff.getDirectPermissionAssignments()).find((a) => a.permission.name === input.permission)
+  if (current && (current.expiresAt === null || current.expiresAt >= expiresAt)) return current.expiresAt
+
+  await staff.givePermissionTo(input.permission, { expiresAt })
+  return expiresAt
 }
 ```
 
@@ -196,17 +173,18 @@ export async function revokeExpiredGrants(rbac: Rbac<ToolsRbac>, grants: GrantSt
 sequenceDiagram
   participant SA as Super-admin
   participant P as Panel
-  participant J as Job (every minute)
   SA->>P: grant customers.impersonate, 2h, "ticket #4521"
-  P->>P: grants.create + givePermissionTo
+  P->>P: givePermissionTo(..., { expiresAt })
   Note over P: agent can impersonate
-  J->>P: revokeExpiredGrants
-  P->>P: markRevoked + revokePermissionTo
-  Note over P: back to read-only
+  Note over P: two hours later, every check denies it
+  P->>P: nightly pruneExpired() deletes the old row
 ```
 
-`revokePermissionTo()` removes the **direct** permission only. If the person also has it through a role, they keep
+The expiry is on the **direct** permission only. If the person also has the permission through a role, they keep
 it, which is what you want.
+
+The expired row stays in the table until `rbac.pruneExpired()` deletes it. Checks already ignore it, so run that
+when it suits you, for example once a night.
 
 ## Guard the routes
 
@@ -214,8 +192,7 @@ it, which is what you want.
 // src/app.ts
 import Fastify from 'fastify'
 import { rbacPlugin } from '@anievo-id/rbac-evolution-fastify'
-import { grantTemporaryAccess, revokeExpiredGrants, type TemporaryPermission } from './access-grants'
-import { grants } from './db'
+import { grantTemporaryAccess, type TemporaryPermission } from './access-grants'
 import { rbac, requirePermission } from './rbac'
 
 export const app = Fastify()
@@ -244,10 +221,10 @@ await app.register(
     admin.post('/jobs/:id/retry', { preHandler: requirePermission('jobs.retry') }, async () => ({ ok: true }))
 
     admin.post('/access-grants', { preHandler: requirePermission('access.grant') }, async (request, reply) => {
-      const body = request.body as { staffId: number; permission: TemporaryPermission; hours: number; reason: string }
+      const body = request.body as { staffId: number; permission: TemporaryPermission; hours: number }
       if (body.hours > 8) return reply.code(422).send({ error: 'At most 8 hours' })
-      const grant = await grantTemporaryAccess(rbac, grants, { ...body, grantedBy: request.staff!.id })
-      return reply.code(201).send(grant)
+      const expiresAt = await grantTemporaryAccess(rbac, { ...body, grantedBy: request.staff!.id })
+      return reply.code(201).send({ expiresAt })
     })
 
     // The snapshot for the React app
@@ -258,7 +235,8 @@ await app.register(
   { prefix: '/admin' },
 )
 
-setInterval(() => void revokeExpiredGrants(rbac, grants), 60_000) // or your job scheduler
+// Housekeeping only: expired grants already deny. Once a night, or from your job scheduler.
+setInterval(() => void rbac.pruneExpired(), 24 * 3_600_000)
 ```
 
 Validate `request.body` with a Fastify JSON schema in a real app, so `permission` can only be one of the
@@ -336,16 +314,20 @@ person had access to (an API token, a second panel).
 
 ### Who has temporary access right now?
 
-A data check, not `can()`: it lists what is stored, without the super-admin shortcut.
+A data check, not `can()`: it lists what is stored, without the super-admin shortcut. Expired grants are not
+listed.
 
 ```ts
-const direct = await rbac.for({ type: 'staff', id: staffId }).getDirectPermissions()
-// direct.map((p) => p.name) → ['customers.impersonate']
+const grants = await rbac.for({ type: 'staff', id: staffId }).getDirectPermissionAssignments()
+// grants.map((g) => [g.permission.name, g.expiresAt]) → [['customers.impersonate', 2026-01-05T11:00:00.000Z]]
 ```
+
+To list every staff member who has it now, `rbac.subjectsWithPermission('staff', 'customers.impersonate')` skips
+the expired grants too.
 
 ### Logging grants
 
-Listen to the events to write grants and revocations to your audit log:
+Listen to the events to write grants to your audit log. With expiry on, the payload says until when:
 
 ```ts
 rbac.on('permission.attached', async (e) => {
@@ -355,61 +337,46 @@ rbac.on('permission.attached', async (e) => {
       subject: e.subject,
       permissions: e.permissions.map((p) => p.name),
       by: e.actor ?? 'unknown', // set with `{ actor }` on the write, or `getActor` on the engine
+      until: e.expiresAt ?? null,
     })
   }
 })
 ```
 
+No event fires when a grant expires, or when `pruneExpired()` deletes it: the access ended at `expiresAt`, which
+the `grant` entry already records.
+
 See [Who made the change](/advanced/events#who-made-the-change-actor) and the [Audit log recipe](/recipes/audit-log).
 
 ## Test it
 
-Use a fake clock (`now`) and a small in-memory `GrantStore`:
+Move the engine's clock with the `now` option:
 
 ```ts
 // test/access-grants.test.ts
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createRbac, MemoryAdapter, type Rbac } from '@anievo-id/rbac-evolution'
-import { grantTemporaryAccess, revokeExpiredGrants, type AccessGrant, type GrantStore } from '../src/access-grants'
+import { grantTemporaryAccess } from '../src/access-grants'
 import { SUPER_ADMIN_ROLES, type ToolsRbac } from '../src/rbac'
 import { toolsSeed } from '../src/seed'
 
-function memoryGrants(): GrantStore {
-  const rows: AccessGrant[] = []
-  return {
-    async create(grant) {
-      const row = { ...grant, id: rows.length + 1, revokedAt: null }
-      rows.push(row)
-      return row
-    },
-    async findExpired(now) {
-      return rows.filter((g) => !g.revokedAt && g.expiresAt <= now)
-    },
-    async hasActive(staffId, permission, now) {
-      return rows.some((g) => g.staffId === staffId && g.permission === permission && !g.revokedAt && g.expiresAt > now)
-    },
-    async markRevoked(id, at) {
-      rows.find((g) => g.id === id)!.revokedAt = at
-    },
-  }
-}
-
 describe('internal tools', () => {
   let rbac: Rbac<ToolsRbac>
-  let grants: GrantStore
   const agent = { type: 'staff', id: 1 }
   const boss = { type: 'staff', id: 2 }
   const t0 = new Date('2026-01-05T09:00:00Z')
   const hours = (h: number) => new Date(t0.getTime() + h * 3_600_000)
+  let clock = t0
 
   beforeEach(async () => {
+    clock = t0
     rbac = createRbac<ToolsRbac>({
-      adapter: new MemoryAdapter(),
+      adapter: new MemoryAdapter({ expiry: true }),
       cache: false,
+      now: () => clock,
       superAdminRoles: SUPER_ADMIN_ROLES,
       before: ({ permission }) => (permission === 'audit-log.delete' ? false : undefined),
     })
-    grants = memoryGrants()
     await rbac.sync(toolsSeed)
     await rbac.for(agent).assignRole('support-agent')
     await rbac.for(boss).assignRole('super-admin')
@@ -425,17 +392,17 @@ describe('internal tools', () => {
     expect(await rbac.for(boss).can('audit-log.delete')).toBe(false)
   })
 
-  it('takes temporary access back when it expires', async () => {
-    const input = { staffId: 1, permission: 'customers.impersonate', reason: '#4521', grantedBy: 2 } as const
-    await grantTemporaryAccess(rbac, grants, { ...input, hours: 2 }, t0)
-    await grantTemporaryAccess(rbac, grants, { ...input, hours: 4 }, t0)
+  it('ends temporary access on its own, and never shortens a running grant', async () => {
+    const input = { staffId: 1, permission: 'customers.impersonate', grantedBy: 2 } as const
+    expect(await grantTemporaryAccess(rbac, { ...input, hours: 4 }, t0)).toEqual(hours(4))
+    expect(await grantTemporaryAccess(rbac, { ...input, hours: 2 }, t0)).toEqual(hours(4))
+
+    clock = hours(3)
     expect(await rbac.for(agent).can('customers.impersonate')).toBe(true)
 
-    await revokeExpiredGrants(rbac, grants, hours(3)) // the 2h grant ended, the 4h one still runs
-    expect(await rbac.for(agent).can('customers.impersonate')).toBe(true)
-
-    await revokeExpiredGrants(rbac, grants, hours(5))
+    clock = hours(4)
     expect(await rbac.for(agent).can('customers.impersonate')).toBe(false)
+    expect(await rbac.pruneExpired()).toEqual({ roles: 0, permissions: 1 })
   })
 })
 ```
@@ -443,7 +410,7 @@ describe('internal tools', () => {
 ## Related
 
 - [Super-admin and the `before` hook](/basic-usage/super-admin)
-- [Direct permissions](/basic-usage/direct-permissions)
+- [Temporary access](/basic-usage/temporary-access) and [Direct permissions](/basic-usage/direct-permissions)
 - [Fastify](/frameworks/fastify) and [React](/frameworks/react)
 - [Events](/advanced/events) and the [Audit log recipe](/recipes/audit-log)
 - [Security](/best-practices/security) and [Threat model](/best-practices/threat-model)

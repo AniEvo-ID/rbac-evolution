@@ -7,6 +7,8 @@
 // - subjects (users, API clients, ...) are stored as `subject_type` + `subject_id` (text),
 //   so any primary key type works (number, UUID, cuid, ...)
 // - `team_id` is NOT NULL text; '' (empty string) means "global / no team"
+// - `expires_at` (1.2, optional) is only used with `new PrismaAdapter(prisma, { expiry: true })`. Without
+//   that option the adapter never reads or writes it, so you can leave the two `expiresAt` lines out.
 
 model RbacPermission {
   id        Int      @id @default(autoincrement())
@@ -51,10 +53,11 @@ model RbacRoleHasPermission {
 }
 
 model RbacModelHasRole {
-  roleId      Int    @map("role_id")
-  subjectType String @map("subject_type")
-  subjectId   String @map("subject_id")
-  teamId      String @default("") @map("team_id")
+  roleId      Int       @map("role_id")
+  subjectType String    @map("subject_type")
+  subjectId   String    @map("subject_id")
+  teamId      String    @default("") @map("team_id")
+  expiresAt   DateTime? @map("expires_at")
 
   role RbacRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
@@ -64,10 +67,11 @@ model RbacModelHasRole {
 }
 
 model RbacModelHasPermission {
-  permissionId Int    @map("permission_id")
-  subjectType  String @map("subject_type")
-  subjectId    String @map("subject_id")
-  teamId       String @default("") @map("team_id")
+  permissionId Int       @map("permission_id")
+  subjectType  String    @map("subject_type")
+  subjectId    String    @map("subject_id")
+  teamId       String    @default("") @map("team_id")
+  expiresAt    DateTime? @map("expires_at")
 
   permission RbacPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 

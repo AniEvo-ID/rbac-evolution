@@ -7,10 +7,10 @@ import { drizzleSqliteAdapter, sqliteRbacSchema } from '../src/sqlite'
 import { ddl } from './ddl'
 
 /** Fresh in-memory database per call. */
-async function freshDb(prefix = '', foreignKeys = false) {
+async function freshDb(prefix = '', foreignKeys = false, expiry = false) {
   const client = createClient({ url: ':memory:' })
   await client.execute(`PRAGMA foreign_keys = ${foreignKeys ? 'ON' : 'OFF'}`)
-  await client.executeMultiple(ddl('sqlite', prefix))
+  await client.executeMultiple(ddl('sqlite', prefix, { expiry }))
   return { client, db: drizzle(client) }
 }
 
@@ -23,6 +23,44 @@ runAdapterTests('drizzle (SQLite via libsql, foreign_keys=OFF)', async () => {
 runAdapterTests('drizzle (SQLite via libsql, foreign_keys=ON)', async () => {
   const { db } = await freshDb('', true)
   return drizzleSqliteAdapter(db)
+})
+
+runAdapterTests('drizzle (SQLite via libsql, expiry)', async () => {
+  const { db } = await freshDb('', false, true)
+  return drizzleSqliteAdapter(db, sqliteRbacSchema({ expiry: true }), { expiry: true })
+})
+
+describe('drizzle sqlite: expiry', () => {
+  it('needs the expiry schema for { expiry: true }', async () => {
+    const { db } = await freshDb()
+    expect(() => drizzleSqliteAdapter(db, sqliteRbacSchema(), { expiry: true })).toThrow(/expiresAt/)
+  })
+
+  it('stores unix ms, and without { expiry: true } never touches the column', async () => {
+    const { client, db } = await freshDb('', false, true)
+    const adapter = drizzleSqliteAdapter(db, sqliteRbacSchema({ expiry: true }), { expiry: true })
+    const r = await adapter.createRole({ name: 'r', guardName: 'web', teamId: null })
+    await adapter.attachSubjectRoles({ type: 'user', id: 1 }, [r.id], null, { expiresAt: new Date(1_900_000_000_123) })
+    const rows = await client.execute('SELECT expires_at FROM model_has_roles')
+    expect(Number(rows.rows[0]?.['expires_at'])).toBe(1_900_000_000_123)
+
+    // The 1.1 schema object on the upgraded table: reads and writes as before, the column stays NULL.
+    const plain = drizzleSqliteAdapter(db)
+    await plain.attachSubjectRoles({ type: 'user', id: 2 }, [r.id], null)
+    expect(await plain.getSubjectRoleIds({ type: 'user', id: 1 }, null)).toEqual([r.id])
+    const second = await client.execute("SELECT expires_at FROM model_has_roles WHERE subject_id = '2'")
+    expect(second.rows[0]?.['expires_at']).toBeNull()
+  })
+
+  it('on a 1.1 database, the default adapter refuses an expiresAt instead of granting permanent access', async () => {
+    const { db } = await freshDb()
+    const rbac = createRbac({ adapter: drizzleSqliteAdapter(db), cache: false })
+    await rbac.createRole('on-call')
+    await expect(
+      rbac.for({ type: 'user', id: 1 }).assignRole('on-call', { expiresAt: new Date(Date.now() + 60_000) }),
+    ).rejects.toMatchObject({ code: 'EXPIRY_NOT_SUPPORTED' })
+    expect(await rbac.for({ type: 'user', id: 1 }).getRoleNames()).toEqual([])
+  })
 })
 
 describe('drizzle sqlite: specifics', () => {

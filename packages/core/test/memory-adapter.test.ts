@@ -6,8 +6,22 @@ runAdapterTests('MemoryAdapter', () => new MemoryAdapter())
 
 runAdapterTests('MemoryAdapter (teams: false)', () => new MemoryAdapter(), { teams: false })
 
+runAdapterTests('MemoryAdapter ({ expiry: true })', () => new MemoryAdapter({ expiry: true }))
+
+runAdapterTests('MemoryAdapter ({ expiry: true }, teams: false)', () => new MemoryAdapter({ expiry: true }), {
+  teams: false,
+})
+
 // A 1.0 custom adapter has none of the optional methods: the suite must still pass, skipping their tests.
-const OPTIONAL = new Set<PropertyKey>(['getSubjectLinks', 'getTeamLinks', 'detachTeamLinks'])
+const OPTIONAL = new Set<PropertyKey>([
+  'getSubjectLinks',
+  'getTeamLinks',
+  'detachTeamLinks',
+  'supportsExpiry',
+  'getSubjectRoleLinks',
+  'getSubjectPermissionLinks',
+  'deleteExpiredLinks',
+])
 runAdapterTests('MemoryAdapter without the optional methods', () => {
   const inner = new MemoryAdapter()
   return new Proxy(inner, {

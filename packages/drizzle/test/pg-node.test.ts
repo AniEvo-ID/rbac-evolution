@@ -6,7 +6,7 @@ import { type NodePgDatabase, drizzle } from 'drizzle-orm/node-postgres'
 import pg from 'pg'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { drizzlePgAdapter, pgRbacSchema } from '../src/pg'
-import { ddl } from './ddl'
+import { ddl, expiryDdl } from './ddl'
 import { PG_URL, TEST_DATABASE, skipNote, withDatabase } from './servers'
 
 const TABLES = ['model_has_permissions', 'model_has_roles', 'role_has_permissions', 'roles', 'permissions']
@@ -31,10 +31,13 @@ describe.skipIf(PG_URL === '')(`drizzle pg (node-postgres, real server)${skipNot
 
     pool = new pg.Pool({ connectionString: withDatabase(PG_URL, TEST_DATABASE), max: 4 })
     // Recreate from the shipped DDL so every run starts from the current schema.
-    for (const prefix of ['', 'rbac_']) {
+    for (const prefix of ['', 'rbac_', 'exp_']) {
       await pool.query(TABLES.map((t) => `DROP TABLE IF EXISTS "${prefix}${t}" CASCADE;`).join('\n'))
       await pool.query(ddl('pg', prefix))
     }
+    // 1.1 tables upgraded with the shipped `sql/pg-expiry.sql`, twice (it is idempotent on PostgreSQL).
+    await pool.query(expiryDdl('pg', 'exp_'))
+    await pool.query(expiryDdl('pg', 'exp_'))
     db = drizzle({ client: pool })
   })
 
@@ -45,6 +48,11 @@ describe.skipIf(PG_URL === '')(`drizzle pg (node-postgres, real server)${skipNot
   runAdapterTests('drizzle (PostgreSQL via node-postgres)', async () => {
     await truncate()
     return drizzlePgAdapter(db)
+  })
+
+  runAdapterTests('drizzle (PostgreSQL via node-postgres, expiry)', async () => {
+    await truncate('exp_')
+    return drizzlePgAdapter(db, pgRbacSchema({ prefix: 'exp_', expiry: true }), { expiry: true })
   })
 
   describe('drizzle pg (node-postgres): specifics', () => {

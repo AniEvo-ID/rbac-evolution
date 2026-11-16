@@ -151,10 +151,12 @@ Each dialect has a factory function that takes a Drizzle database instance and, 
 
 <!-- doc-test: skip -->
 ```ts
-drizzlePgAdapter(db, schema?: PgRbacSchema): RbacAdapter
-drizzleSqliteAdapter(db, schema?: SqliteRbacSchema): RbacAdapter
-drizzleMysqlAdapter(db, schema?: MysqlRbacSchema): RbacAdapter
+drizzlePgAdapter(db, schema?: PgRbacSchema | PgRbacExpirySchema, options?: { expiry?: boolean }): RbacAdapter
+drizzleSqliteAdapter(db, schema?: SqliteRbacSchema | SqliteRbacExpirySchema, options?: { expiry?: boolean }): RbacAdapter
+drizzleMysqlAdapter(db, schema?: MysqlRbacSchema | MysqlRbacExpirySchema, options?: { expiry?: boolean }): RbacAdapter
 ```
+
+`options.expiry` turns on [temporary access](/basic-usage/temporary-access); see [Expiry (1.2)](#expiry-1-2).
 
 ::: code-group
 
@@ -217,13 +219,67 @@ export const rbac = createRbac({ adapter: drizzlePgAdapter(db, rbacTables) })
 
 | Export | From | Kind |
 | --- | --- | --- |
-| `pgRbacSchema(options?)`, `drizzlePgAdapter(db, schema?)` | `/pg` | functions |
-| `sqliteRbacSchema(options?)`, `drizzleSqliteAdapter(db, schema?)` | `/sqlite` | functions |
-| `mysqlRbacSchema(options?)`, `drizzleMysqlAdapter(db, schema?)` | `/mysql` | functions |
-| `PgRbacSchema`, `SqliteRbacSchema`, `MysqlRbacSchema`, `RbacSchemaOptions` | `/pg`, `/sqlite`, `/mysql` | types |
+| `pgRbacSchema(options?)`, `drizzlePgAdapter(db, schema?, options?)` | `/pg` | functions |
+| `sqliteRbacSchema(options?)`, `drizzleSqliteAdapter(db, schema?, options?)` | `/sqlite` | functions |
+| `mysqlRbacSchema(options?)`, `drizzleMysqlAdapter(db, schema?, options?)` | `/mysql` | functions |
+| `PgRbacSchema`, `SqliteRbacSchema`, `MysqlRbacSchema`, their `*ExpirySchema` variants, `RbacSchemaOptions`, `DrizzleAdapterOptions` | `/pg`, `/sqlite`, `/mysql` | types |
 | `DrizzleRbacAdapter`, `DrizzleDialect`, `RbacTables`, `RbacTableNames` | package root | class / types |
 
-`RbacSchemaOptions` has one field, `prefix?: string` (default `''`).
+`RbacSchemaOptions` has two fields: `prefix?: string` (default `''`) and `expiry?: boolean` (default `false`, see
+[Expiry (1.2)](#expiry-1-2)).
+
+## Expiry (1.2)
+
+[Temporary access](/basic-usage/temporary-access) stores when a role assignment or direct permission ends in a
+nullable `expires_at` column of `model_has_roles` and `model_has_permissions`. It is **off by default**: the
+schema functions build the 1.1 tables, and the adapter never selects, inserts or updates `expires_at`, so a 1.1
+database keeps working after the upgrade, unchanged.
+
+To turn it on:
+
+1. Add the column. Either build the schema with `{ expiry: true }` and let drizzle-kit generate the migration:
+
+   ```ts
+   // db/schema.ts
+   import { pgRbacSchema } from '@anievo-id/rbac-evolution-drizzle/pg'
+
+   export const rbacTables = pgRbacSchema({ expiry: true })
+   export const { permissions, roles, roleHasPermissions, modelHasRoles, modelHasPermissions } = rbacTables
+   ```
+
+   ```bash
+   npx drizzle-kit generate   # ALTER TABLE ... ADD COLUMN "expires_at" ...
+   npx drizzle-kit migrate
+   ```
+
+   or run the upgrade file that ships with the package, once:
+
+   | Dialect | File | Column |
+   | --- | --- | --- |
+   | PostgreSQL | `sql/pg-expiry.sql` | `timestamp with time zone` |
+   | SQLite | `sql/sqlite-expiry.sql` | `integer`, unix milliseconds (Drizzle `mode: 'timestamp_ms'`) |
+   | MySQL | `sql/mysql-expiry.sql` | `datetime(3)` |
+
+   ```bash
+   psql "$DATABASE_URL" -f node_modules/@anievo-id/rbac-evolution-drizzle/sql/pg-expiry.sql
+   ```
+
+   Existing rows get `NULL`, which means permanent. A new database runs `sql/<dialect>.sql`, then
+   `sql/<dialect>-expiry.sql`. With a prefix, prefix the two table names in the file.
+
+2. Pass that schema and the option to the adapter:
+
+   ```ts
+   import { createRbac } from '@anievo-id/rbac-evolution'
+   import { drizzlePgAdapter, pgRbacSchema } from '@anievo-id/rbac-evolution-drizzle/pg'
+
+   export const rbac = createRbac({ adapter: drizzlePgAdapter(db, pgRbacSchema({ expiry: true }), { expiry: true }) })
+   ```
+
+`{ expiry: true }` with a schema built without it throws a `TypeError` when the adapter is created. Without the
+option, an `expiresAt` throws `EXPIRY_NOT_SUPPORTED` and writes nothing. A schema built with `{ expiry: true }` but
+an adapter without the option is fine: the column stays `NULL`. Migrate the database before you deploy a schema that
+has the column, because Drizzle lists every column of a table in its inserts.
 
 ## Behaviour notes
 
@@ -233,6 +289,9 @@ export const rbac = createRbac({ adapter: drizzlePgAdapter(db, rbacTables) })
 - **Inserts on MySQL.** MySQL has no `INSERT ... RETURNING`, so `createPermission` / `createRole` read the generated id with Drizzle's `$returningId()`.
 - **Link cleanup.** `deleteRole` and `deletePermission` delete the link rows themselves before deleting the row. This works even when SQLite foreign keys are off (the default). The `ON DELETE CASCADE` clauses take effect on SQLite only after `PRAGMA foreign_keys = ON` for each connection.
 - **Timestamps.** The adapter never writes or returns `created_at` / `updated_at`. They keep their default values.
+- **Expiry writes.** With `{ expiry: true }`, an attach inserts the missing links with their `expires_at`, then
+  updates `expires_at` of the links the exact subject already held (the latest call wins). `pruneExpired()` is one
+  `DELETE ... WHERE expires_at <= now` per table.
 
 ## Supported databases and how they are tested
 

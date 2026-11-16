@@ -4,9 +4,14 @@
 
 ## `@anievo-id/rbac-evolution`
 
-106 exports.
+114 exports.
 
 ```ts
+// ActiveLinkOptions: interface
+interface ActiveLinkOptions {
+    now: Date;
+}
+
 // ActorOptions: interface
 interface ActorOptions {
     actor?: RbacActor | undefined;
@@ -14,6 +19,11 @@ interface ActorOptions {
 
 // ActorResolver: type
 type ActorResolver = () => RbacActor | null | undefined | Promise<RbacActor | null | undefined>;
+
+// AttachLinkOptions: interface
+interface AttachLinkOptions {
+    expiresAt: Date | null;
+}
 
 // BeforeContext: interface
 interface BeforeContext<T extends RbacTypeConfig = DefaultRbacTypes> {
@@ -55,6 +65,23 @@ type DefaultGuardName<T extends RbacTypeConfig = DefaultRbacTypes> = T extends {
 interface DefaultRbacTypes {
     permissions: string;
     roles: string;
+}
+
+// DeletedLinkCounts: interface
+interface DeletedLinkCounts {
+    roles: number;
+    permissions: number;
+}
+
+// ExpiryArgs: type
+type ExpiryArgs<A> = A[] | [
+    ...A[],
+    ExpiryOptions
+];
+
+// ExpiryOptions: interface
+interface ExpiryOptions {
+    expiresAt?: Date | null | undefined;
 }
 
 // FindPermissionsQuery: interface
@@ -112,6 +139,8 @@ type Many<T> = T | readonly T[];
 
 // MemoryAdapter: class
 declare class MemoryAdapter implements RbacAdapter {
+    readonly supportsExpiry: boolean;
+    constructor(options?: MemoryAdapterOptions);
     createPermission(data: {
         name: string;
         guardName: string;
@@ -129,16 +158,24 @@ declare class MemoryAdapter implements RbacAdapter {
     attachRolePermissions(roleId: Id, permissionIds: readonly Id[]): Promise<void>;
     detachRolePermissions(roleId: Id, permissionIds?: readonly Id[]): Promise<void>;
     getSubjectRoleIds(subject: Subject, teamId: TeamId): Promise<Id[]>;
-    attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId): Promise<void>;
+    attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId, options?: AttachLinkOptions): Promise<void>;
     detachSubjectRoles(subject: Subject, roleIds: readonly Id[] | undefined, teamId: TeamId): Promise<void>;
     getSubjectPermissionIds(subject: Subject, teamId: TeamId): Promise<Id[]>;
-    attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId): Promise<void>;
+    attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId, options?: AttachLinkOptions): Promise<void>;
     detachSubjectPermissions(subject: Subject, permissionIds: readonly Id[] | undefined, teamId: TeamId): Promise<void>;
-    getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]>;
-    getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]>;
+    getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId, options?: ActiveLinkOptions): Promise<Id[]>;
+    getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId, options?: ActiveLinkOptions): Promise<Id[]>;
+    getSubjectRoleLinks(subject: Subject, teamId: TeamId): Promise<SubjectRoleLink[]>;
+    getSubjectPermissionLinks(subject: Subject, teamId: TeamId): Promise<SubjectPermissionLink[]>;
+    deleteExpiredLinks(now: Date): Promise<DeletedLinkCounts>;
     getSubjectLinks(subject: Subject): Promise<SubjectLinks>;
     getTeamLinks(teamId: Id): Promise<SubjectLinks>;
     detachTeamLinks(teamId: Id): Promise<void>;
+}
+
+// MemoryAdapterOptions: interface
+interface MemoryAdapterOptions {
+    expiry?: boolean | undefined;
 }
 
 // MemoryCache: class
@@ -177,12 +214,19 @@ declare class PermissionAlreadyExists extends RbacError {
     constructor(name: string, guardName: string);
 }
 
+// PermissionAssignment: interface
+interface PermissionAssignment {
+    permission: Permission;
+    expiresAt: Date | null;
+}
+
 // PermissionAttachedEvent: type
 type PermissionAttachedEvent = {
     event: 'permission.attached';
     permissions: Permission[];
     guardName: string;
     teamId: TeamId;
+    expiresAt?: Date | null | undefined;
 } & PermissionTarget & RbacEventBase;
 
 // PermissionCreatedEvent: interface
@@ -263,6 +307,7 @@ declare class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     subjectsWithRole<G extends string = DefaultGuardName<T>>(subjectType: string, roles: Many<RoleInput<RoleName<T, G>>>, options?: ScopeOptions<CheckGuard<T, G>>): Promise<Id[]>;
     subjectsWithPermission<G extends string = DefaultGuardName<T>>(subjectType: string, permissions: Many<PermissionInput<PermissionName<T, G>>>, options?: SubjectsWithPermissionOptions<CheckGuard<T, G>>): Promise<Id[]>;
     deleteTeam(teamId: Id): Promise<void>;
+    pruneExpired(): Promise<DeletedLinkCounts>;
     forgetCachedPermissions(): Promise<void>;
 }
 
@@ -271,6 +316,7 @@ type RbacActor = Subject | string;
 
 // RbacAdapter: interface
 interface RbacAdapter {
+    readonly supportsExpiry?: boolean | undefined;
     createPermission(data: {
         name: string;
         guardName: string;
@@ -288,16 +334,19 @@ interface RbacAdapter {
     attachRolePermissions(roleId: Id, permissionIds: readonly Id[]): Promise<void>;
     detachRolePermissions(roleId: Id, permissionIds?: readonly Id[]): Promise<void>;
     getSubjectRoleIds(subject: Subject, teamId: TeamId): Promise<Id[]>;
-    attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId): Promise<void>;
+    attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId, options?: AttachLinkOptions): Promise<void>;
     detachSubjectRoles(subject: Subject, roleIds: readonly Id[] | undefined, teamId: TeamId): Promise<void>;
     getSubjectPermissionIds(subject: Subject, teamId: TeamId): Promise<Id[]>;
-    attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId): Promise<void>;
+    attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId, options?: AttachLinkOptions): Promise<void>;
     detachSubjectPermissions(subject: Subject, permissionIds: readonly Id[] | undefined, teamId: TeamId): Promise<void>;
-    getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]>;
-    getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]>;
+    getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId, options?: ActiveLinkOptions): Promise<Id[]>;
+    getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId, options?: ActiveLinkOptions): Promise<Id[]>;
     getSubjectLinks?(subject: Subject): Promise<SubjectLinks>;
     getTeamLinks?(teamId: Id): Promise<SubjectLinks>;
     detachTeamLinks?(teamId: Id): Promise<void>;
+    getSubjectRoleLinks?(subject: Subject, teamId: TeamId): Promise<SubjectRoleLink[]>;
+    getSubjectPermissionLinks?(subject: Subject, teamId: TeamId): Promise<SubjectPermissionLink[]>;
+    deleteExpiredLinks?(now: Date): Promise<DeletedLinkCounts>;
 }
 
 // RbacError: class
@@ -307,7 +356,7 @@ declare class RbacError extends Error {
 }
 
 // RbacErrorCode: type
-type RbacErrorCode = 'PERMISSION_DOES_NOT_EXIST' | 'PERMISSION_ALREADY_EXISTS' | 'ROLE_DOES_NOT_EXIST' | 'ROLE_ALREADY_EXISTS' | 'GUARD_DOES_NOT_MATCH' | 'TEAM_DOES_NOT_MATCH' | 'TEAMS_NOT_ENABLED' | 'INVALID_NAME' | 'INVALID_WILDCARD_PERMISSION' | 'INVALID_SYNC_DEFINITION' | 'ADAPTER_METHOD_MISSING';
+type RbacErrorCode = 'PERMISSION_DOES_NOT_EXIST' | 'PERMISSION_ALREADY_EXISTS' | 'ROLE_DOES_NOT_EXIST' | 'ROLE_ALREADY_EXISTS' | 'GUARD_DOES_NOT_MATCH' | 'TEAM_DOES_NOT_MATCH' | 'TEAMS_NOT_ENABLED' | 'INVALID_NAME' | 'INVALID_WILDCARD_PERMISSION' | 'INVALID_SYNC_DEFINITION' | 'ADAPTER_METHOD_MISSING' | 'EXPIRY_NOT_SUPPORTED';
 
 // RbacEvent: type
 type RbacEvent = RbacEventMap[RbacEventName];
@@ -369,6 +418,7 @@ interface RbacOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
     wildcardPrefixCheck?: WildcardPrefixCheck | undefined;
     getActor?: ActorResolver | undefined;
     names?: RbacNames<T> | undefined;
+    now?: (() => Date) | undefined;
 }
 
 // RbacRequirement: interface
@@ -448,6 +498,12 @@ declare class RoleAlreadyExists extends RbacError {
     constructor(name: string, guardName: string);
 }
 
+// RoleAssignment: interface
+interface RoleAssignment {
+    role: Role;
+    expiresAt: Date | null;
+}
+
 // RoleAttachedEvent: interface
 interface RoleAttachedEvent extends RbacEventBase {
     event: 'role.attached';
@@ -455,6 +511,7 @@ interface RoleAttachedEvent extends RbacEventBase {
     roles: Role[];
     guardName: string;
     teamId: TeamId;
+    expiresAt?: Date | null | undefined;
 }
 
 // RoleCreatedEvent: interface
@@ -549,6 +606,7 @@ interface SubjectPermissionLink {
     subject: Subject;
     permissionId: Id;
     teamId: TeamId;
+    expiresAt?: Date | null | undefined;
 }
 
 // SubjectRbac: class
@@ -558,18 +616,20 @@ declare class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes, G extends
     readonly teamId: TeamId;
     constructor(rbac: Rbac<T>, subject: Subject, guardName: string, teamId: TeamId, actor?: RbacActor);
     withScope<G2 extends string = G>(options: ScopeOptions<CheckGuard<T, G2>>): SubjectRbac<T, ScopedGuardName<T, G2>>;
-    assignRole(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<this>;
+    assignRole(...roles: ExpiryArgs<Many<RoleInput<RoleName<T, G>>>>): Promise<this>;
     removeRole(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<this>;
-    syncRoles(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<this>;
+    syncRoles(...roles: ExpiryArgs<Many<RoleInput<RoleName<T, G>>>>): Promise<this>;
+    getRoleAssignments(): Promise<RoleAssignment[]>;
     getRoles(): Promise<Role[]>;
     getRoleNames(): Promise<string[]>;
     hasRole(roles: Many<RoleInput<RoleName<T, G>>>): Promise<boolean>;
     hasAnyRole(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<boolean>;
     hasAllRoles(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<boolean>;
     hasExactRoles(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<boolean>;
-    givePermissionTo(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<this>;
+    givePermissionTo(...permissions: ExpiryArgs<Many<PermissionInput<PermissionName<T, G>>>>): Promise<this>;
     revokePermissionTo(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<this>;
-    syncPermissions(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<this>;
+    syncPermissions(...permissions: ExpiryArgs<Many<PermissionInput<PermissionName<T, G>>>>): Promise<this>;
+    getDirectPermissionAssignments(): Promise<PermissionAssignment[]>;
     revokeAll(options?: RevokeAllOptions): Promise<this>;
     teams(options?: SubjectTeamsOptions): Promise<Id[]>;
     getDirectPermissions(): Promise<Permission[]>;
@@ -595,6 +655,7 @@ interface SubjectRoleLink {
     subject: Subject;
     roleId: Id;
     teamId: TeamId;
+    expiresAt?: Date | null | undefined;
 }
 
 // SubjectTeamsOptions: interface
@@ -774,4 +835,4 @@ declare function runAdapterTests(name: string, factory: () => RbacAdapter | Prom
 
 Referenced from other entry points of this package (not re-exported here):
 
-- `@anievo-id/rbac-evolution`: `FindPermissionsQuery` (interface), `FindRolesQuery` (interface), `Id` (type), `Permission` (interface), `RbacAdapter` (interface), `Role` (interface), `RolePermissionLink` (interface), `Subject` (interface), `SubjectLinks` (interface), `SubjectPermissionLink` (interface), `SubjectRoleLink` (interface), `TeamId` (type)
+- `@anievo-id/rbac-evolution`: `ActiveLinkOptions` (interface), `AttachLinkOptions` (interface), `DeletedLinkCounts` (interface), `FindPermissionsQuery` (interface), `FindRolesQuery` (interface), `Id` (type), `Permission` (interface), `RbacAdapter` (interface), `Role` (interface), `RolePermissionLink` (interface), `Subject` (interface), `SubjectLinks` (interface), `SubjectPermissionLink` (interface), `SubjectRoleLink` (interface), `TeamId` (type)

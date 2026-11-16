@@ -1,4 +1,7 @@
 import type {
+  ActiveLinkOptions,
+  AttachLinkOptions,
+  DeletedLinkCounts,
   FindPermissionsQuery,
   FindRolesQuery,
   Id,
@@ -8,6 +11,8 @@ import type {
   RolePermissionLink,
   Subject,
   SubjectLinks,
+  SubjectPermissionLink,
+  SubjectRoleLink,
   TeamId,
 } from '@anievo-id/rbac-evolution'
 import { type Kysely, sql } from 'kysely'
@@ -17,6 +22,12 @@ import { type RbacTableNames, type RbacTableOptions, tableNames } from './tables
 export interface KyselyAdapterOptions extends RbacTableOptions {
   /** Dialect family. Detected from the Kysely instance when omitted. */
   dialect?: RbacDialect | undefined
+  /**
+   * Store an expiry per role assignment and direct permission (`assignRole(role, { expiresAt })`). Needs the
+   * `expires_at` column (`addRbacExpiryColumns` / `rbacExpiryMigration`, or `createRbacTables({ expiry: true })`).
+   * Default: `false`: the adapter never reads or writes that column, so 1.1 tables keep working unchanged.
+   */
+  expiry?: boolean | undefined
 }
 
 /**
@@ -84,7 +95,7 @@ const isMssqlDuplicate = (error: unknown): boolean => {
 const MSSQL_MAX_PARAMS = 2000 // a margin below 2100
 const MSSQL_MAX_VALUES_ROWS = 1000
 
-type LinkRow = Record<string, string | number>
+type LinkRow = Record<string, string | number | Date | null>
 
 /**
  * Splits rows into statements that fit SQL Server's limits. Columns with the same value in every row
@@ -127,9 +138,10 @@ const mssqlInsertIgnore = (
   const first = rows[0] as LinkRow
   const columns = Object.keys(first).filter((c) => constants.includes(c) || varying.includes(c))
   const selected = columns.map((c) => (constants.includes(c) ? sql`${first[c]} as ${sql.ref(c)}` : sql.ref(`v.${c}`)))
+  // `expires_at` is written but is not part of the key, so it never decides whether a link exists.
   const matches = [
     ...varying.map((c) => sql`${sql.ref(`e.${c}`)} = ${sql.ref(`v.${c}`)}`),
-    ...constants.map((c) => sql`${sql.ref(`e.${c}`)} = ${first[c]}`),
+    ...constants.filter((c) => c !== 'expires_at').map((c) => sql`${sql.ref(`e.${c}`)} = ${first[c]}`),
   ]
   const source =
     varying.length === 0
@@ -171,18 +183,39 @@ const sameSubject = (row: SubjectRow, subjectType: string, subjectId: string | u
 /** A link row read back exactly: its target (role or permission) id and its subject and team, as stored. */
 interface ExactLinkRow extends SubjectRow {
   target: number
+  /** Only read with `{ expiry: true }`. */
+  expires_at?: Date | null
 }
 
-const toSubjectLinks = (roles: readonly ExactLinkRow[], permissions: readonly ExactLinkRow[]): SubjectLinks => {
-  const subject = (row: ExactLinkRow): Subject => ({ type: row.subject_type, id: row.subject_id })
-  return {
-    roles: roles.map((row) => ({ subject: subject(row), roleId: row.target, teamId: teamFromKey(row.team_id) })),
-    permissions: permissions.map((row) => ({
-      subject: subject(row),
-      permissionId: row.target,
-      teamId: teamFromKey(row.team_id),
-    })),
-  }
+/** `{ expiresAt }` with expiry on, else nothing (the links look as in 1.1). */
+const expiryOf = (row: ExactLinkRow): { expiresAt?: Date | null } =>
+  row.expires_at === undefined ? {} : { expiresAt: row.expires_at }
+
+const toRoleLink = (row: ExactLinkRow): SubjectRoleLink => ({
+  subject: { type: row.subject_type, id: row.subject_id },
+  roleId: row.target,
+  teamId: teamFromKey(row.team_id),
+  ...expiryOf(row),
+})
+
+const toPermissionLink = (row: ExactLinkRow): SubjectPermissionLink => ({
+  subject: { type: row.subject_type, id: row.subject_id },
+  permissionId: row.target,
+  teamId: teamFromKey(row.team_id),
+  ...expiryOf(row),
+})
+
+const toSubjectLinks = (roles: readonly ExactLinkRow[], permissions: readonly ExactLinkRow[]): SubjectLinks => ({
+  roles: roles.map(toRoleLink),
+  permissions: permissions.map(toPermissionLink),
+})
+
+/** A stored `expires_at` as a Date: drivers return a Date (PostgreSQL, MySQL, SQL Server) or unix ms (SQLite). */
+const fromDbDate = (value: unknown): Date | null => {
+  if (value === null || value === undefined) return null
+  if (value instanceof Date) return value
+  const date = typeof value === 'string' && !/^-?\d+$/.test(value) ? new Date(value) : new Date(Number(value))
+  return Number.isNaN(date.getTime()) ? null : date
 }
 
 /**
@@ -192,6 +225,8 @@ const toSubjectLinks = (roles: readonly ExactLinkRow[], permissions: readonly Ex
 export class KyselyRbacAdapter implements RbacAdapter {
   readonly dialect: RbacDialect
   readonly tables: RbacTableNames
+  /** `true` with `{ expiry: true }`: the engine may then pass `expiresAt`. */
+  readonly supportsExpiry: boolean
 
   constructor(
     private readonly db: AnyDb,
@@ -199,6 +234,7 @@ export class KyselyRbacAdapter implements RbacAdapter {
   ) {
     this.dialect = options.dialect ?? detectDialect(db)
     this.tables = tableNames(options)
+    this.supportsExpiry = options.expiry === true
   }
 
   /**
@@ -349,8 +385,13 @@ export class KyselyRbacAdapter implements RbacAdapter {
     return this.getLinks('modelHasRoles', subject, teamId)
   }
 
-  attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId): Promise<void> {
-    return this.attach('modelHasRoles', subject, roleIds, teamId)
+  attachSubjectRoles(
+    subject: Subject,
+    roleIds: readonly Id[],
+    teamId: TeamId,
+    options?: AttachLinkOptions,
+  ): Promise<void> {
+    return this.attach('modelHasRoles', subject, roleIds, teamId, options)
   }
 
   detachSubjectRoles(subject: Subject, roleIds: readonly Id[] | undefined, teamId: TeamId): Promise<void> {
@@ -361,8 +402,13 @@ export class KyselyRbacAdapter implements RbacAdapter {
     return this.getLinks('modelHasPermissions', subject, teamId)
   }
 
-  attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId): Promise<void> {
-    return this.attach('modelHasPermissions', subject, permissionIds, teamId)
+  attachSubjectPermissions(
+    subject: Subject,
+    permissionIds: readonly Id[],
+    teamId: TeamId,
+    options?: AttachLinkOptions,
+  ): Promise<void> {
+    return this.attach('modelHasPermissions', subject, permissionIds, teamId, options)
   }
 
   detachSubjectPermissions(
@@ -373,12 +419,52 @@ export class KyselyRbacAdapter implements RbacAdapter {
     return this.detach('modelHasPermissions', subject, permissionIds, teamId)
   }
 
-  getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
-    return this.reverse('modelHasRoles', subjectType, roleIds, teamId)
+  getSubjectIdsWithRoles(
+    subjectType: string,
+    roleIds: readonly Id[],
+    teamId: TeamId,
+    options?: ActiveLinkOptions,
+  ): Promise<Id[]> {
+    return this.reverse('modelHasRoles', subjectType, roleIds, teamId, options)
   }
 
-  getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
-    return this.reverse('modelHasPermissions', subjectType, permissionIds, teamId)
+  getSubjectIdsWithPermissions(
+    subjectType: string,
+    permissionIds: readonly Id[],
+    teamId: TeamId,
+    options?: ActiveLinkOptions,
+  ): Promise<Id[]> {
+    return this.reverse('modelHasPermissions', subjectType, permissionIds, teamId, options)
+  }
+
+  // ----------------------------------------------------------- expiry (optional)
+
+  async getSubjectRoleLinks(subject: Subject, teamId: TeamId): Promise<SubjectRoleLink[]> {
+    const where = { subject_type: subject.type, subject_id: String(subject.id), team_id: teamKey(teamId) }
+    return (await this.linkRows(this.db, 'modelHasRoles', where)).map(toRoleLink)
+  }
+
+  async getSubjectPermissionLinks(subject: Subject, teamId: TeamId): Promise<SubjectPermissionLink[]> {
+    const where = { subject_type: subject.type, subject_id: String(subject.id), team_id: teamKey(teamId) }
+    return (await this.linkRows(this.db, 'modelHasPermissions', where)).map(toPermissionLink)
+  }
+
+  async deleteExpiredLinks(now: Date): Promise<DeletedLinkCounts> {
+    if (!this.supportsExpiry) return { roles: 0, permissions: 0 }
+    const remove = async (table: SubjectTable): Promise<number> => {
+      const result = await this.db
+        .deleteFrom(this.tables[table])
+        .where('expires_at', '<=', this.toDbDate(now))
+        .executeTakeFirst()
+      return Number(result.numDeletedRows)
+    }
+    return { roles: await remove('modelHasRoles'), permissions: await remove('modelHasPermissions') }
+  }
+
+  /** A Date as stored in `expires_at`: unix ms on SQLite (no date type), a Date elsewhere. */
+  private toDbDate(date: Date | null): Date | number | null {
+    if (date === null) return null
+    return this.dialect === 'sqlite' ? date.getTime() : date
   }
 
   // ------------------------------------------------------------- bulk (optional)
@@ -439,9 +525,12 @@ export class KyselyRbacAdapter implements RbacAdapter {
     where: { subject_type?: string; subject_id?: string; team_id?: string },
   ): Promise<ExactLinkRow[]> {
     const target = TARGET[table]
-    let q = db.selectFrom(this.tables[table]).select([target, 'subject_type', 'subject_id', 'team_id'])
+    const columns = [target, 'subject_type', 'subject_id', 'team_id']
+    // `expires_at` is only read with `{ expiry: true }`: 1.1 tables don't have it.
+    if (this.supportsExpiry) columns.push('expires_at')
+    let q = db.selectFrom(this.tables[table]).select(columns)
     for (const [column, value] of Object.entries(where)) q = q.where(column, '=', value)
-    const rows: (SubjectRow & Record<string, unknown>)[] = await q.execute()
+    const rows = (await q.execute()) as (SubjectRow & Record<string, unknown>)[]
     return rows
       .filter((row) =>
         Object.entries(where).every(([column, value]) => String(row[column as keyof SubjectRow]) === value),
@@ -451,6 +540,7 @@ export class KyselyRbacAdapter implements RbacAdapter {
         subject_type: String(row.subject_type),
         subject_id: String(row.subject_id),
         team_id: String(row.team_id),
+        ...(this.supportsExpiry ? { expires_at: fromDbDate(row.expires_at) } : {}),
       }))
   }
 
@@ -472,7 +562,7 @@ export class KyselyRbacAdapter implements RbacAdapter {
   }
 
   /** Multi-row INSERT that silently skips rows whose primary key already exists. */
-  private async insertIgnore(table: string, rows: Record<string, string | number>[]): Promise<void> {
+  private async insertIgnore(table: string, rows: LinkRow[]): Promise<void> {
     const first = rows[0]
     if (first === undefined) return
     const columns = Object.keys(first)
@@ -542,15 +632,45 @@ export class KyselyRbacAdapter implements RbacAdapter {
       .map((row) => Number(row[target]))
   }
 
-  private async attach(table: SubjectTable, subject: Subject, targetIds: readonly Id[], teamId: TeamId): Promise<void> {
+  private async attach(
+    table: SubjectTable,
+    subject: Subject,
+    targetIds: readonly Id[],
+    teamId: TeamId,
+    options?: AttachLinkOptions,
+  ): Promise<void> {
     const ids = toIntIds(targetIds)
     if (ids.length === 0) return
     const s = this.subjectQuery(table, subject, teamId)
     const target = TARGET[table]
+    // With expiry, new links are inserted with their expiry (never briefly permanent) ...
+    const expiresAt = this.supportsExpiry ? this.toDbDate(options?.expiresAt ?? null) : undefined
+    const expiry = expiresAt === undefined ? {} : { expires_at: expiresAt }
     await this.insertIgnore(
       s.name,
-      ids.map((id) => ({ [target]: id, subject_type: s.subject_type, subject_id: s.subject_id, team_id: s.team_id })),
+      ids.map((id) => ({
+        [target]: id,
+        subject_type: s.subject_type,
+        subject_id: s.subject_id,
+        team_id: s.team_id,
+        ...expiry,
+      })),
     )
+    if (expiresAt === undefined) return
+    // ... and links the subject already held get it too (the latest call wins). Only the target ids read back
+    // for this exact subject are updated, so a lookalike subject is never touched (same reasoning as `detach`).
+    const wanted = new Set(ids)
+    const held = (await this.getLinks(table, subject, teamId)).filter((id) => wanted.has(id))
+    for (let i = 0; i < held.length; i += 1000) {
+      await this.db
+        .updateTable(s.name)
+        .set({ expires_at: expiresAt })
+        .where('subject_type', '=', s.subject_type)
+        .where('subject_id', '=', s.subject_id)
+        .where('team_id', '=', s.team_id)
+        .where(target, 'in', held.slice(i, i + 1000))
+        .execute()
+    }
   }
 
   private async detach(
@@ -581,18 +701,23 @@ export class KyselyRbacAdapter implements RbacAdapter {
     subjectType: string,
     targetIds: readonly Id[],
     teamId: TeamId,
+    options?: ActiveLinkOptions,
   ): Promise<Id[]> {
     const ids = toIntIds(targetIds)
     if (ids.length === 0) return []
     const team = teamKey(teamId)
-    const rows: SubjectRow[] = await this.db
+    let q = this.db
       .selectFrom(this.tables[table])
       .select(['subject_type', 'subject_id', 'team_id'])
       .distinct()
       .where('subject_type', '=', subjectType)
       .where('team_id', '=', team)
       .where(TARGET[table], 'in', ids)
-      .execute()
+    if (this.supportsExpiry && options) {
+      const now = this.toDbDate(options.now)
+      q = q.where((eb) => eb.or([eb('expires_at', 'is', null), eb('expires_at', '>', now)]))
+    }
+    const rows: SubjectRow[] = await q.execute()
     const exact = rows.filter((row) => sameSubject(row, subjectType, undefined, team))
     return [...new Set(exact.map((row) => String(row.subject_id)))]
   }

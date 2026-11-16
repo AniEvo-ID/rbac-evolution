@@ -12,6 +12,9 @@
  * ```
  */
 import type {
+  ActiveLinkOptions,
+  AttachLinkOptions,
+  DeletedLinkCounts,
   FindPermissionsQuery,
   FindRolesQuery,
   Id,
@@ -21,6 +24,8 @@ import type {
   RolePermissionLink,
   Subject,
   SubjectLinks,
+  SubjectPermissionLink,
+  SubjectRoleLink,
   TeamId,
 } from '@anievo-id/rbac-evolution'
 
@@ -118,6 +123,22 @@ export type PrismaRbacModelHasPermissionDelegate = PrismaRbacDelegate<
 > &
   PrismaRbacSubjectGroupBy<{ permissionId?: IntFilter; subjectType?: string; teamId?: string }>
 
+/**
+ * The subject-link delegates as the adapter uses them with `{ expiry: true }`. Kept out of the public types
+ * above, so a client generated from the 1.1 models (no `expiresAt`) still matches `PrismaRbacClient`.
+ */
+type ExpiryFilter = null | { gt: Date } | { lte: Date }
+interface ExpiryLinkDelegate {
+  findMany(args: { where: Record<string, unknown> }): PromiseLike<(LinkRow & Record<string, unknown>)[]>
+  createMany(args: { data: Record<string, unknown>[]; skipDuplicates?: boolean }): PromiseLike<BatchPayload>
+  deleteMany(args: { where: Record<string, unknown> }): PromiseLike<BatchPayload>
+  updateMany?(args: { where: Record<string, unknown>; data: { expiresAt: Date | null } }): PromiseLike<BatchPayload>
+  groupBy(args: {
+    by: ['subjectType', 'subjectId', 'teamId']
+    where: Record<string, unknown>
+  }): PromiseLike<{ subjectType: string; subjectId: string; teamId: string }[]>
+}
+
 /** The part of a `PrismaClient` (with the rbac models) that the adapter needs. */
 export interface PrismaRbacClient {
   rbacPermission: PrismaRbacPermissionDelegate
@@ -136,6 +157,13 @@ export interface PrismaAdapterOptions {
    * Default: `false` (portable: reads existing links first, inserts only the missing ones).
    */
   skipDuplicates?: boolean | undefined
+  /**
+   * Store an expiry per role assignment and direct permission (`assignRole(role, { expiresAt })`). Needs the
+   * optional `expiresAt` field on `RbacModelHasRole` and `RbacModelHasPermission` (see `schema/rbac.prisma`
+   * and the upgrade steps). Default: `false`: the adapter never reads or writes that field, so a 1.1 schema
+   * keeps working unchanged.
+   */
+  expiry?: boolean | undefined
 }
 
 // ------------------------------------------------------------------------------- helpers
@@ -206,22 +234,38 @@ const sameSubject = (
   (where.subjectId === undefined || row.subjectId === where.subjectId) &&
   row.teamId === where.teamId
 
-type LinkRow = { subjectType: string; subjectId: string; teamId: string }
+type LinkRow = { subjectType: string; subjectId: string; teamId: string; expiresAt?: Date | null }
+
+/** `{ expiresAt }` of a row when expiry is on (a missing field reads as permanent), else nothing (as in 1.1). */
+const expiryOf = (row: LinkRow, expiry: boolean): { expiresAt?: Date | null } =>
+  expiry ? { expiresAt: row.expiresAt ?? null } : {}
+
+const toRoleLink = (r: LinkRow & { roleId: number }, expiry: boolean): SubjectRoleLink => ({
+  subject: { type: r.subjectType, id: r.subjectId },
+  roleId: r.roleId,
+  teamId: teamFromKey(r.teamId),
+  ...expiryOf(r, expiry),
+})
+
+const toPermissionLink = (p: LinkRow & { permissionId: number }, expiry: boolean): SubjectPermissionLink => ({
+  subject: { type: p.subjectType, id: p.subjectId },
+  permissionId: p.permissionId,
+  teamId: teamFromKey(p.teamId),
+  ...expiryOf(p, expiry),
+})
 
 const toSubjectLinks = (
   roles: readonly (LinkRow & { roleId: number })[],
   permissions: readonly (LinkRow & { permissionId: number })[],
+  expiry: boolean,
 ): SubjectLinks => ({
-  roles: roles.map((r) => ({
-    subject: { type: r.subjectType, id: r.subjectId },
-    roleId: r.roleId,
-    teamId: teamFromKey(r.teamId),
-  })),
-  permissions: permissions.map((p) => ({
-    subject: { type: p.subjectType, id: p.subjectId },
-    permissionId: p.permissionId,
-    teamId: teamFromKey(p.teamId),
-  })),
+  roles: roles.map((r) => toRoleLink(r, expiry)),
+  permissions: permissions.map((p) => toPermissionLink(p, expiry)),
+})
+
+/** Links still active at `now`: no expiry, or one after `now`. */
+const activeAt = (now: Date): { OR: { expiresAt: ExpiryFilter }[] } => ({
+  OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
 })
 
 // ------------------------------------------------------------------------------- adapter
@@ -236,10 +280,13 @@ const toSubjectLinks = (
 export class PrismaAdapter implements RbacAdapter {
   readonly #db: PrismaRbacClient
   readonly #skipDuplicates: boolean
+  /** `true` with `{ expiry: true }`: the engine may then pass `expiresAt`. */
+  readonly supportsExpiry: boolean
 
   constructor(prisma: PrismaRbacClient, options: PrismaAdapterOptions = {}) {
     this.#db = prisma
     this.#skipDuplicates = options.skipDuplicates ?? false
+    this.supportsExpiry = options.expiry === true
   }
 
   /** A `tx` client is already inside a transaction: run the (lazy) queries in order instead. */
@@ -384,11 +431,22 @@ export class PrismaAdapter implements RbacAdapter {
     return rows.filter((r) => sameSubject(r, where)).map((r) => r.roleId)
   }
 
-  async attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId): Promise<void> {
+  async attachSubjectRoles(
+    subject: Subject,
+    roleIds: readonly Id[],
+    teamId: TeamId,
+    options?: AttachLinkOptions,
+  ): Promise<void> {
     const ids = requireIntIds(roleIds, 'role')
     if (ids.length === 0) return
     const base = this.#subjectWhere(subject, teamId)
     const delegate = this.#db.rbacModelHasRole
+    if (this.supportsExpiry) {
+      await this.#attachWithExpiry('RbacModelHasRole', 'roleId', base, ids, options, () =>
+        this.getSubjectRoleIds(subject, teamId),
+      )
+      return
+    }
     await this.#insertMissing(
       ids,
       async () => (await delegate.findMany({ where: { ...base, roleId: { in: ids } } })).map((r) => r.roleId),
@@ -411,11 +469,22 @@ export class PrismaAdapter implements RbacAdapter {
     return rows.filter((r) => sameSubject(r, where)).map((r) => r.permissionId)
   }
 
-  async attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId): Promise<void> {
+  async attachSubjectPermissions(
+    subject: Subject,
+    permissionIds: readonly Id[],
+    teamId: TeamId,
+    options?: AttachLinkOptions,
+  ): Promise<void> {
     const ids = requireIntIds(permissionIds, 'permission')
     if (ids.length === 0) return
     const base = this.#subjectWhere(subject, teamId)
     const delegate = this.#db.rbacModelHasPermission
+    if (this.supportsExpiry) {
+      await this.#attachWithExpiry('RbacModelHasPermission', 'permissionId', base, ids, options, () =>
+        this.getSubjectPermissionIds(subject, teamId),
+      )
+      return
+    }
     await this.#insertMissing(
       ids,
       async () =>
@@ -437,24 +506,34 @@ export class PrismaAdapter implements RbacAdapter {
 
   // ------------------------------------------------------------ reverse lookups
 
-  async getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
+  async getSubjectIdsWithRoles(
+    subjectType: string,
+    roleIds: readonly Id[],
+    teamId: TeamId,
+    options?: ActiveLinkOptions,
+  ): Promise<Id[]> {
     const ids = toIntIds(roleIds)
     if (ids.length === 0) return []
     const where = { subjectType, teamId: teamKey(teamId) }
-    const rows = await this.#db.rbacModelHasRole.groupBy({
+    const rows = await this.#links('RbacModelHasRole').groupBy({
       by: ['subjectType', 'subjectId', 'teamId'],
-      where: { ...where, roleId: { in: ids } },
+      where: { ...where, roleId: { in: ids }, ...this.#active(options) },
     })
     return unique(rows.filter((r) => sameSubject(r, where)).map((r) => r.subjectId))
   }
 
-  async getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
+  async getSubjectIdsWithPermissions(
+    subjectType: string,
+    permissionIds: readonly Id[],
+    teamId: TeamId,
+    options?: ActiveLinkOptions,
+  ): Promise<Id[]> {
     const ids = toIntIds(permissionIds)
     if (ids.length === 0) return []
     const where = { subjectType, teamId: teamKey(teamId) }
-    const rows = await this.#db.rbacModelHasPermission.groupBy({
+    const rows = await this.#links('RbacModelHasPermission').groupBy({
       by: ['subjectType', 'subjectId', 'teamId'],
-      where: { ...where, permissionId: { in: ids } },
+      where: { ...where, permissionId: { in: ids }, ...this.#active(options) },
     })
     return unique(rows.filter((r) => sameSubject(r, where)).map((r) => r.subjectId))
   }
@@ -467,7 +546,7 @@ export class PrismaAdapter implements RbacAdapter {
       row.subjectType === where.subjectType && row.subjectId === where.subjectId
     const roles = await this.#db.rbacModelHasRole.findMany({ where })
     const permissions = await this.#db.rbacModelHasPermission.findMany({ where })
-    return toSubjectLinks(roles.filter(exact), permissions.filter(exact))
+    return toSubjectLinks(roles.filter(exact), permissions.filter(exact), this.supportsExpiry)
   }
 
   async getTeamLinks(teamId: Id): Promise<SubjectLinks> {
@@ -479,6 +558,7 @@ export class PrismaAdapter implements RbacAdapter {
     return toSubjectLinks(
       roles.filter((r) => r.teamId === team),
       permissions.filter((p) => p.teamId === team),
+      this.supportsExpiry,
     )
   }
 
@@ -510,6 +590,66 @@ export class PrismaAdapter implements RbacAdapter {
         }),
       ),
     ])
+  }
+
+  // ----------------------------------------------------------- expiry (optional)
+
+  async getSubjectRoleLinks(subject: Subject, teamId: TeamId): Promise<SubjectRoleLink[]> {
+    const where = this.#subjectWhere(subject, teamId)
+    const rows = await this.#db.rbacModelHasRole.findMany({ where })
+    return rows.filter((r) => sameSubject(r, where)).map((r) => toRoleLink(r, this.supportsExpiry))
+  }
+
+  async getSubjectPermissionLinks(subject: Subject, teamId: TeamId): Promise<SubjectPermissionLink[]> {
+    const where = this.#subjectWhere(subject, teamId)
+    const rows = await this.#db.rbacModelHasPermission.findMany({ where })
+    return rows.filter((r) => sameSubject(r, where)).map((r) => toPermissionLink(r, this.supportsExpiry))
+  }
+
+  async deleteExpiredLinks(now: Date): Promise<DeletedLinkCounts> {
+    if (!this.supportsExpiry) return { roles: 0, permissions: 0 }
+    const where = { expiresAt: { lte: now } satisfies ExpiryFilter }
+    const roles = await this.#links('RbacModelHasRole').deleteMany({ where })
+    const permissions = await this.#links('RbacModelHasPermission').deleteMany({ where })
+    return { roles: roles.count, permissions: permissions.count }
+  }
+
+  /** A subject-link delegate, typed for the `expiresAt` field (only used with `{ expiry: true }`). */
+  #links(model: 'RbacModelHasRole' | 'RbacModelHasPermission'): ExpiryLinkDelegate {
+    const delegate = model === 'RbacModelHasRole' ? this.#db.rbacModelHasRole : this.#db.rbacModelHasPermission
+    return delegate as unknown as ExpiryLinkDelegate
+  }
+
+  /** The "still active" filter for the reverse lookups, with expiry on and a `now`. */
+  #active(options: ActiveLinkOptions | undefined): Record<string, unknown> {
+    return this.supportsExpiry && options ? activeAt(options.now) : {}
+  }
+
+  /**
+   * Attach with `{ expiry: true }`: inserts the missing links with the expiry (`null` without options), then
+   * writes it to the links the exact subject already held: the latest call wins. Only ids read back for the
+   * exact subject are updated, so a lookalike subject (another case, a trailing space) is never touched.
+   */
+  async #attachWithExpiry(
+    model: 'RbacModelHasRole' | 'RbacModelHasPermission',
+    target: 'roleId' | 'permissionId',
+    base: { subjectType: string; subjectId: string; teamId: string },
+    ids: number[],
+    options: AttachLinkOptions | undefined,
+    held: () => Promise<Id[]>,
+  ): Promise<void> {
+    const delegate = this.#links(model)
+    const expiresAt = options?.expiresAt ?? null
+    await this.#insertMissing(
+      ids,
+      async () =>
+        (await delegate.findMany({ where: { ...base, [target]: { in: ids } } })).map((r) => Number(r[target])),
+      (data) => delegate.createMany({ data: data.map((id) => ({ ...base, [target]: id, expiresAt })), ...this.#skip() }),
+    )
+    const update = this.#heldIds(await held(), ids)
+    if (update.length === 0) return
+    if (!delegate.updateMany) throw new TypeError(`PrismaAdapter: \`{ expiry: true }\` needs ${model}.updateMany().`)
+    await delegate.updateMany({ where: { ...base, [target]: { in: update } }, data: { expiresAt } })
   }
 
   // -------------------------------------------------------------------- helpers

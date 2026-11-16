@@ -1,4 +1,7 @@
 import type {
+  ActiveLinkOptions,
+  AttachLinkOptions,
+  DeletedLinkCounts,
   FindPermissionsQuery,
   FindRolesQuery,
   Id,
@@ -8,6 +11,8 @@ import type {
   RolePermissionLink,
   Subject,
   SubjectLinks,
+  SubjectPermissionLink,
+  SubjectRoleLink,
   TeamId,
 } from '@anievo-id/rbac-evolution'
 import { type Model, Types } from 'mongoose'
@@ -49,14 +54,44 @@ type SubjectLinkDoc = {
   teamId: string
 }
 
+/** Options of `new MongooseRbacAdapter(models, options)`. */
+export interface MongooseAdapterOptions {
+  /**
+   * Store an expiry per role assignment and direct permission, in the link documents' `expiresAt` field.
+   * The models must declare that field (the ones of `createRbacModels()` / `rbacSchemas()` do, from 1.2).
+   * Default: `false`: the adapter never reads or writes it.
+   */
+  expiry?: boolean | undefined
+}
+
+/** `expiresAt` of a lean link document (missing = permanent). */
+const expiryOf = (doc: { expiresAt?: Date | null }): Date | null => doc.expiresAt ?? null
+
 /**
  * Mongoose (MongoDB) implementation of `RbacAdapter`.
  * Construct it with `mongooseAdapter(options?)` or `new MongooseRbacAdapter(createRbacModels(...))`.
  */
 export class MongooseRbacAdapter implements RbacAdapter {
   private ready: Promise<unknown> | undefined
+  /** `true` with `{ expiry: true }`: the engine may then pass `expiresAt`. */
+  readonly supportsExpiry: boolean
 
-  constructor(readonly models: RbacModels) {}
+  constructor(
+    readonly models: RbacModels,
+    options: MongooseAdapterOptions = {},
+  ) {
+    this.supportsExpiry = options.expiry === true
+    if (this.supportsExpiry) {
+      // Mongoose strips fields its schema doesn't declare: without them, an expiry would silently not be stored.
+      for (const model of [models.ModelHasRole, models.ModelHasPermission] as Model<unknown>[]) {
+        if (model.schema.path('expiresAt') === undefined) {
+          throw new TypeError(
+            `rbac-evolution-mongoose: \`{ expiry: true }\` needs an \`expiresAt: Date\` field on ${model.modelName}.`,
+          )
+        }
+      }
+    }
+  }
 
   /**
    * Waits for the models' indexes (unique constraints) once, before the first operation.
@@ -195,7 +230,12 @@ export class MongooseRbacAdapter implements RbacAdapter {
     return docs.map((d) => d.roleId.toHexString())
   }
 
-  async attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId): Promise<void> {
+  async attachSubjectRoles(
+    subject: Subject,
+    roleIds: readonly Id[],
+    teamId: TeamId,
+    options?: AttachLinkOptions,
+  ): Promise<void> {
     const ids = toObjectIds(roleIds)
     if (ids.length === 0) return
     await this.init()
@@ -203,6 +243,7 @@ export class MongooseRbacAdapter implements RbacAdapter {
     await MongooseRbacAdapter.upsertAll(
       this.models.ModelHasRole,
       ids.map((roleId) => ({ ...base, roleId })),
+      this.expirySet(options),
     )
   }
 
@@ -225,7 +266,12 @@ export class MongooseRbacAdapter implements RbacAdapter {
     return docs.map((d) => d.permissionId.toHexString())
   }
 
-  async attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId): Promise<void> {
+  async attachSubjectPermissions(
+    subject: Subject,
+    permissionIds: readonly Id[],
+    teamId: TeamId,
+    options?: AttachLinkOptions,
+  ): Promise<void> {
     const ids = toObjectIds(permissionIds)
     if (ids.length === 0) return
     await this.init()
@@ -233,6 +279,7 @@ export class MongooseRbacAdapter implements RbacAdapter {
     await MongooseRbacAdapter.upsertAll(
       this.models.ModelHasPermission,
       ids.map((permissionId) => ({ ...base, permissionId })),
+      this.expirySet(options),
     )
   }
 
@@ -251,28 +298,68 @@ export class MongooseRbacAdapter implements RbacAdapter {
     await this.models.ModelHasPermission.deleteMany(filter)
   }
 
-  async getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
+  async getSubjectIdsWithRoles(
+    subjectType: string,
+    roleIds: readonly Id[],
+    teamId: TeamId,
+    options?: ActiveLinkOptions,
+  ): Promise<Id[]> {
     const ids = toObjectIds(roleIds)
     if (ids.length === 0) return []
     await this.init()
     // $group streams through a cursor; `distinct` returns one document, capped at 16 MB (~400k ids).
     const rows: { _id: unknown }[] = await this.models.ModelHasRole.aggregate([
-      { $match: { subjectType, teamId: teamKey(teamId), roleId: { $in: ids } } },
+      { $match: { subjectType, teamId: teamKey(teamId), roleId: { $in: ids }, ...this.active(options) } },
       { $group: { _id: '$subjectId' } },
     ])
     return rows.map((r) => String(r._id))
   }
 
-  async getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
+  async getSubjectIdsWithPermissions(
+    subjectType: string,
+    permissionIds: readonly Id[],
+    teamId: TeamId,
+    options?: ActiveLinkOptions,
+  ): Promise<Id[]> {
     const ids = toObjectIds(permissionIds)
     if (ids.length === 0) return []
     await this.init()
     // $group streams through a cursor; `distinct` returns one document, capped at 16 MB (~400k ids).
     const rows: { _id: unknown }[] = await this.models.ModelHasPermission.aggregate([
-      { $match: { subjectType, teamId: teamKey(teamId), permissionId: { $in: ids } } },
+      { $match: { subjectType, teamId: teamKey(teamId), permissionId: { $in: ids }, ...this.active(options) } },
       { $group: { _id: '$subjectId' } },
     ])
     return rows.map((r) => String(r._id))
+  }
+
+  // ----------------------------------------------------------- expiry (optional)
+
+  async getSubjectRoleLinks(subject: Subject, teamId: TeamId): Promise<SubjectRoleLink[]> {
+    return (await this.links(MongooseRbacAdapter.subjectFilter(subject, teamId))).roles
+  }
+
+  async getSubjectPermissionLinks(subject: Subject, teamId: TeamId): Promise<SubjectPermissionLink[]> {
+    return (await this.links(MongooseRbacAdapter.subjectFilter(subject, teamId))).permissions
+  }
+
+  async deleteExpiredLinks(now: Date): Promise<DeletedLinkCounts> {
+    if (!this.supportsExpiry) return { roles: 0, permissions: 0 }
+    await this.init()
+    const filter = { expiresAt: { $ne: null, $lte: now } }
+    const roles = await this.models.ModelHasRole.deleteMany(filter)
+    const permissions = await this.models.ModelHasPermission.deleteMany(filter)
+    return { roles: roles.deletedCount, permissions: permissions.deletedCount }
+  }
+
+  /** `$set` of the expiry with `{ expiry: true }` (an attach without options writes a permanent link). */
+  private expirySet(options: AttachLinkOptions | undefined): Record<string, unknown> | undefined {
+    return this.supportsExpiry ? { expiresAt: options?.expiresAt ?? null } : undefined
+  }
+
+  /** Links still active at `now` (a missing field matches `null`), with expiry on and a `now`. */
+  private active(options: ActiveLinkOptions | undefined): Record<string, unknown> {
+    if (!this.supportsExpiry || !options) return {}
+    return { $or: [{ expiresAt: null }, { expiresAt: { $gt: options.now } }] }
   }
 
   // ------------------------------------------------------------- bulk (optional)
@@ -298,16 +385,25 @@ export class MongooseRbacAdapter implements RbacAdapter {
 
   private async links(filter: Partial<SubjectLinkDoc>): Promise<SubjectLinks> {
     await this.init()
-    const projection = { subjectType: 1, subjectId: 1, teamId: 1 }
+    // `expiresAt` is only read with `{ expiry: true }`; the links then look as in 1.1 otherwise.
+    const projection = { subjectType: 1, subjectId: 1, teamId: 1, ...(this.supportsExpiry ? { expiresAt: 1 } : {}) }
     const roles = await this.models.ModelHasRole.find(filter, { ...projection, roleId: 1 }).lean()
     const permissions = await this.models.ModelHasPermission.find(filter, { ...projection, permissionId: 1 }).lean()
     const subject = (d: SubjectLinkDoc): Subject => ({ type: d.subjectType, id: d.subjectId })
+    // The doc types have no `expiresAt` (it is optional and new in 1.2): read it from the lean document.
+    const expiry = (d: object) => (this.supportsExpiry ? { expiresAt: expiryOf(d as { expiresAt?: Date | null }) } : {})
     return {
-      roles: roles.map((d) => ({ subject: subject(d), roleId: d.roleId.toHexString(), teamId: teamFromKey(d.teamId) })),
+      roles: roles.map((d) => ({
+        subject: subject(d),
+        roleId: d.roleId.toHexString(),
+        teamId: teamFromKey(d.teamId),
+        ...expiry(d),
+      })),
       permissions: permissions.map((d) => ({
         subject: subject(d),
         permissionId: d.permissionId.toHexString(),
         teamId: teamFromKey(d.teamId),
+        ...expiry(d),
       })),
     }
   }
@@ -319,13 +415,19 @@ export class MongooseRbacAdapter implements RbacAdapter {
   }
 
   /**
-   * Idempotent insert: one upsert per link (`$setOnInsert`), matched on the unique key.
+   * Idempotent insert: one upsert per link (`$setOnInsert`), matched on the unique key. `set` (the expiry)
+   * is written to new and existing links alike: the latest attach wins.
    * A concurrent insert of the same link surfaces as a duplicate-key error, which is ignored.
    */
-  private static async upsertAll<T>(model: Model<T>, docs: Record<string, unknown>[]): Promise<void> {
+  private static async upsertAll<T>(
+    model: Model<T>,
+    docs: Record<string, unknown>[],
+    set?: Record<string, unknown>,
+  ): Promise<void> {
+    const update = (doc: Record<string, unknown>) => (set ? { $setOnInsert: doc, $set: set } : { $setOnInsert: doc })
     try {
       await model.bulkWrite(
-        docs.map((doc) => ({ updateOne: { filter: doc, update: { $setOnInsert: doc }, upsert: true } })) as never,
+        docs.map((doc) => ({ updateOne: { filter: doc, update: update(doc), upsert: true } })) as never,
         { ordered: false },
       )
     } catch (error) {
@@ -344,5 +446,5 @@ export class MongooseRbacAdapter implements RbacAdapter {
  * ```
  */
 export function mongooseAdapter(options: RbacModelOptions = {}): MongooseRbacAdapter {
-  return new MongooseRbacAdapter(createRbacModels(options))
+  return new MongooseRbacAdapter(createRbacModels(options), { expiry: options.expiry })
 }

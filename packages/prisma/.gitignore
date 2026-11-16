@@ -1,4 +1,5 @@
 test/generated/
+test/generated-legacy/
 test/generated-pg/
 test/generated-mysql/
 test/.tmp/

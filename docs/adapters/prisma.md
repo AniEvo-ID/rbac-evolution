@@ -78,10 +78,11 @@ model RbacRoleHasPermission {
 }
 
 model RbacModelHasRole {
-  roleId      Int    @map("role_id")
-  subjectType String @map("subject_type")
-  subjectId   String @map("subject_id")
-  teamId      String @default("") @map("team_id")
+  roleId      Int       @map("role_id")
+  subjectType String    @map("subject_type")
+  subjectId   String    @map("subject_id")
+  teamId      String    @default("") @map("team_id")
+  expiresAt   DateTime? @map("expires_at") // optional, for { expiry: true }
 
   role RbacRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
@@ -91,10 +92,11 @@ model RbacModelHasRole {
 }
 
 model RbacModelHasPermission {
-  permissionId Int    @map("permission_id")
-  subjectType  String @map("subject_type")
-  subjectId    String @map("subject_id")
-  teamId       String @default("") @map("team_id")
+  permissionId Int       @map("permission_id")
+  subjectType  String    @map("subject_type")
+  subjectId    String    @map("subject_id")
+  teamId       String    @default("") @map("team_id")
+  expiresAt    DateTime? @map("expires_at") // optional, for { expiry: true }
 
   permission RbacPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
@@ -177,6 +179,7 @@ new PrismaAdapter(prisma, options?)
 | Option | Type | Default | Description |
 | --- | --- | --- | --- |
 | `skipDuplicates` | `boolean` | `false` | Use `createMany({ skipDuplicates: true })` for every attach, so it runs as a single race-free `INSERT ... ON CONFLICT DO NOTHING` / `INSERT IGNORE`. Only supported on PostgreSQL, CockroachDB, MySQL and MariaDB. |
+| `expiry` | `boolean` | `false` | Store an expiry per role assignment and direct permission, for [temporary access](/basic-usage/temporary-access). Needs the `expiresAt` fields, see [Expiry (1.2)](#expiry-1-2). |
 
 With the default (`false`), each attach reads the links that already exist and inserts only the missing ones. If another request inserts the same link in the meantime (Prisma error `P2002`), the adapter reads again and retries. This mode works on every connector.
 
@@ -184,6 +187,54 @@ With the default (`false`), each attach reads the links that already exist and i
 // PostgreSQL / MySQL / MariaDB / CockroachDB
 const adapter = new PrismaAdapter(prisma, { skipDuplicates: true })
 ```
+
+## Expiry (1.2)
+
+[Temporary access](/basic-usage/temporary-access) stores when a role assignment or direct permission ends in an
+`expires_at` column. It is **off by default**: without `{ expiry: true }` the adapter never reads or writes that
+field, so a schema from 1.1 keeps working after the upgrade, unchanged. A schema that has the fields works without
+the option too (new links get `NULL`).
+
+To turn it on in an existing app:
+
+1. Add one line to each of the two link models (both are in the [models above](#_1-add-the-models-to-your-schema) and
+   in the shipped `schema/rbac.prisma`):
+
+   ```prisma
+   model RbacModelHasRole {
+     // ...the existing fields
+     expiresAt   DateTime? @map("expires_at")
+   }
+
+   model RbacModelHasPermission {
+     // ...the existing fields
+     expiresAt    DateTime? @map("expires_at")
+   }
+   ```
+
+2. Create a migration and apply it. It adds a nullable column to `model_has_roles` and `model_has_permissions`;
+   existing rows get `NULL`, which means permanent:
+
+   ```bash
+   npx prisma migrate dev --name rbac_expiry
+   ```
+
+   The generated SQL is a plain `ALTER TABLE ... ADD COLUMN "expires_at" TIMESTAMP(3)` (PostgreSQL) or
+   `DATETIME(3) NULL` (MySQL). Deploy it with `prisma migrate deploy` as usual.
+
+3. Create the adapter with the option:
+
+   ```ts
+   const rbac = createRbac({ adapter: new PrismaAdapter(prisma, { expiry: true }) })
+
+   await rbac.for(user).assignRole('on-call', { expiresAt: new Date(Date.now() + 8 * 3_600_000) })
+   ```
+
+Apply the migration before you deploy the client generated from the new schema: a client whose models have
+`expiresAt` reads that column in every query on the two link tables, whatever the adapter option. A database that
+has the column with an older client is fine, so rolling back the code is safe.
+
+Without the option, an `expiresAt` throws `EXPIRY_NOT_SUPPORTED` and writes nothing.
 
 ## How values come back
 

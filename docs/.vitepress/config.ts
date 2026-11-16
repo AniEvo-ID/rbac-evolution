@@ -115,6 +115,7 @@ export default defineConfig({
             { text: 'Basic usage', link: '/basic-usage/basic-usage' },
             { text: 'Direct permissions', link: '/basic-usage/direct-permissions' },
             { text: 'Permissions via roles', link: '/basic-usage/roles' },
+            { text: 'Temporary access', link: '/basic-usage/temporary-access' },
             { text: 'Typed names (enums)', link: '/basic-usage/typed-names' },
             { text: 'Teams', link: '/basic-usage/teams' },
             { text: 'Wildcard permissions', link: '/basic-usage/wildcard-permissions' },

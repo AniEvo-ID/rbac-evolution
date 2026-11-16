@@ -27,7 +27,10 @@ import {
   type RbacTableNames,
   type RbacTableOptions,
   type RolesTable,
+  addRbacExpiryColumns,
   createRbacTables,
+  dropRbacExpiryColumns,
+  rbacExpiryMigration,
   detectDialect,
   dropRbacTables,
   kyselyAdapter,
@@ -98,9 +101,9 @@ describe('kysely: types', () => {
     expect(typeof _bad).toBe('function')
   })
 
-  it('KyselyAdapterOptions: dialect + prefix, exactOptionalPropertyTypes', () => {
+  it('KyselyAdapterOptions: dialect + prefix + expiry, exactOptionalPropertyTypes', () => {
     expectTypeOf<RbacDialect>().toEqualTypeOf<'postgres' | 'mysql' | 'sqlite' | 'mssql'>()
-    expectTypeOf<KyselyAdapterOptions>().toEqualTypeOf<{ dialect?: RbacDialect; prefix?: string }>()
+    expectTypeOf<KyselyAdapterOptions>().toEqualTypeOf<{ dialect?: RbacDialect; prefix?: string; expiry?: boolean }>()
     expectTypeOf<RbacTableOptions>().toEqualTypeOf<{ prefix?: string }>()
     expectTypeOf<KyselyAdapterOptions>().toMatchTypeOf<RbacTableOptions>()
     expectTypeOf(kyselyAdapter).parameter(1).toEqualTypeOf<KyselyAdapterOptions | undefined>()
@@ -127,7 +130,10 @@ describe('kysely: types', () => {
   it('schema helpers: createRbacTables, dropRbacTables, rbacMigration, tableNames', () => {
     expectTypeOf(createRbacTables).returns.toEqualTypeOf<Promise<void>>()
     expectTypeOf(createRbacTables).parameter(1).toEqualTypeOf<RbacMigrationOptions | undefined>()
-    expectTypeOf<RbacMigrationOptions>().toEqualTypeOf<{ dialect?: RbacDialect; prefix?: string }>()
+    expectTypeOf<RbacMigrationOptions>().toEqualTypeOf<{ dialect?: RbacDialect; prefix?: string; expiry?: boolean }>()
+    expectTypeOf(addRbacExpiryColumns).parameter(1).toEqualTypeOf<RbacMigrationOptions | undefined>()
+    expectTypeOf(dropRbacExpiryColumns).parameter(1).toEqualTypeOf<RbacTableOptions | undefined>()
+    expectTypeOf(rbacExpiryMigration).returns.toEqualTypeOf<Migration>()
     expectTypeOf(dropRbacTables).returns.toEqualTypeOf<Promise<void>>()
     expectTypeOf(dropRbacTables).parameter(1).toEqualTypeOf<RbacTableOptions | undefined>()
     expectTypeOf(rbacMigration).returns.toEqualTypeOf<Migration>()

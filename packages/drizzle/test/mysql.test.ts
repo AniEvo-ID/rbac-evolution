@@ -5,7 +5,7 @@ import { type MySql2Database, drizzle } from 'drizzle-orm/mysql2'
 import mysql from 'mysql2/promise'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { drizzleMysqlAdapter, mysqlRbacSchema } from '../src/mysql'
-import { ddl } from './ddl'
+import { ddl, expiryDdl } from './ddl'
 import { MYSQL_URL, TEST_DATABASE, skipNote, withDatabase } from './servers'
 
 const TABLES = ['model_has_permissions', 'model_has_roles', 'role_has_permissions', 'roles', 'permissions']
@@ -29,10 +29,12 @@ describe.skipIf(MYSQL_URL === '')(`drizzle mysql (mysql2, real server)${skipNote
     await admin.query(`CREATE DATABASE IF NOT EXISTS \`${TEST_DATABASE}\``)
     await admin.query(`USE \`${TEST_DATABASE}\``)
     // Recreate from the shipped DDL so every run starts from the current schema.
-    for (const prefix of ['', 'rbac_']) {
+    for (const prefix of ['', 'rbac_', 'exp_']) {
       await admin.query(TABLES.map((t) => `DROP TABLE IF EXISTS \`${prefix}${t}\`;`).join('\n'))
       await admin.query(ddl('mysql', prefix))
     }
+    // 1.1 tables upgraded with the shipped `sql/mysql-expiry.sql`.
+    await admin.query(expiryDdl('mysql', 'exp_'))
     await admin.end()
 
     pool = mysql.createPool({ uri: withDatabase(MYSQL_URL, TEST_DATABASE), connectionLimit: 4 })
@@ -46,6 +48,11 @@ describe.skipIf(MYSQL_URL === '')(`drizzle mysql (mysql2, real server)${skipNote
   runAdapterTests('drizzle (MySQL via mysql2)', async () => {
     await clear()
     return drizzleMysqlAdapter(db)
+  })
+
+  runAdapterTests('drizzle (MySQL via mysql2, expiry)', async () => {
+    await clear('exp_')
+    return drizzleMysqlAdapter(db, mysqlRbacSchema({ prefix: 'exp_', expiry: true }), { expiry: true })
   })
 
   describe('drizzle mysql: specifics', () => {

@@ -15,6 +15,10 @@ with `1.x` of all the others. Full details are in the
   `createNextRbac({ rbac, guard: 'api' })` and `createRbacServer({ rbac, guard: 'api' })` take the names of the
   request's guard, a route's `{ guard }` option those of that guard, and `isRoleName()` / `isPermissionName()` take
   `{ guard }` (with `names.guards`). See [Multiple guards](/basic-usage/multiple-guards#typed-names-per-guard).
+- **Temporary access.** `assignRole()`, `givePermissionTo()` and the syncs take `{ expiresAt }`; from then on every
+  check, query, snapshot and cache entry treats the link as gone, and `rbac.pruneExpired()` cleans up. It is opt-in
+  per adapter (`{ expiry: true }`, plus one nullable column), so 1.1 databases keep working unchanged. See
+  [Temporary access](/basic-usage/temporary-access).
 
 ## 1.1: lifecycle, typed requests and audit
 

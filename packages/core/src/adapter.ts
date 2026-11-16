@@ -24,6 +24,11 @@ export interface SubjectRoleLink {
   subject: Subject
   roleId: Id
   teamId: TeamId
+  /**
+   * When the link stops granting the role (`null` = never). Only set by adapters with `supportsExpiry: true`;
+   * absent means permanent.
+   */
+  expiresAt?: Date | null | undefined
 }
 
 /** One row of `model_has_permissions`: a subject holds a direct permission in a team (`null` = global). */
@@ -31,6 +36,37 @@ export interface SubjectPermissionLink {
   subject: Subject
   permissionId: Id
   teamId: TeamId
+  /** When the link stops granting the permission (`null` = never), as in {@link SubjectRoleLink}. */
+  expiresAt?: Date | null | undefined
+}
+
+/**
+ * Passed as the last argument of `attachSubjectRoles` / `attachSubjectPermissions`, only to adapters with
+ * `supportsExpiry: true`.
+ */
+export interface AttachLinkOptions {
+  /**
+   * When the links stop granting access (`null` = never). Written to every given link, including links the
+   * subject already holds: the latest call wins.
+   */
+  expiresAt: Date | null
+}
+
+/**
+ * Passed as the last argument of `getSubjectIdsWithRoles` / `getSubjectIdsWithPermissions`, only to adapters
+ * with `supportsExpiry: true`.
+ */
+export interface ActiveLinkOptions {
+  /** The engine's clock. Skip links whose `expiresAt` is at or before it. */
+  now: Date
+}
+
+/** What `deleteExpiredLinks()` removed. */
+export interface DeletedLinkCounts {
+  /** `model_has_roles` rows removed. */
+  roles: number
+  /** `model_has_permissions` rows removed. */
+  permissions: number
 }
 
 /** Rows of `model_has_roles` and `model_has_permissions`, as returned by the optional bulk reads of {@link RbacAdapter}. */
@@ -51,8 +87,20 @@ export interface SubjectLinks {
  * - `detach*` methods with `undefined` ids remove every link for that owner (and team).
  * - `deletePermission` / `deleteRole` must also remove their links.
  * - Uniqueness of names is checked by the engine; adapters may additionally enforce it.
+ *
+ * Expiry (optional): an adapter that stores an expiry per subject link sets `supportsExpiry: true` and
+ * implements `getSubjectRoleLinks`, `getSubjectPermissionLinks` and `deleteExpiredLinks`. The engine then
+ * passes {@link AttachLinkOptions} to the attach methods and {@link ActiveLinkOptions} to the reverse
+ * lookups, and filters expired links itself everywhere else. Without it, the engine never passes those
+ * arguments and refuses an `expiresAt` with `EXPIRY_NOT_SUPPORTED`.
  */
 export interface RbacAdapter {
+  /**
+   * `true` when the adapter stores an expiry per subject link (see above). Default: off. First-party
+   * adapters only set it when created with `{ expiry: true }`, because it needs an `expires_at` column.
+   */
+  readonly supportsExpiry?: boolean | undefined
+
   // permissions
   createPermission(data: { name: string; guardName: string }): Promise<Permission>
   findPermissions(query?: FindPermissionsQuery): Promise<Permission[]>
@@ -70,12 +118,24 @@ export interface RbacAdapter {
 
   // subject ↔ role
   getSubjectRoleIds(subject: Subject, teamId: TeamId): Promise<Id[]>
-  attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId): Promise<void>
+  /** `options` is only passed with `supportsExpiry: true`; store its `expiresAt` on every given link. */
+  attachSubjectRoles(
+    subject: Subject,
+    roleIds: readonly Id[],
+    teamId: TeamId,
+    options?: AttachLinkOptions,
+  ): Promise<void>
   detachSubjectRoles(subject: Subject, roleIds: readonly Id[] | undefined, teamId: TeamId): Promise<void>
 
   // subject ↔ permission (direct permissions)
   getSubjectPermissionIds(subject: Subject, teamId: TeamId): Promise<Id[]>
-  attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId): Promise<void>
+  /** `options` is only passed with `supportsExpiry: true`; store its `expiresAt` on every given link. */
+  attachSubjectPermissions(
+    subject: Subject,
+    permissionIds: readonly Id[],
+    teamId: TeamId,
+    options?: AttachLinkOptions,
+  ): Promise<void>
   detachSubjectPermissions(
     subject: Subject,
     permissionIds: readonly Id[] | undefined,
@@ -83,10 +143,26 @@ export interface RbacAdapter {
   ): Promise<void>
 
   // reverse lookups (spatie: `User::role('writer')->get()`, `User::permission('edit')->get()`)
-  /** Ids of subjects of `subjectType` that have ANY of the given roles in the given team. Unique. */
-  getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]>
-  /** Ids of subjects of `subjectType` that have ANY of the given DIRECT permissions in the given team. Unique. */
-  getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]>
+  /**
+   * Ids of subjects of `subjectType` that have ANY of the given roles in the given team. Unique.
+   * With `options` (only passed with `supportsExpiry: true`), links expired at `options.now` don't count.
+   */
+  getSubjectIdsWithRoles(
+    subjectType: string,
+    roleIds: readonly Id[],
+    teamId: TeamId,
+    options?: ActiveLinkOptions,
+  ): Promise<Id[]>
+  /**
+   * Ids of subjects of `subjectType` that have ANY of the given DIRECT permissions in the given team. Unique.
+   * With `options` (only passed with `supportsExpiry: true`), links expired at `options.now` don't count.
+   */
+  getSubjectIdsWithPermissions(
+    subjectType: string,
+    permissionIds: readonly Id[],
+    teamId: TeamId,
+    options?: ActiveLinkOptions,
+  ): Promise<Id[]>
 
   // optional bulk operations: the engine checks for each one before use (see each method for its fallback)
 
@@ -116,4 +192,23 @@ export interface RbacAdapter {
    * call (with `undefined` ids) per subject returned by `getTeamLinks`.
    */
   detachTeamLinks?(teamId: Id): Promise<void>
+
+  // optional expiry methods: needed with `supportsExpiry: true` (the engine throws `ADAPTER_METHOD_MISSING`
+  // without them), never called otherwise. With expiry, `getSubjectLinks` and `getTeamLinks` should also
+  // return each link's `expiresAt`.
+
+  /**
+   * The subject's role links in the team, expired ones included, each with its `expiresAt` (`null` = never).
+   * Match the subject and team exactly, like `getSubjectRoleIds`.
+   */
+  getSubjectRoleLinks?(subject: Subject, teamId: TeamId): Promise<SubjectRoleLink[]>
+
+  /** The subject's direct-permission links in the team, like {@link getSubjectRoleLinks}. */
+  getSubjectPermissionLinks?(subject: Subject, teamId: TeamId): Promise<SubjectPermissionLink[]>
+
+  /**
+   * Deletes every role and direct-permission link (any subject, team and guard) whose `expiresAt` is at or
+   * before `now`. Links without an expiry stay. Used by `rbac.pruneExpired()`.
+   */
+  deleteExpiredLinks?(now: Date): Promise<DeletedLinkCounts>
 }

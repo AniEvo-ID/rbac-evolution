@@ -6,11 +6,11 @@
  */
 
 export { drizzlePgAdapter, pgRbacSchema } from './pg'
-export type { PgRbacSchema } from './pg'
+export type { PgRbacExpirySchema, PgRbacSchema } from './pg'
 export { drizzleSqliteAdapter, sqliteRbacSchema } from './sqlite'
-export type { SqliteRbacSchema } from './sqlite'
+export type { SqliteRbacExpirySchema, SqliteRbacSchema } from './sqlite'
 export { drizzleMysqlAdapter, mysqlRbacSchema } from './mysql'
-export type { MysqlRbacSchema } from './mysql'
+export type { MysqlRbacExpirySchema, MysqlRbacSchema } from './mysql'
 export { DrizzleRbacAdapter } from './adapter'
-export type { DrizzleDialect, RbacTables } from './adapter'
+export type { DrizzleAdapterOptions, DrizzleDialect, RbacTables } from './adapter'
 export type { RbacSchemaOptions, RbacTableNames } from './names'

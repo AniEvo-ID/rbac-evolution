@@ -83,6 +83,17 @@ export async function userCan(user: { id: number; role: RoleName }, permission: 
 | Subject id matching | `1` and `'1'` are the same subject | Same |
 | Uniqueness | Only the engine checks it | Engine check plus a unique index |
 | Returned objects | Copies, so changing them doesn't affect stored data | New objects per query |
+| Expiry | `new MemoryAdapter({ expiry: true })`, nothing to migrate | `{ expiry: true }` plus an `expires_at` column |
+
+### Expiry
+
+Like the database adapters, `MemoryAdapter` keeps the 1.1 behaviour by default. Pass `{ expiry: true }` to use
+[temporary access](/basic-usage/temporary-access), for example in tests together with the engine's `now` option:
+
+```ts
+let now = new Date('2026-03-01T12:00:00Z')
+const rbac = createRbac({ adapter: new MemoryAdapter({ expiry: true }), now: () => now })
+```
 
 ## Resetting
 

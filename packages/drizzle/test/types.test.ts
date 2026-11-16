@@ -14,7 +14,11 @@ import * as mysqlEntry from '../src/mysql'
 import * as pgEntry from '../src/pg'
 import * as sqliteEntry from '../src/sqlite'
 import {
+  type DrizzleAdapterOptions,
   type DrizzleDialect,
+  type MysqlRbacExpirySchema,
+  type PgRbacExpirySchema,
+  type SqliteRbacExpirySchema,
   DrizzleRbacAdapter,
   type MysqlRbacSchema,
   type PgRbacSchema,
@@ -81,10 +85,19 @@ describe('drizzle: types', () => {
     expectTypeOf(drizzleMysqlAdapter).toBeCallableWith({} as MySql2Database, mysqlRbacSchema())
     expectTypeOf<MysqlTx>().toMatchTypeOf<Parameters<typeof drizzleMysqlAdapter>[0]>()
 
-    // the schema argument is optional
-    expectTypeOf(drizzlePgAdapter).parameter(1).toEqualTypeOf<PgRbacSchema | undefined>()
-    expectTypeOf(drizzleSqliteAdapter).parameter(1).toEqualTypeOf<SqliteRbacSchema | undefined>()
-    expectTypeOf(drizzleMysqlAdapter).parameter(1).toEqualTypeOf<MysqlRbacSchema | undefined>()
+    // the schema argument is optional; it may be the expiry variant (1.2), with `{ expiry: true }` as options
+    expectTypeOf(drizzlePgAdapter).parameter(1).toEqualTypeOf<PgRbacSchema | PgRbacExpirySchema | undefined>()
+    expectTypeOf(drizzleSqliteAdapter).parameter(1).toEqualTypeOf<SqliteRbacSchema | SqliteRbacExpirySchema | undefined>()
+    expectTypeOf(drizzleMysqlAdapter).parameter(1).toEqualTypeOf<MysqlRbacSchema | MysqlRbacExpirySchema | undefined>()
+    expectTypeOf(drizzlePgAdapter).parameter(2).toEqualTypeOf<DrizzleAdapterOptions | undefined>()
+    expectTypeOf<DrizzleAdapterOptions>().toEqualTypeOf<{ expiry?: boolean }>()
+    expectTypeOf(drizzlePgAdapter).toBeCallableWith({} as NodePgDatabase, pgRbacSchema({ expiry: true }), { expiry: true })
+    expectTypeOf(drizzleSqliteAdapter).toBeCallableWith({} as LibSQLDatabase, sqliteRbacSchema({ expiry: true }), {
+      expiry: true,
+    })
+    expectTypeOf(drizzleMysqlAdapter).toBeCallableWith({} as MySql2Database, mysqlRbacSchema({ expiry: true }), {
+      expiry: true,
+    })
   })
 
   it('rejects a database or schema of another dialect', () => {
@@ -115,11 +128,14 @@ describe('drizzle: types', () => {
     expect(typeof _wrongDb).toBe('function')
   })
 
-  it('schema factories take RbacSchemaOptions (prefix only)', () => {
-    expectTypeOf<RbacSchemaOptions>().toEqualTypeOf<{ prefix?: string }>()
-    expectTypeOf(pgRbacSchema).parameters.toEqualTypeOf<[options?: RbacSchemaOptions]>()
-    expectTypeOf(sqliteRbacSchema).parameters.toEqualTypeOf<[options?: RbacSchemaOptions]>()
-    expectTypeOf(mysqlRbacSchema).parameters.toEqualTypeOf<[options?: RbacSchemaOptions]>()
+  it('schema factories take RbacSchemaOptions (prefix, expiry)', () => {
+    expectTypeOf<RbacSchemaOptions>().toEqualTypeOf<{ prefix?: string; expiry?: boolean }>()
+    // `{ expiry: true }` picks the overload with the `expiresAt` column; anything else the 1.1 tables.
+    expectTypeOf(pgRbacSchema({ expiry: true })).toEqualTypeOf<PgRbacExpirySchema>()
+    expectTypeOf(pgRbacSchema({ prefix: 'x' })).toEqualTypeOf<PgRbacSchema>()
+    expectTypeOf(sqliteRbacSchema({ expiry: true })).toEqualTypeOf<SqliteRbacExpirySchema>()
+    expectTypeOf(mysqlRbacSchema({ expiry: true })).toEqualTypeOf<MysqlRbacExpirySchema>()
+    expectTypeOf(mysqlRbacSchema()).toEqualTypeOf<MysqlRbacSchema>()
 
     expectTypeOf(pgRbacSchema).toBeCallableWith()
     expectTypeOf(pgRbacSchema).toBeCallableWith({})
@@ -157,6 +173,11 @@ describe('drizzle: types', () => {
       expectTypeOf(schema).toMatchTypeOf<RbacTables>()
       expectTypeOf<keyof typeof schema>().toEqualTypeOf<keyof RbacTables>()
     }
+    for (const schema of [pgRbacSchema({ expiry: true }), sqliteRbacSchema({ expiry: true }), mysqlRbacSchema({ expiry: true })]) {
+      expectTypeOf(schema).toMatchTypeOf<RbacTables>()
+    }
+    expect('expiresAt' in pgRbacSchema({ expiry: true }).modelHasRoles).toBe(true)
+    expect('expiresAt' in pgRbacSchema().modelHasRoles).toBe(false)
   })
 
   it('table row types ($inferSelect / $inferInsert)', () => {
@@ -188,6 +209,17 @@ describe('drizzle: types', () => {
       subjectId: string
       teamId?: string
     }>()
+    // The expiry tables add one nullable column, optional on insert.
+    for (const _ of [] as (PgRbacExpirySchema | SqliteRbacExpirySchema | MysqlRbacExpirySchema)[]) {
+      expectTypeOf(_.modelHasRoles.$inferSelect).toEqualTypeOf<{
+        roleId: number
+        subjectType: string
+        subjectId: string
+        teamId: string
+        expiresAt: Date | null
+      }>()
+      expectTypeOf<(typeof _.modelHasPermissions.$inferInsert)['expiresAt']>().toEqualTypeOf<Date | null | undefined>()
+    }
     expectTypeOf<MysqlRbacSchema['permissions']['$inferInsert']>().toEqualTypeOf<{
       name: string
       guardName: string

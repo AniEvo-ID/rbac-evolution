@@ -56,6 +56,12 @@ export interface RbacModelOptions {
   connection?: Connection | undefined
   /** Prepended to every collection name, e.g. `'rbac_'` → `rbac_permissions`. Default: `''`. */
   prefix?: string | undefined
+  /**
+   * `mongooseAdapter()` only: store an expiry per role assignment and direct permission
+   * (`assignRole(role, { expiresAt })`), in the `expiresAt` field of the link documents. Default: `false`:
+   * the adapter never reads or writes that field. MongoDB needs no migration either way.
+   */
+  expiry?: boolean | undefined
 }
 
 export interface RbacCollectionNames {
@@ -78,6 +84,13 @@ export const collectionNames = (options: Pick<RbacModelOptions, 'prefix'> = {}):
 }
 
 const linkOptions = { versionKey: false } as const
+
+/**
+ * 1.2, optional: when a subject link ends. No default, so documents only get it when the adapter writes it
+ * (`mongooseAdapter({ expiry: true })`); missing or `null` = permanent, so documents written before 1.2 need
+ * no migration. Added with `schema.add()`, so the doc types (`ModelHasRoleDoc`, ...) stay as in 1.1.
+ */
+const EXPIRY_FIELD = { expiresAt: { type: Date } }
 
 /** Schemas (unregistered). Useful to add plugins or hooks before calling `createRbacModels`. */
 export function rbacSchemas() {
@@ -119,6 +132,7 @@ export function rbacSchemas() {
     },
     linkOptions,
   )
+  modelHasRole.add(EXPIRY_FIELD as never)
   modelHasRole.index({ subjectType: 1, subjectId: 1, teamId: 1, roleId: 1 }, { unique: true })
   modelHasRole.index({ roleId: 1, subjectType: 1, teamId: 1 })
 
@@ -131,6 +145,7 @@ export function rbacSchemas() {
     },
     linkOptions,
   )
+  modelHasPermission.add(EXPIRY_FIELD as never)
   modelHasPermission.index({ subjectType: 1, subjectId: 1, teamId: 1, permissionId: 1 }, { unique: true })
   modelHasPermission.index({ permissionId: 1, subjectType: 1, teamId: 1 })
 

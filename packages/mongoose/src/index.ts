@@ -1,4 +1,4 @@
-export { MongooseRbacAdapter, mongooseAdapter } from './adapter'
+export { MongooseRbacAdapter, mongooseAdapter, type MongooseAdapterOptions } from './adapter'
 export {
   collectionNames,
   createRbacModels,

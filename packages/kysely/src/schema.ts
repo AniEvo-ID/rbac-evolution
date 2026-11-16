@@ -5,6 +5,12 @@ import { type RbacTableOptions, tableNames } from './tables'
 export interface RbacMigrationOptions extends RbacTableOptions {
   /** Dialect family. Detected from the Kysely instance when omitted. */
   dialect?: RbacDialect | undefined
+  /**
+   * `createRbacTables` only: also create the nullable `expires_at` column of `model_has_roles` and
+   * `model_has_permissions`, needed by `kyselyAdapter(db, { expiry: true })`. Default: `false` (the 1.1 tables).
+   * For tables that already exist, use `addRbacExpiryColumns` / `rbacExpiryMigration` instead.
+   */
+  expiry?: boolean | undefined
 }
 
 type Col = (c: ColumnDefinitionBuilder) => ColumnDefinitionBuilder
@@ -15,6 +21,8 @@ interface Types {
   /** Indexable string column. */
   text: Parameters<CreateTableBuilder<string>['addColumn']>[1]
   timestamp: Parameters<CreateTableBuilder<string>['addColumn']>[1]
+  /** `expires_at`: compared with the engine's clock, so stored with milliseconds (SQLite: unix ms). */
+  expiresAt: Parameters<CreateTableBuilder<string>['addColumn']>[1]
   now: ReturnType<typeof sql.raw>
 }
 
@@ -25,6 +33,7 @@ const types = (dialect: RbacDialect): Types => {
         id: { type: 'serial', build: (c) => c.primaryKey() },
         text: 'text',
         timestamp: 'timestamptz',
+        expiresAt: 'timestamptz',
         now: sql.raw('now()'),
       }
     case 'sqlite':
@@ -32,6 +41,7 @@ const types = (dialect: RbacDialect): Types => {
         id: { type: 'integer', build: (c) => c.primaryKey().autoIncrement() },
         text: 'text',
         timestamp: 'integer',
+        expiresAt: 'integer',
         now: sql.raw("(cast(strftime('%s', 'now') as integer))"),
       }
     case 'mysql':
@@ -40,6 +50,7 @@ const types = (dialect: RbacDialect): Types => {
         // Binary collation: names and subject ids compare case- and accent-sensitively, like the other dialects.
         text: sql.raw('varchar(255) character set utf8mb4 collate utf8mb4_bin'),
         timestamp: 'datetime',
+        expiresAt: sql.raw('datetime(3)'),
         now: sql.raw('CURRENT_TIMESTAMP'),
       }
     case 'mssql':
@@ -48,6 +59,7 @@ const types = (dialect: RbacDialect): Types => {
         // Binary collation, like MySQL: the server default (e.g. SQL_Latin1_General_CP1_CI_AS) ignores case.
         text: sql.raw('nvarchar(255) collate Latin1_General_100_BIN2'),
         timestamp: sql.raw('datetime2'),
+        expiresAt: sql.raw('datetime2(3)'),
         now: sql.raw('CURRENT_TIMESTAMP'),
       }
   }
@@ -133,16 +145,62 @@ export async function createRbacTables(db: Kysely<any>, options: RbacMigrationOp
   ] as const) {
     if (!missing(table)) continue
     const base = table.slice(prefix.length)
-    await db.schema
+    let create = db.schema
       .createTable(table)
       .addColumn(target, 'integer', notNull)
       .addColumn('subject_type', t.text, notNull)
       .addColumn('subject_id', t.text, notNull)
       .addColumn('team_id', t.text, teamId)
+    if (options.expiry === true) create = create.addColumn('expires_at', t.expiresAt)
+    await create
       .addPrimaryKeyConstraint(`${prefix}${base}_pkey`, ['subject_type', 'subject_id', 'team_id', target])
       .addForeignKeyConstraint(`${prefix}${base}_${target}_fkey`, [target], parent, ['id'], cascade)
       .execute()
     await db.schema.createIndex(`${prefix}${base}_${target}_index`).on(table).column(target).execute()
+  }
+}
+
+/** The link tables (of the five) that have no `expires_at` column yet. */
+async function linkTablesWithout(db: Kysely<any>, options: RbacTableOptions, has: boolean): Promise<string[]> {
+  const n = tableNames(options)
+  const tables = await db.introspection.getTables()
+  return [n.modelHasRoles, n.modelHasPermissions].filter((name) => {
+    const table = tables.find((t) => t.name === name)
+    return table !== undefined && table.columns.some((c) => c.name === 'expires_at') === has
+  })
+}
+
+/**
+ * Upgrades existing tables for expiry (1.2): adds the nullable `expires_at` column to `model_has_roles` and
+ * `model_has_permissions`. Existing rows get `NULL` (permanent). Tables that already have it are skipped.
+ * Then create the adapter with `kyselyAdapter(db, { expiry: true })`.
+ */
+export async function addRbacExpiryColumns(db: Kysely<any>, options: RbacMigrationOptions = {}): Promise<void> {
+  const t = types(options.dialect ?? detectDialect(db))
+  for (const table of await linkTablesWithout(db, options, false)) {
+    await db.schema.alterTable(table).addColumn('expires_at', t.expiresAt).execute()
+  }
+}
+
+/** Removes the `expires_at` columns again (the `down` of {@link rbacExpiryMigration}). Expiry data is lost. */
+export async function dropRbacExpiryColumns(db: Kysely<any>, options: RbacTableOptions = {}): Promise<void> {
+  for (const table of await linkTablesWithout(db, options, true)) {
+    await db.schema.alterTable(table).dropColumn('expires_at').execute()
+  }
+}
+
+/**
+ * A Kysely `Migration` that adds (`up`) and removes (`down`) the `expires_at` columns. Add it after
+ * `rbacMigration()` to upgrade a 1.1 database for `kyselyAdapter(db, { expiry: true })`.
+ *
+ * ```ts
+ * provider: { getMigrations: async () => ({ '0001_rbac': rbacMigration(), '0002_rbac_expiry': rbacExpiryMigration() }) }
+ * ```
+ */
+export function rbacExpiryMigration(options: RbacMigrationOptions = {}): Migration {
+  return {
+    up: (db) => addRbacExpiryColumns(db, options),
+    down: (db) => dropRbacExpiryColumns(db, options),
   }
 }
 

@@ -38,9 +38,10 @@ These codes are thrown as plain `RbacError` instances. Use `error.code` to tell 
 | `TEAM_DOES_NOT_MATCH` | A `Role` **object** from another team is used in a team scope. Global roles (`teamId: null`) are always allowed. |
 | `INVALID_NAME` | A role or permission name is empty or only whitespace. Names are trimmed before use. |
 | `INVALID_SYNC_DEFINITION` | The definition passed to [`rbac.sync()`](/advanced/seeding) is malformed (wrong shape, empty names, a role listed twice in one scope). Thrown before anything is written. |
-| `ADAPTER_METHOD_MISSING` | The call needs an [optional adapter method](/adapters/custom#optional-methods) that the adapter doesn't implement: `teams()` and `revokeAll({ allTeams: true })` need `getSubjectLinks()`, `deleteTeam()` needs `getTeamLinks()`. Thrown before anything is written. Every built-in adapter has them. |
+| `ADAPTER_METHOD_MISSING` | The call needs an [optional adapter method](/adapters/custom#optional-methods) that the adapter doesn't implement: `teams()` and `revokeAll({ allTeams: true })` need `getSubjectLinks()`, `deleteTeam()` needs `getTeamLinks()`. Thrown before anything is written. Every built-in adapter has them. Also thrown by an adapter that declares `supportsExpiry` without the [expiry methods](/adapters/custom#expiry). |
+| `EXPIRY_NOT_SUPPORTED` | An `expiresAt` date was given to `assignRole`, `givePermissionTo`, `syncRoles` or `syncPermissions`, but the adapter doesn't store expiry (it was created without `{ expiry: true }`). Thrown before anything is written, so the link is never stored as permanent. See [Temporary access](/basic-usage/temporary-access#turning-it-on). |
 
-The `RbacErrorCode` type is the union of all ten codes. New codes can be added in a minor release, so give a `switch` on it a `default` branch.
+The `RbacErrorCode` type is the union of all twelve codes. New codes can be added in a minor release, so give a `switch` on it a `default` branch.
 
 ## Where each error comes from
 
@@ -50,14 +51,15 @@ The `RbacErrorCode` type is the union of all ten codes. New codes can be added i
 | `createRole` | `RoleAlreadyExists`, `TEAMS_NOT_ENABLED`, `INVALID_NAME` |
 | `findPermissionOrFail` / `findRoleOrFail` | `PermissionDoesNotExist` / `RoleDoesNotExist` |
 | `deletePermission` / `deleteRole` | `PermissionDoesNotExist` / `RoleDoesNotExist`; `deleteRole` with `team` also `TEAMS_NOT_ENABLED` |
-| `assignRole`, `removeRole`, `syncRoles` | `RoleDoesNotExist`, `GuardDoesNotMatch`, `TEAM_DOES_NOT_MATCH` |
-| `givePermissionTo`, `revokePermissionTo`, `syncPermissions` (subject or role) | `PermissionDoesNotExist`, `GuardDoesNotMatch`; on a role, also `RoleDoesNotExist` if the role is missing |
+| `assignRole`, `removeRole`, `syncRoles` | `RoleDoesNotExist`, `GuardDoesNotMatch`, `TEAM_DOES_NOT_MATCH`; with an `expiresAt`, `EXPIRY_NOT_SUPPORTED` (and a `TypeError` for an invalid `Date`) |
+| `givePermissionTo`, `revokePermissionTo`, `syncPermissions` (subject or role) | `PermissionDoesNotExist`, `GuardDoesNotMatch`; on a role, also `RoleDoesNotExist` if the role is missing; on a subject with an `expiresAt`, `EXPIRY_NOT_SUPPORTED` |
 | `hasPermissionTo`, `hasDirectPermission` | `PermissionDoesNotExist` (only when `wildcard` is off), `GuardDoesNotMatch` |
 | `subjectsWithRole` / `subjectsWithPermission` | `RoleDoesNotExist` / `PermissionDoesNotExist`, `GuardDoesNotMatch` |
 | `rbac.for(...)`, `rbac.role(...)` with `team` | `TEAMS_NOT_ENABLED` (thrown synchronously) |
 | `revokeAll` | `ADAPTER_METHOD_MISSING` (only with `allTeams` and teams enabled) |
 | `teams` | `TEAMS_NOT_ENABLED`, `ADAPTER_METHOD_MISSING` |
 | `deleteTeam` | `TEAMS_NOT_ENABLED`, `ADAPTER_METHOD_MISSING`; a `TypeError` for `null` or `''` (the global scope) |
+| `pruneExpired` | `ADAPTER_METHOD_MISSING` (an adapter with `supportsExpiry` but no `deleteExpiredLinks()`) |
 | `can`, `cannot`, `canAny`, `canAll`, `hasAnyPermission`, `hasAllPermissions` | Never throw an `RbacError` (see below) |
 | `hasRole`, `hasAnyRole`, `hasAllRoles`, `hasExactRoles` | Never throw for unknown names. They return `false`. |
 

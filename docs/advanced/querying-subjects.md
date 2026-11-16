@@ -120,6 +120,12 @@ See [Errors](/advanced/errors) for the full list.
 
 ## Caveats
 
+::: info Expired assignments are skipped
+With [temporary access](/basic-usage/temporary-access), both queries leave out subjects whose role or direct
+permission expired, by the engine's clock, even before `pruneExpired()` deletes the rows. The filter runs in the
+database, as part of the same query.
+:::
+
 ::: warning Wildcards are expanded only on request
 By default `subjectsWithPermission` matches stored permission **rows**, not wildcard patterns. A user who holds `articles.*` is **not** returned by `subjectsWithPermission('user', 'articles.edit')`, and the name you pass must exist as a permission, or the call throws `PermissionDoesNotExist`. Pass `{ expandWildcards: true }` to include wildcard holders, see [Wildcards](#wildcards).
 :::

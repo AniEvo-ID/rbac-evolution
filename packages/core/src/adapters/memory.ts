@@ -1,4 +1,15 @@
-import type { FindPermissionsQuery, FindRolesQuery, RbacAdapter, RolePermissionLink, SubjectLinks } from '../adapter'
+import type {
+  ActiveLinkOptions,
+  AttachLinkOptions,
+  DeletedLinkCounts,
+  FindPermissionsQuery,
+  FindRolesQuery,
+  RbacAdapter,
+  RolePermissionLink,
+  SubjectLinks,
+  SubjectPermissionLink,
+  SubjectRoleLink,
+} from '../adapter'
 import type { Id, Permission, Role, Subject, TeamId } from '../types'
 
 interface SubjectLink {
@@ -6,6 +17,16 @@ interface SubjectLink {
   subjectId: Id
   targetId: Id
   teamId: TeamId
+  /** Only kept with `{ expiry: true }`. */
+  expiresAt?: Date | null
+}
+
+export interface MemoryAdapterOptions {
+  /**
+   * Store an expiry per role assignment and direct permission, so `assignRole(..., { expiresAt })` works.
+   * Default: `false`, as for the database adapters.
+   */
+  expiry?: boolean | undefined
 }
 
 const key = (id: Id | null): string => (id === null ? '\u0000null' : String(id))
@@ -18,12 +39,17 @@ const isSubject = (l: SubjectLink, s: Subject): boolean => l.subjectType === s.t
  * Data is lost when the process exits.
  */
 export class MemoryAdapter implements RbacAdapter {
+  readonly supportsExpiry: boolean
   private nextId = 1
   private permissions: Permission[] = []
   private roles: Role[] = []
   private rolePermissions: RolePermissionLink[] = []
   private subjectRoles: SubjectLink[] = []
   private subjectPermissions: SubjectLink[] = []
+
+  constructor(options: MemoryAdapterOptions = {}) {
+    this.supportsExpiry = options.expiry === true
+  }
 
   // ---------------------------------------------------------------- permissions
 
@@ -101,8 +127,13 @@ export class MemoryAdapter implements RbacAdapter {
     return MemoryAdapter.getLinks(this.subjectRoles, subject, teamId)
   }
 
-  async attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId): Promise<void> {
-    MemoryAdapter.attach(this.subjectRoles, subject, roleIds, teamId)
+  async attachSubjectRoles(
+    subject: Subject,
+    roleIds: readonly Id[],
+    teamId: TeamId,
+    options?: AttachLinkOptions,
+  ): Promise<void> {
+    this.attach(this.subjectRoles, subject, roleIds, teamId, options)
   }
 
   async detachSubjectRoles(subject: Subject, roleIds: readonly Id[] | undefined, teamId: TeamId): Promise<void> {
@@ -113,8 +144,13 @@ export class MemoryAdapter implements RbacAdapter {
     return MemoryAdapter.getLinks(this.subjectPermissions, subject, teamId)
   }
 
-  async attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId): Promise<void> {
-    MemoryAdapter.attach(this.subjectPermissions, subject, permissionIds, teamId)
+  async attachSubjectPermissions(
+    subject: Subject,
+    permissionIds: readonly Id[],
+    teamId: TeamId,
+    options?: AttachLinkOptions,
+  ): Promise<void> {
+    this.attach(this.subjectPermissions, subject, permissionIds, teamId, options)
   }
 
   async detachSubjectPermissions(
@@ -125,25 +161,55 @@ export class MemoryAdapter implements RbacAdapter {
     this.subjectPermissions = MemoryAdapter.detach(this.subjectPermissions, subject, permissionIds, teamId)
   }
 
-  async getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
-    return MemoryAdapter.reverse(this.subjectRoles, subjectType, roleIds, teamId)
+  async getSubjectIdsWithRoles(
+    subjectType: string,
+    roleIds: readonly Id[],
+    teamId: TeamId,
+    options?: ActiveLinkOptions,
+  ): Promise<Id[]> {
+    return this.reverse(this.subjectRoles, subjectType, roleIds, teamId, options)
   }
 
-  async getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
-    return MemoryAdapter.reverse(this.subjectPermissions, subjectType, permissionIds, teamId)
+  async getSubjectIdsWithPermissions(
+    subjectType: string,
+    permissionIds: readonly Id[],
+    teamId: TeamId,
+    options?: ActiveLinkOptions,
+  ): Promise<Id[]> {
+    return this.reverse(this.subjectPermissions, subjectType, permissionIds, teamId, options)
+  }
+
+  // ----------------------------------------------------------- expiry (optional)
+
+  async getSubjectRoleLinks(subject: Subject, teamId: TeamId): Promise<SubjectRoleLink[]> {
+    return this.toLinks(this.subjectRoles.filter((l) => isSubject(l, subject) && same(l.teamId, teamId)), []).roles
+  }
+
+  async getSubjectPermissionLinks(subject: Subject, teamId: TeamId): Promise<SubjectPermissionLink[]> {
+    const links = this.subjectPermissions.filter((l) => isSubject(l, subject) && same(l.teamId, teamId))
+    return this.toLinks([], links).permissions
+  }
+
+  async deleteExpiredLinks(now: Date): Promise<DeletedLinkCounts> {
+    const expired = (l: SubjectLink): boolean => l.expiresAt != null && l.expiresAt.getTime() <= now.getTime()
+    const roles = this.subjectRoles.filter(expired).length
+    const permissions = this.subjectPermissions.filter(expired).length
+    this.subjectRoles = this.subjectRoles.filter((l) => !expired(l))
+    this.subjectPermissions = this.subjectPermissions.filter((l) => !expired(l))
+    return { roles, permissions }
   }
 
   // ------------------------------------------------------------- bulk (optional)
 
   async getSubjectLinks(subject: Subject): Promise<SubjectLinks> {
-    return MemoryAdapter.toLinks(
+    return this.toLinks(
       this.subjectRoles.filter((l) => isSubject(l, subject)),
       this.subjectPermissions.filter((l) => isSubject(l, subject)),
     )
   }
 
   async getTeamLinks(teamId: Id): Promise<SubjectLinks> {
-    return MemoryAdapter.toLinks(
+    return this.toLinks(
       this.subjectRoles.filter((l) => same(l.teamId, teamId)),
       this.subjectPermissions.filter((l) => same(l.teamId, teamId)),
     )
@@ -156,22 +222,42 @@ export class MemoryAdapter implements RbacAdapter {
 
   // -------------------------------------------------------------------- helpers
 
-  private static toLinks(roles: SubjectLink[], permissions: SubjectLink[]): SubjectLinks {
+  private toLinks(roles: SubjectLink[], permissions: SubjectLink[]): SubjectLinks {
     const subject = (l: SubjectLink): Subject => ({ type: l.subjectType, id: l.subjectId })
+    // Without expiry, links look exactly as in 1.1 (no `expiresAt` key).
+    const expiry = (l: SubjectLink) => (this.supportsExpiry ? { expiresAt: MemoryAdapter.copy(l.expiresAt) } : {})
     return {
-      roles: roles.map((l) => ({ subject: subject(l), roleId: l.targetId, teamId: l.teamId })),
-      permissions: permissions.map((l) => ({ subject: subject(l), permissionId: l.targetId, teamId: l.teamId })),
+      roles: roles.map((l) => ({ subject: subject(l), roleId: l.targetId, teamId: l.teamId, ...expiry(l) })),
+      permissions: permissions.map((l) => ({
+        subject: subject(l),
+        permissionId: l.targetId,
+        teamId: l.teamId,
+        ...expiry(l),
+      })),
     }
+  }
+
+  private static copy(date: Date | null | undefined): Date | null {
+    return date === undefined || date === null ? null : new Date(date.getTime())
   }
 
   private static getLinks(links: SubjectLink[], subject: Subject, teamId: TeamId): Id[] {
     return links.filter((l) => isSubject(l, subject) && same(l.teamId, teamId)).map((l) => l.targetId)
   }
 
-  private static attach(links: SubjectLink[], subject: Subject, ids: readonly Id[], teamId: TeamId): void {
+  private attach(
+    links: SubjectLink[],
+    subject: Subject,
+    ids: readonly Id[],
+    teamId: TeamId,
+    options: AttachLinkOptions | undefined,
+  ): void {
+    // The expiry is only stored with `{ expiry: true }`; then the latest attach of a link sets it.
+    const expiry = this.supportsExpiry ? { expiresAt: MemoryAdapter.copy(options?.expiresAt) } : {}
     for (const targetId of ids) {
-      const exists = links.some((l) => isSubject(l, subject) && same(l.targetId, targetId) && same(l.teamId, teamId))
-      if (!exists) links.push({ subjectType: subject.type, subjectId: subject.id, targetId, teamId })
+      const existing = links.find((l) => isSubject(l, subject) && same(l.targetId, targetId) && same(l.teamId, teamId))
+      if (existing) Object.assign(existing, expiry)
+      else links.push({ subjectType: subject.type, subjectId: subject.id, targetId, teamId, ...expiry })
     }
   }
 
@@ -186,11 +272,19 @@ export class MemoryAdapter implements RbacAdapter {
     )
   }
 
-  private static reverse(links: SubjectLink[], subjectType: string, ids: readonly Id[], teamId: TeamId): Id[] {
+  private reverse(
+    links: SubjectLink[],
+    subjectType: string,
+    ids: readonly Id[],
+    teamId: TeamId,
+    options: ActiveLinkOptions | undefined,
+  ): Id[] {
     const seen = new Set<string>()
     const out: Id[] = []
+    const now = this.supportsExpiry ? options?.now.getTime() : undefined
     for (const l of links) {
       if (l.subjectType !== subjectType || !same(l.teamId, teamId) || !inIds(ids, l.targetId)) continue
+      if (now !== undefined && l.expiresAt != null && l.expiresAt.getTime() <= now) continue
       const k = key(l.subjectId)
       if (seen.has(k)) continue
       seen.add(k)

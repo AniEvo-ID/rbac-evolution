@@ -1,4 +1,7 @@
 import type {
+  ActiveLinkOptions,
+  AttachLinkOptions,
+  DeletedLinkCounts,
   FindPermissionsQuery,
   FindRolesQuery,
   Id,
@@ -8,22 +11,42 @@ import type {
   RolePermissionLink,
   Subject,
   SubjectLinks,
+  SubjectPermissionLink,
+  SubjectRoleLink,
   TeamId,
 } from '@anievo-id/rbac-evolution'
-import { type AnyColumn, type SQL, type Table, and, eq, inArray, sql } from 'drizzle-orm'
+import { type AnyColumn, type SQL, type Table, and, eq, gt, inArray, isNull, lte, or, sql } from 'drizzle-orm'
 
 /** Structural shape shared by the PostgreSQL, SQLite and MySQL schemas. */
 export interface RbacTables {
   permissions: Table & { id: AnyColumn; name: AnyColumn; guardName: AnyColumn }
   roles: Table & { id: AnyColumn; name: AnyColumn; guardName: AnyColumn; teamId: AnyColumn }
   roleHasPermissions: Table & { roleId: AnyColumn; permissionId: AnyColumn }
-  modelHasRoles: Table & { roleId: AnyColumn; subjectType: AnyColumn; subjectId: AnyColumn; teamId: AnyColumn }
+  /** `expiresAt` only in a schema built with `{ expiry: true }`. */
+  modelHasRoles: Table & {
+    roleId: AnyColumn
+    subjectType: AnyColumn
+    subjectId: AnyColumn
+    teamId: AnyColumn
+    expiresAt?: AnyColumn
+  }
   modelHasPermissions: Table & {
     permissionId: AnyColumn
     subjectType: AnyColumn
     subjectId: AnyColumn
     teamId: AnyColumn
+    expiresAt?: AnyColumn
   }
+}
+
+/** Options of `drizzlePgAdapter()`, `drizzleSqliteAdapter()` and `drizzleMysqlAdapter()`. */
+export interface DrizzleAdapterOptions {
+  /**
+   * Store an expiry per role assignment and direct permission (`assignRole(role, { expiresAt })`). Needs the
+   * schema built with `{ expiry: true }` and the `expires_at` column in the database (`sql/<dialect>-expiry.sql`).
+   * Default: `false`: the adapter never reads or writes that column, so 1.1 tables keep working unchanged.
+   */
+  expiry?: boolean | undefined
 }
 
 /**
@@ -96,7 +119,27 @@ interface LinkRow {
   subjectType: string
   subjectId: string
   teamId: string
+  /** Only selected with `{ expiry: true }`. */
+  expiresAt?: Date | null
 }
+
+/** `{ expiresAt }` when it was selected (expiry on), else nothing: the links then look as in 1.1. */
+const expiryOf = (row: LinkRow): { expiresAt?: Date | null } =>
+  row.expiresAt === undefined ? {} : { expiresAt: row.expiresAt ?? null }
+
+const toRoleLink = (row: LinkRow): SubjectRoleLink => ({
+  subject: { type: row.subjectType, id: row.subjectId },
+  roleId: Number(row.id),
+  teamId: teamFromKey(row.teamId),
+  ...expiryOf(row),
+})
+
+const toPermissionLink = (row: LinkRow): SubjectPermissionLink => ({
+  subject: { type: row.subjectType, id: row.subjectId },
+  permissionId: Number(row.id),
+  teamId: teamFromKey(row.teamId),
+  ...expiryOf(row),
+})
 
 /**
  * SQL compares text with the column's collation, which can ignore case or accents (MySQL's default
@@ -117,11 +160,22 @@ const sameLink = (
  * Use `drizzlePgAdapter()`, `drizzleSqliteAdapter()` or `drizzleMysqlAdapter()` to construct it.
  */
 export class DrizzleRbacAdapter implements RbacAdapter {
+  /** `true` with `{ expiry: true }`: the engine may then pass `expiresAt`. */
+  readonly supportsExpiry: boolean
+
   constructor(
     private readonly db: UntypedDb,
     private readonly t: RbacTables,
     private readonly dialect: DrizzleDialect = 'pg',
-  ) {}
+    options: DrizzleAdapterOptions = {},
+  ) {
+    this.supportsExpiry = options.expiry === true
+    if (this.supportsExpiry && (t.modelHasRoles.expiresAt === undefined || t.modelHasPermissions.expiresAt === undefined)) {
+      throw new TypeError(
+        'rbac-evolution-drizzle: `{ expiry: true }` needs the tables with the `expiresAt` column: build them with `{ expiry: true }`.',
+      )
+    }
+  }
 
   /**
    * Runs `fn` in a transaction (a savepoint when `db` is already a transaction). SQLite runs without one:
@@ -294,8 +348,13 @@ export class DrizzleRbacAdapter implements RbacAdapter {
     return this.getLinks(this.t.modelHasRoles, this.t.modelHasRoles.roleId, subject, teamId)
   }
 
-  attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId): Promise<void> {
-    return this.attach(this.t.modelHasRoles, 'roleId', subject, roleIds, teamId)
+  attachSubjectRoles(
+    subject: Subject,
+    roleIds: readonly Id[],
+    teamId: TeamId,
+    options?: AttachLinkOptions,
+  ): Promise<void> {
+    return this.attach(this.t.modelHasRoles, 'roleId', this.t.modelHasRoles.roleId, subject, roleIds, teamId, options)
   }
 
   detachSubjectRoles(subject: Subject, roleIds: readonly Id[] | undefined, teamId: TeamId): Promise<void> {
@@ -306,8 +365,14 @@ export class DrizzleRbacAdapter implements RbacAdapter {
     return this.getLinks(this.t.modelHasPermissions, this.t.modelHasPermissions.permissionId, subject, teamId)
   }
 
-  attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId): Promise<void> {
-    return this.attach(this.t.modelHasPermissions, 'permissionId', subject, permissionIds, teamId)
+  attachSubjectPermissions(
+    subject: Subject,
+    permissionIds: readonly Id[],
+    teamId: TeamId,
+    options?: AttachLinkOptions,
+  ): Promise<void> {
+    const { modelHasPermissions: table } = this.t
+    return this.attach(table, 'permissionId', table.permissionId, subject, permissionIds, teamId, options)
   }
 
   detachSubjectPermissions(
@@ -324,18 +389,56 @@ export class DrizzleRbacAdapter implements RbacAdapter {
     )
   }
 
-  getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
-    return this.reverse(this.t.modelHasRoles, this.t.modelHasRoles.roleId, subjectType, roleIds, teamId)
+  getSubjectIdsWithRoles(
+    subjectType: string,
+    roleIds: readonly Id[],
+    teamId: TeamId,
+    options?: ActiveLinkOptions,
+  ): Promise<Id[]> {
+    return this.reverse(this.t.modelHasRoles, this.t.modelHasRoles.roleId, subjectType, roleIds, teamId, options)
   }
 
-  getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]> {
+  getSubjectIdsWithPermissions(
+    subjectType: string,
+    permissionIds: readonly Id[],
+    teamId: TeamId,
+    options?: ActiveLinkOptions,
+  ): Promise<Id[]> {
     return this.reverse(
       this.t.modelHasPermissions,
       this.t.modelHasPermissions.permissionId,
       subjectType,
       permissionIds,
       teamId,
+      options,
     )
+  }
+
+  // ----------------------------------------------------------- expiry (optional)
+
+  async getSubjectRoleLinks(subject: Subject, teamId: TeamId): Promise<SubjectRoleLink[]> {
+    return (await this.linkRows(this.t.modelHasRoles, this.t.modelHasRoles.roleId, subject, teamId)).map(toRoleLink)
+  }
+
+  async getSubjectPermissionLinks(subject: Subject, teamId: TeamId): Promise<SubjectPermissionLink[]> {
+    const { modelHasPermissions: table } = this.t
+    return (await this.linkRows(table, table.permissionId, subject, teamId)).map(toPermissionLink)
+  }
+
+  async deleteExpiredLinks(now: Date): Promise<DeletedLinkCounts> {
+    if (!this.supportsExpiry) return { roles: 0, permissions: 0 }
+    const remove = async (table: SubjectTable, target: AnyColumn): Promise<number> => {
+      const query = this.db.delete(table).where(lte(table.expiresAt!, now))
+      if (this.dialect !== 'mysql') return (await query.returning({ id: target })).length
+      // mysql2: [ResultSetHeader]; PlanetScale / TiDB serverless: { rowsAffected }.
+      const result: unknown = await query
+      const header = (Array.isArray(result) ? result[0] : result) as { affectedRows?: number; rowsAffected?: number }
+      return Number(header?.affectedRows ?? header?.rowsAffected ?? 0)
+    }
+    return {
+      roles: await remove(this.t.modelHasRoles, this.t.modelHasRoles.roleId),
+      permissions: await remove(this.t.modelHasPermissions, this.t.modelHasPermissions.permissionId),
+    }
   }
 
   // ------------------------------------------------------------- bulk (optional)
@@ -399,10 +502,7 @@ export class DrizzleRbacAdapter implements RbacAdapter {
     if (where.subjectType !== undefined) filters.push(eq(table.subjectType, where.subjectType))
     if (where.subjectId !== undefined) filters.push(eq(table.subjectId, where.subjectId))
     if (where.teamId !== undefined) filters.push(eq(table.teamId, where.teamId))
-    const rows: LinkRow[] = await db
-      .select({ id: target, subjectType: table.subjectType, subjectId: table.subjectId, teamId: table.teamId })
-      .from(table)
-      .where(and(...filters))
+    const rows: LinkRow[] = await db.select(this.linkColumns(table, target)).from(table).where(and(...filters))
     return rows.filter(
       (row) =>
         (where.subjectType === undefined || row.subjectType === where.subjectType) &&
@@ -412,15 +512,13 @@ export class DrizzleRbacAdapter implements RbacAdapter {
   }
 
   private static toSubjectLinks(roles: readonly LinkRow[], permissions: readonly LinkRow[]): SubjectLinks {
-    const subject = (row: LinkRow): Subject => ({ type: row.subjectType, id: row.subjectId })
-    return {
-      roles: roles.map((row) => ({ subject: subject(row), roleId: Number(row.id), teamId: teamFromKey(row.teamId) })),
-      permissions: permissions.map((row) => ({
-        subject: subject(row),
-        permissionId: Number(row.id),
-        teamId: teamFromKey(row.teamId),
-      })),
-    }
+    return { roles: roles.map(toRoleLink), permissions: permissions.map(toPermissionLink) }
+  }
+
+  /** The columns of a link row; `expiresAt` only with `{ expiry: true }` (1.1 tables don't have it). */
+  private linkColumns(table: SubjectTable, target: AnyColumn): Record<string, AnyColumn> {
+    const columns = { id: target, subjectType: table.subjectType, subjectId: table.subjectId, teamId: table.teamId }
+    return this.supportsExpiry ? { ...columns, expiresAt: table.expiresAt! } : columns
   }
 
   // -------------------------------------------------------------------- helpers
@@ -472,7 +570,7 @@ export class DrizzleRbacAdapter implements RbacAdapter {
     teamId: TeamId,
   ): Promise<LinkRow[]> {
     const rows: LinkRow[] = await this.db
-      .select({ id: target, subjectType: table.subjectType, subjectId: table.subjectId, teamId: table.teamId })
+      .select(this.linkColumns(table, target))
       .from(table)
       .where(and(...DrizzleRbacAdapter.subjectWhere(table, subject, teamId)))
     return rows.filter((row) => sameLink(row, subject.type, String(subject.id), teamKey(teamId)))
@@ -485,19 +583,33 @@ export class DrizzleRbacAdapter implements RbacAdapter {
   private async attach(
     table: SubjectTable,
     targetKey: 'roleId' | 'permissionId',
+    target: AnyColumn,
     subject: Subject,
     targetIds: readonly Id[],
     teamId: TeamId,
+    options?: AttachLinkOptions,
   ): Promise<void> {
     const ids = toIntIds(targetIds)
     if (ids.length === 0) return
     const base = { subjectType: subject.type, subjectId: String(subject.id), teamId: teamKey(teamId) }
+    // With expiry, new links are inserted with their expiry (never briefly permanent) ...
+    const expiry = this.supportsExpiry ? { expiresAt: options?.expiresAt ?? null } : {}
     await this.insertIgnoringDuplicates(
       table,
-      ids.map((id) => ({ ...base, [targetKey]: id })),
+      ids.map((id) => ({ ...base, [targetKey]: id, ...expiry })),
       'subjectType',
       table.subjectType,
     )
+    if (expiry.expiresAt === undefined) return
+    // ... and links the subject already held get it too (the latest call wins). Only the target ids read back
+    // for this exact subject are updated, so a lookalike subject is never touched (same reasoning as `detach`).
+    const wanted = new Set(ids)
+    const held = (await this.linkRows(table, target, subject, teamId)).map((row) => Number(row.id)).filter((id) => wanted.has(id))
+    if (held.length === 0) return
+    await this.db
+      .update(table)
+      .set({ expiresAt: expiry.expiresAt })
+      .where(and(...DrizzleRbacAdapter.subjectWhere(table, subject, teamId), inArray(target, held)))
   }
 
   private async detach(
@@ -527,14 +639,17 @@ export class DrizzleRbacAdapter implements RbacAdapter {
     subjectType: string,
     targetIds: readonly Id[],
     teamId: TeamId,
+    options?: ActiveLinkOptions,
   ): Promise<Id[]> {
     const ids = toIntIds(targetIds)
     if (ids.length === 0) return []
     const team = teamKey(teamId)
+    const where = [eq(table.subjectType, subjectType), eq(table.teamId, team), inArray(target, ids)]
+    if (this.supportsExpiry && options) where.push(or(isNull(table.expiresAt!), gt(table.expiresAt!, options.now))!)
     const rows: Omit<LinkRow, 'id'>[] = await this.db
       .selectDistinct({ subjectType: table.subjectType, subjectId: table.subjectId, teamId: table.teamId })
       .from(table)
-      .where(and(eq(table.subjectType, subjectType), eq(table.teamId, team), inArray(target, ids)))
+      .where(and(...where))
     const exact = rows.filter((row) => sameLink(row, subjectType, undefined, team))
     return [...new Set(exact.map((row) => row.subjectId))]
   }

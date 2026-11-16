@@ -23,6 +23,7 @@ export type {
   SyncRoleUpdate,
 } from './sync'
 export type { SubjectsWithPermissionOptions } from './query'
+export type { ExpiryArgs, ExpiryOptions, PermissionAssignment, RoleAssignment } from './expiry'
 
 export type {
   ActorOptions,
@@ -45,6 +46,9 @@ export type {
 } from './events'
 
 export type {
+  ActiveLinkOptions,
+  AttachLinkOptions,
+  DeletedLinkCounts,
   FindPermissionsQuery,
   FindRolesQuery,
   RbacAdapter,
@@ -53,7 +57,7 @@ export type {
   SubjectPermissionLink,
   SubjectRoleLink,
 } from './adapter'
-export { MemoryAdapter } from './adapters/memory'
+export { MemoryAdapter, type MemoryAdapterOptions } from './adapters/memory'
 
 export { MemoryCache, type MemoryCacheOptions } from './cache'
 export type { CacheStore } from './cache'

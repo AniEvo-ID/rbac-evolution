@@ -23,7 +23,17 @@ const ATTW = {
   // A Nuxt module is ESM only (Nuxt loads it with import()), so CommonJS `require` is not supported.
   nuxt: ['--profile', 'esm-only'],
   // The `/sql/*.sql` entry points are plain SQL files for migrations, not modules.
-  drizzle: ['--profile', 'node16', '--exclude-entrypoints', 'sql/pg.sql', 'sql/sqlite.sql', 'sql/mysql.sql'],
+  drizzle: [
+    '--profile',
+    'node16',
+    '--exclude-entrypoints',
+    'sql/pg.sql',
+    'sql/sqlite.sql',
+    'sql/mysql.sql',
+    'sql/pg-expiry.sql',
+    'sql/sqlite-expiry.sql',
+    'sql/mysql-expiry.sql',
+  ],
 }
 
 const only = process.argv.slice(2)

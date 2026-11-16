@@ -1,5 +1,6 @@
 import {
   customType,
+  datetime,
   index,
   int,
   mysqlTable,
@@ -46,7 +47,14 @@ const timestamps = () => ({
  * export const { permissions, roles, roleHasPermissions, modelHasRoles, modelHasPermissions } = mysqlRbacSchema()
  * ```
  */
-export function mysqlRbacSchema(options: RbacSchemaOptions = {}) {
+export function mysqlRbacSchema(options: RbacSchemaOptions & { expiry: true }): MysqlRbacExpirySchema
+export function mysqlRbacSchema(options?: RbacSchemaOptions): MysqlRbacSchema
+export function mysqlRbacSchema(options: RbacSchemaOptions = {}): MysqlRbacSchema | MysqlRbacExpirySchema {
+  return options.expiry === true ? buildMysqlExpiry(options) : buildMysql(options)
+}
+
+/** The five tables, as in 1.1. */
+function buildMysql(options: RbacSchemaOptions) {
   const n = tableNames(options)
 
   const permissions = mysqlTable(
@@ -129,4 +137,59 @@ export function mysqlRbacSchema(options: RbacSchemaOptions = {}) {
   return { permissions, roles, roleHasPermissions, modelHasRoles, modelHasPermissions }
 }
 
-export type MysqlRbacSchema = ReturnType<typeof mysqlRbacSchema>
+/**
+ * The tables of `mysqlRbacSchema({ expiry: true })`: the 1.1 tables, with a nullable `expires_at` column on
+ * `model_has_roles` and `model_has_permissions` (1.2).
+ */
+function buildMysqlExpiry(options: RbacSchemaOptions) {
+  const n = tableNames(options)
+  const { permissions, roles, roleHasPermissions } = buildMysql(options)
+
+  const modelHasRoles = mysqlTable(
+    n.modelHasRoles,
+    {
+      roleId: int('role_id')
+        .notNull()
+        .references(() => roles.id, { onDelete: 'cascade' }),
+      subjectType: exactVarchar('subject_type', { length: MYSQL_LENGTHS.subjectType }).notNull(),
+      subjectId: exactVarchar('subject_id', { length: MYSQL_LENGTHS.subjectId }).notNull(),
+      /** `''` = global (no team). */
+      teamId: exactVarchar('team_id', { length: MYSQL_LENGTHS.teamId }).notNull().default(''),
+      /** When the link ends (`NULL` = never). Only used by an adapter created with `{ expiry: true }`. */
+      expiresAt: datetime('expires_at', { mode: 'date', fsp: 3 }),
+    },
+    (t) => [
+      primaryKey({ name: `${n.modelHasRoles}_pkey`, columns: [t.subjectType, t.subjectId, t.teamId, t.roleId] }),
+      index(`${n.modelHasRoles}_role_id_index`).on(t.roleId),
+    ],
+  )
+
+  const modelHasPermissions = mysqlTable(
+    n.modelHasPermissions,
+    {
+      permissionId: int('permission_id')
+        .notNull()
+        .references(() => permissions.id, { onDelete: 'cascade' }),
+      subjectType: exactVarchar('subject_type', { length: MYSQL_LENGTHS.subjectType }).notNull(),
+      subjectId: exactVarchar('subject_id', { length: MYSQL_LENGTHS.subjectId }).notNull(),
+      /** `''` = global (no team). */
+      teamId: exactVarchar('team_id', { length: MYSQL_LENGTHS.teamId }).notNull().default(''),
+      /** When the link ends (`NULL` = never). Only used by an adapter created with `{ expiry: true }`. */
+      expiresAt: datetime('expires_at', { mode: 'date', fsp: 3 }),
+    },
+    (t) => [
+      primaryKey({
+        name: `${n.modelHasPermissions}_pkey`,
+        columns: [t.subjectType, t.subjectId, t.teamId, t.permissionId],
+      }),
+      index(`${n.modelHasPermissions}_permission_id_index`).on(t.permissionId),
+    ],
+  )
+
+  return { permissions, roles, roleHasPermissions, modelHasRoles, modelHasPermissions }
+}
+
+/** The tables of `mysqlRbacSchema()`. */
+export type MysqlRbacSchema = ReturnType<typeof buildMysql>
+/** The tables of `mysqlRbacSchema({ expiry: true })`: the subject-link tables have an `expiresAt` column. */
+export type MysqlRbacExpirySchema = ReturnType<typeof buildMysqlExpiry>

@@ -1,7 +1,7 @@
 // Stub: a copy of the `src/rbac.ts` block of docs/use-cases/internal-tools.md.
 import { createRbac } from '@anievo-id/rbac-evolution'
 import { createGuards } from '@anievo-id/rbac-evolution-fastify'
-import { adapter } from './db' // e.g. new DrizzleAdapter(db), see Adapters
+import { adapter } from './db' // created with { expiry: true }, see Temporary access
 
 export type ToolsRbac = {
   permissions:

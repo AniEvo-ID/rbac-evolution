@@ -22,13 +22,21 @@ export interface RbacEventBase {
   actor?: RbacActor | undefined
 }
 
-/** Roles were attached to a subject (`assignRole`, `syncRoles`). Only newly attached roles are listed. */
+/**
+ * Roles were attached to a subject (`assignRole`, `syncRoles`). Only newly attached roles are listed, plus,
+ * with an expiry-enabled adapter, held roles whose expiry the call changed.
+ */
 export interface RoleAttachedEvent extends RbacEventBase {
   event: 'role.attached'
   subject: Subject
   roles: Role[]
   guardName: string
   teamId: TeamId
+  /**
+   * When these assignments end (`null` = permanent). Only present when the adapter supports expiry
+   * (`supportsExpiry: true`).
+   */
+  expiresAt?: Date | null | undefined
 }
 
 /** Roles were detached from a subject (`removeRole`, `syncRoles`). Only actually removed roles are listed. */
@@ -43,13 +51,21 @@ export interface RoleDetachedEvent extends RbacEventBase {
 /** Who received / lost the permissions: a subject (direct permissions) or a role. */
 export type PermissionTarget = { target: 'subject'; subject: Subject } | { target: 'role'; role: Role }
 
-/** Permissions were attached to a subject or a role. Only newly attached permissions are listed. */
+/**
+ * Permissions were attached to a subject or a role. Only newly attached permissions are listed, plus, for a
+ * subject with an expiry-enabled adapter, held ones whose expiry the call changed.
+ */
 export type PermissionAttachedEvent = {
   event: 'permission.attached'
   permissions: Permission[]
   guardName: string
   /** The subject's team scope, or the role's `teamId`. */
   teamId: TeamId
+  /**
+   * When these direct grants end (`null` = permanent). Only present for `target: 'subject'` when the adapter
+   * supports expiry (`supportsExpiry: true`). Role permissions never expire.
+   */
+  expiresAt?: Date | null | undefined
 } & PermissionTarget &
   RbacEventBase
 

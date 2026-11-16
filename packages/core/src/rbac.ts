@@ -1,4 +1,4 @@
-import type { RbacAdapter } from './adapter'
+import type { ActiveLinkOptions, DeletedLinkCounts, RbacAdapter } from './adapter'
 import { type CacheStore, MemoryCache } from './cache'
 import {
   GuardDoesNotMatch,
@@ -20,6 +20,16 @@ import { expandWildcardPermissions, type SubjectsWithPermissionOptions } from '.
 import { type RbacNames, registerNames } from './names'
 import { type SyncDefinition, type SyncDefinitions, type SyncOptions, type SyncResult, syncDefinition } from './sync'
 import { deleteTeam, type RevokeAllOptions, revokeAll, subjectTeams, type SubjectTeamsOptions } from './bulk'
+import {
+  type ActiveLinks,
+  activeLinks,
+  earliest,
+  type ExpiryArgs,
+  type PermissionAssignment,
+  requestedExpiry,
+  type RoleAssignment,
+  splitExpiryArgs,
+} from './expiry'
 import type {
   CheckGuard,
   DefaultGuardName,
@@ -123,11 +133,22 @@ export interface RbacOptions<T extends RbacTypeConfig = DefaultRbacTypes> {
    * input against them. Optional; the engine itself does not use them.
    */
   names?: RbacNames<T> | undefined
+  /**
+   * The engine's clock, used to decide whether an assignment's `expiresAt` has passed. Inject one in tests
+   * to move time forward. Default: the system clock (`new Date()`).
+   */
+  now?: (() => Date) | undefined
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
 const idKey = (id: Id | null): string => (id === null ? '\u0000null' : String(id))
+
+const missingExpiryMethod = (method: keyof RbacAdapter, caller: string): RbacError =>
+  new RbacError(
+    'ADAPTER_METHOD_MISSING',
+    `${caller} needs the adapter method \`${method}()\`: the adapter declares \`supportsExpiry\` but does not implement it.`,
+  )
 
 function flatten<T>(items: readonly Many<T>[]): T[] {
   const out: T[] = []
@@ -182,7 +203,19 @@ function normalizeName(name: string): string {
  */
 export interface RbacInternals<T extends RbacTypeConfig = DefaultRbacTypes> {
   readonly events: RbacEmitter
-  remember<V>(key: string, compute: () => Promise<V>): Promise<V>
+  /**
+   * Cached `compute()`. `validUntil` gives the epoch ms after which a value is stale (an expiry inside it):
+   * the entry's TTL is capped there, and a hit past it is recomputed.
+   */
+  remember<V>(key: string, compute: () => Promise<V>, validUntil?: (value: V) => number | undefined): Promise<V>
+  /** Whether the adapter stores expiry (`supportsExpiry: true`). */
+  readonly expiry: boolean
+  /** The engine's clock, in epoch ms. */
+  now(): number
+  /** `[{ now }]` for the reverse lookups with expiry on, else `[]`. */
+  activeArgs(): [] | [ActiveLinkOptions]
+  /** The subject's active (not expired) role or direct-permission links in the team, with their expiry. */
+  subjectLinks(kind: 'roles' | 'permissions', subject: Subject, teamId: TeamId): Promise<ActiveLinks>
   permissionExists(name: string, guardName: string): Promise<boolean>
   gate(subject: SubjectRbac<T, string>, permission: string): Promise<boolean | undefined>
   resolveGuard(guard: string | undefined): string
@@ -234,6 +267,8 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
   readonly #superAdminRoles: readonly string[]
   readonly #events: RbacEmitter
   readonly #wildcardPrefixCheck: WildcardPrefixCheck
+  readonly #expiry: boolean
+  readonly #clock: () => number
   /** Bumped on every change, so a lookup that started before the change never caches its stale result. */
   #generation = 0
   readonly #internals: RbacInternals<T>
@@ -249,9 +284,16 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     this.#superAdminRoles = options.superAdminRoles ?? []
     this.#events = new RbacEmitter(options.getActor)
     this.#wildcardPrefixCheck = options.wildcardPrefixCheck ?? 'warn'
+    this.#expiry = options.adapter.supportsExpiry === true
+    const now = options.now
+    this.#clock = now ? () => now().getTime() : () => Date.now()
     this.#internals = {
       events: this.#events,
-      remember: (key, compute) => this.#remember(key, compute),
+      remember: (key, compute, validUntil) => this.#remember(key, compute, validUntil),
+      expiry: this.#expiry,
+      now: () => this.#clock(),
+      activeArgs: () => this.#activeArgs(),
+      subjectLinks: (kind, subject, teamId) => this.#subjectLinks(kind, subject, teamId),
       permissionExists: (name, guardName) => this.#permissionExists(name, guardName),
       gate: (subject, permission) => this.#gate(subject, permission),
       resolveGuard: (guard) => this.#resolveGuard(guard),
@@ -529,6 +571,7 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
       subjectType,
       resolved.map((r) => r.id),
       teamId,
+      ...this.#activeArgs(),
     )
   }
 
@@ -558,8 +601,10 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     const links = roles.length > 0 ? await this.adapter.getRolePermissionLinks(roles.map((r) => r.id)) : []
     const roleIds = uniqueIds(links.filter((l) => wanted.has(idKey(l.permissionId))).map((l) => l.roleId))
 
-    const viaRoles = roleIds.length > 0 ? await this.adapter.getSubjectIdsWithRoles(subjectType, roleIds, teamId) : []
-    const direct = await this.adapter.getSubjectIdsWithPermissions(subjectType, permissionIds, teamId)
+    const active = this.#activeArgs()
+    const viaRoles =
+      roleIds.length > 0 ? await this.adapter.getSubjectIdsWithRoles(subjectType, roleIds, teamId, ...active) : []
+    const direct = await this.adapter.getSubjectIdsWithPermissions(subjectType, permissionIds, teamId, ...active)
     return uniqueIds([...viaRoles, ...direct])
   }
 
@@ -578,6 +623,50 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     await deleteTeam(this, this.#internals, teamId)
   }
 
+  // ----------------------------------------------------------------------- expiry
+
+  /**
+   * Deletes every role assignment and direct permission whose `expiresAt` has passed (by the engine's clock),
+   * for every subject, team and guard. Checks already ignore them, so access doesn't change: this only
+   * keeps the tables small. Run it from a scheduled job. Emits no events (the access ended at `expiresAt`,
+   * not now) and leaves the cache alone. Returns how many links were deleted.
+   *
+   * A no-op returning zeros when the adapter has no expiry support. Throws `ADAPTER_METHOD_MISSING` when it
+   * declares `supportsExpiry` without `deleteExpiredLinks()`.
+   */
+  async pruneExpired(): Promise<DeletedLinkCounts> {
+    if (!this.#expiry) return { roles: 0, permissions: 0 }
+    if (!this.adapter.deleteExpiredLinks) throw missingExpiryMethod('deleteExpiredLinks', '`pruneExpired()`')
+    return this.adapter.deleteExpiredLinks(new Date(this.#clock()))
+  }
+
+  #activeArgs(): [] | [ActiveLinkOptions] {
+    return this.#expiry ? [{ now: new Date(this.#clock()) }] : []
+  }
+
+  async #subjectLinks(kind: 'roles' | 'permissions', subject: Subject, teamId: TeamId): Promise<ActiveLinks> {
+    const { adapter } = this
+    if (!this.#expiry) {
+      const ids =
+        kind === 'roles'
+          ? await adapter.getSubjectRoleIds(subject, teamId)
+          : await adapter.getSubjectPermissionIds(subject, teamId)
+      return activeLinks(ids, (id) => id, () => null, 0)
+    }
+    const now = this.#clock()
+    if (kind === 'roles') {
+      if (!adapter.getSubjectRoleLinks) throw missingExpiryMethod('getSubjectRoleLinks', 'Expiry')
+      return activeLinks(await adapter.getSubjectRoleLinks(subject, teamId), (l) => l.roleId, (l) => l.expiresAt, now)
+    }
+    if (!adapter.getSubjectPermissionLinks) throw missingExpiryMethod('getSubjectPermissionLinks', 'Expiry')
+    return activeLinks(
+      await adapter.getSubjectPermissionLinks(subject, teamId),
+      (l) => l.permissionId,
+      (l) => l.expiresAt,
+      now,
+    )
+  }
+
   // ------------------------------------------------------------------------ cache
 
   /** Clears every cached role/permission lookup. Called automatically after each change. */
@@ -586,15 +675,26 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     await this.#cache?.clear()
   }
 
-  async #remember<V>(key: string, compute: () => Promise<V>): Promise<V> {
+  async #remember<V>(
+    key: string,
+    compute: () => Promise<V>,
+    validUntil?: (value: V) => number | undefined,
+  ): Promise<V> {
     if (!this.#cache) return compute()
     const hit = await this.#cache.get(key)
-    if (hit !== undefined) return hit as V
+    if (hit !== undefined) {
+      // A shared store may round TTLs up (Redis `EX` is in seconds): the value itself says when it goes stale.
+      const until = validUntil?.(hit as V)
+      if (until === undefined || until > this.#clock()) return hit as V
+    }
     const generation = this.#generation
     const value = await compute()
+    const until = validUntil?.(value)
+    // Never keep an entry past the earliest expiry inside it.
+    const ttl = until === undefined ? this.#cacheTtl : Math.min(this.#cacheTtl, until - this.#clock())
     // shortcut: the counter is per process; a cache shared between processes can still get a stale
     // entry from another process's in-flight lookup (bounded by cacheTtl). Use a versioned store if that matters.
-    if (generation === this.#generation) await this.#cache.set(key, value, this.#cacheTtl)
+    if (generation === this.#generation && ttl > 0) await this.#cache.set(key, value, ttl)
     return value
   }
 
@@ -781,7 +881,12 @@ export class RoleRbac<T extends RbacTypeConfig = DefaultRbacTypes, G extends str
   async syncSubjects(subjectType: string, ids: readonly Id[]): Promise<this> {
     const role = await this.get()
     const scope = { guard: role.guardName, team: this.teamId, actor: this.#actor }
-    const before = await this.rbac.adapter.getSubjectIdsWithRoles(subjectType, [role.id], this.teamId)
+    const before = await this.rbac.adapter.getSubjectIdsWithRoles(
+      subjectType,
+      [role.id],
+      this.teamId,
+      ...this.#core.activeArgs(),
+    )
     const current = new Set(before.map(String))
     const wanted = new Set(ids.map(String))
     // shortcut: one assign/remove per changed subject; batch in the adapter if roles go to thousands of subjects at once
@@ -837,6 +942,34 @@ interface SubjectState {
   roles: Role[]
   direct: Permission[]
   viaRoles: Permission[]
+  /**
+   * Expiry (epoch ms) of the role and direct-permission links that have one, by id. Only present when one
+   * of them expires. Plain numbers, so the state survives a JSON cache (Redis, KV, ...).
+   */
+  expires?: { roles: Record<string, number>; direct: Record<string, number> }
+  /** Epoch ms of the earliest of `expires`: the state is stale from then on (cache TTL and hit check). */
+  validUntil?: number
+}
+
+/** The links of one kind held in a state, as `id → expiry` (`null` = permanent). */
+function stateLinks(state: SubjectState, kind: 'roles' | 'permissions'): ActiveLinks {
+  const items = kind === 'roles' ? state.roles : state.direct
+  const expires = kind === 'roles' ? state.expires?.roles : state.expires?.direct
+  return new Map(items.map((item) => [idKey(item.id), { id: item.id, expiresAt: expires?.[idKey(item.id)] ?? null }]))
+}
+
+/** Items that are new, or (with expiry) whose expiry the write changes. */
+function changedLinks<V extends { id: Id }>(items: readonly V[], before: ActiveLinks, expiresAt: Date | null): V[] {
+  const target = expiresAt === null ? null : expiresAt.getTime()
+  return items.filter((item) => {
+    const link = before.get(idKey(item.id))
+    return link === undefined || link.expiresAt !== target
+  })
+}
+
+/** Items held in `before` (active links). */
+function heldLinks<V extends { id: Id }>(items: readonly V[], before: ActiveLinks): V[] {
+  return items.filter((item) => before.has(idKey(item.id)))
 }
 
 /** Roles & permissions of a single subject. Obtain with `rbac.for(user)`. */
@@ -874,43 +1007,66 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes, G extends 
 
   // ------------------------------------------------------------------------ roles
 
-  async assignRole(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<this> {
-    const { adapter } = this.rbac
-    const { events } = this.#core
-    const resolved = await this.#core.resolveRoles(flatten(roles), this.guardName, this.teamId)
-    const track = events.has('role.attached')
-    const before = track ? await adapter.getSubjectRoleIds(this.subject, this.teamId) : []
-    await adapter.attachSubjectRoles(this.subject, resolved.map((r) => r.id), this.teamId)
+  /**
+   * Assigns roles. A last `{ expiresAt }` argument makes the assignments temporary (see {@link ExpiryOptions});
+   * without it they are permanent, also for roles the subject already held with an expiry (the latest call wins).
+   */
+  async assignRole(...roles: ExpiryArgs<Many<RoleInput<RoleName<T, G>>>>): Promise<this> {
+    const { items, options } = splitExpiryArgs(roles)
+    const expiresAt = requestedExpiry(options, this.rbac.adapter) ?? null
+    const resolved = await this.#core.resolveRoles(flatten(items), this.guardName, this.teamId)
+    const track = this.#core.events.has('role.attached')
+    const before = track ? await this.#core.subjectLinks('roles', this.subject, this.teamId) : undefined
+    await this.attach('roles', resolved, expiresAt)
     await this.rbac.forgetCachedPermissions()
-    if (track) await this.emitRoles('role.attached', filterByIds(resolved, before, false))
+    if (before) await this.emitRoles('role.attached', changedLinks(resolved, before, expiresAt), expiresAt)
     return this
   }
 
   async removeRole(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<this> {
     const { adapter } = this.rbac
-    const { events } = this.#core
     const resolved = await this.#core.resolveRoles(flatten(roles), this.guardName, this.teamId)
-    const track = events.has('role.detached')
-    const before = track ? await adapter.getSubjectRoleIds(this.subject, this.teamId) : []
+    const track = this.#core.events.has('role.detached')
+    const before = track ? await this.#core.subjectLinks('roles', this.subject, this.teamId) : undefined
     await adapter.detachSubjectRoles(this.subject, resolved.map((r) => r.id), this.teamId)
     await this.rbac.forgetCachedPermissions()
-    if (track) await this.emitRoles('role.detached', filterByIds(resolved, before, true))
+    if (before) await this.emitRoles('role.detached', heldLinks(resolved, before))
     return this
   }
 
-  /** Replaces all roles (in the current guard & team) with the given ones. */
-  async syncRoles(...roles: Many<RoleInput<RoleName<T, G>>>[]): Promise<this> {
-    const resolved = await this.#core.resolveRoles(flatten(roles), this.guardName, this.teamId)
-    const current = (await this.state()).roles
+  /**
+   * Replaces all roles (in the current guard & team) with the given ones. With a last `{ expiresAt }`, every
+   * listed role gets that expiry; without it, roles the subject keeps keep theirs and new ones are permanent.
+   */
+  async syncRoles(...roles: ExpiryArgs<Many<RoleInput<RoleName<T, G>>>>): Promise<this> {
+    const { items, options } = splitExpiryArgs(roles)
+    const requested = requestedExpiry(options, this.rbac.adapter)
+    const resolved = await this.#core.resolveRoles(flatten(items), this.guardName, this.teamId)
+    const state = await this.state()
+    const current = state.roles
+    const before = stateLinks(state, 'roles')
     const newIds = resolved.map((r) => r.id)
+    // Without an expiry, links that stay are left as they are (with expiry on: only the new ones are written).
+    const keep = requested === undefined && this.#core.expiry
+    const attached = keep ? resolved.filter((r) => !before.has(idKey(r.id))) : resolved
     // Attach first, then detach the rest: a failure midway leaves extra roles, never none.
-    await this.rbac.adapter.attachSubjectRoles(this.subject, newIds, this.teamId)
+    await this.attach('roles', attached, requested ?? null)
     const stale = filterByIds(current, newIds, false)
     if (stale.length > 0) await this.rbac.adapter.detachSubjectRoles(this.subject, stale.map((r) => r.id), this.teamId)
     await this.rbac.forgetCachedPermissions()
     await this.emitRoles('role.detached', filterByIds(current, resolved.map((r) => r.id), false))
-    await this.emitRoles('role.attached', filterByIds(resolved, current.map((r) => r.id), false))
+    await this.emitRoles('role.attached', changedLinks(attached, before, requested ?? null), requested ?? null)
     return this
+  }
+
+  /**
+   * The roles the subject holds (in the current guard & team), each with when the assignment ends
+   * (`expiresAt`, `null` = permanent). Expired assignments are not listed.
+   */
+  async getRoleAssignments(): Promise<RoleAssignment[]> {
+    const state = await this.state()
+    const links = stateLinks(state, 'roles')
+    return state.roles.map((role) => ({ role, expiresAt: SubjectRbac.toDate(links.get(idKey(role.id))?.expiresAt) }))
   }
 
   async getRoles(): Promise<Role[]> {
@@ -950,45 +1106,76 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes, G extends 
 
   // ------------------------------------------------------------ direct permissions
 
-  async givePermissionTo(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<this> {
-    const { adapter } = this.rbac
-    const { events } = this.#core
-    const resolved = await this.#core.resolvePermissions(flatten(permissions), this.guardName)
-    const track = events.has('permission.attached')
-    const before = track ? await adapter.getSubjectPermissionIds(this.subject, this.teamId) : []
-    await adapter.attachSubjectPermissions(this.subject, resolved.map((p) => p.id), this.teamId)
+  /**
+   * Gives direct permissions. A last `{ expiresAt }` argument makes the grants temporary (see
+   * {@link ExpiryOptions}); without it they are permanent, also for ones already held with an expiry.
+   */
+  async givePermissionTo(...permissions: ExpiryArgs<Many<PermissionInput<PermissionName<T, G>>>>): Promise<this> {
+    const { items, options } = splitExpiryArgs(permissions)
+    const expiresAt = requestedExpiry(options, this.rbac.adapter) ?? null
+    const resolved = await this.#core.resolvePermissions(flatten(items), this.guardName)
+    const track = this.#core.events.has('permission.attached')
+    const before = track ? await this.#core.subjectLinks('permissions', this.subject, this.teamId) : undefined
+    await this.attach('permissions', resolved, expiresAt)
     await this.rbac.forgetCachedPermissions()
-    if (track) await this.emitPermissions('permission.attached', filterByIds(resolved, before, false))
+    if (before) {
+      await this.emitPermissions('permission.attached', changedLinks(resolved, before, expiresAt), expiresAt)
+    }
     return this
   }
 
   async revokePermissionTo(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<this> {
     const { adapter } = this.rbac
-    const { events } = this.#core
     const resolved = await this.#core.resolvePermissions(flatten(permissions), this.guardName)
-    const track = events.has('permission.detached')
-    const before = track ? await adapter.getSubjectPermissionIds(this.subject, this.teamId) : []
+    const track = this.#core.events.has('permission.detached')
+    const before = track ? await this.#core.subjectLinks('permissions', this.subject, this.teamId) : undefined
     await adapter.detachSubjectPermissions(this.subject, resolved.map((p) => p.id), this.teamId)
     await this.rbac.forgetCachedPermissions()
-    if (track) await this.emitPermissions('permission.detached', filterByIds(resolved, before, true))
+    if (before) await this.emitPermissions('permission.detached', heldLinks(resolved, before))
     return this
   }
 
-  /** Replaces all direct permissions (in the current guard & team) with the given ones. */
-  async syncPermissions(...permissions: Many<PermissionInput<PermissionName<T, G>>>[]): Promise<this> {
-    const resolved = await this.#core.resolvePermissions(flatten(permissions), this.guardName)
-    const current = (await this.state()).direct
+  /**
+   * Replaces all direct permissions (in the current guard & team) with the given ones. `{ expiresAt }` works
+   * as in {@link syncRoles}.
+   */
+  async syncPermissions(...permissions: ExpiryArgs<Many<PermissionInput<PermissionName<T, G>>>>): Promise<this> {
+    const { items, options } = splitExpiryArgs(permissions)
+    const requested = requestedExpiry(options, this.rbac.adapter)
+    const resolved = await this.#core.resolvePermissions(flatten(items), this.guardName)
+    const state = await this.state()
+    const current = state.direct
+    const before = stateLinks(state, 'permissions')
     const newIds = resolved.map((p) => p.id)
+    const keep = requested === undefined && this.#core.expiry
+    const attached = keep ? resolved.filter((p) => !before.has(idKey(p.id))) : resolved
     // Attach first, then detach the rest: a failure midway leaves extra permissions, never none.
-    await this.rbac.adapter.attachSubjectPermissions(this.subject, newIds, this.teamId)
+    await this.attach('permissions', attached, requested ?? null)
     const stale = filterByIds(current, newIds, false)
     if (stale.length > 0) {
       await this.rbac.adapter.detachSubjectPermissions(this.subject, stale.map((p) => p.id), this.teamId)
     }
     await this.rbac.forgetCachedPermissions()
     await this.emitPermissions('permission.detached', filterByIds(current, resolved.map((p) => p.id), false))
-    await this.emitPermissions('permission.attached', filterByIds(resolved, current.map((p) => p.id), false))
+    await this.emitPermissions(
+      'permission.attached',
+      changedLinks(attached, before, requested ?? null),
+      requested ?? null,
+    )
     return this
+  }
+
+  /**
+   * The direct permissions the subject holds (in the current guard & team), each with when the grant ends
+   * (`expiresAt`, `null` = permanent). Expired grants are not listed.
+   */
+  async getDirectPermissionAssignments(): Promise<PermissionAssignment[]> {
+    const state = await this.state()
+    const links = stateLinks(state, 'permissions')
+    return state.direct.map((permission) => ({
+      permission,
+      expiresAt: SubjectRbac.toDate(links.get(idKey(permission.id))?.expiresAt),
+    }))
   }
 
   // ---------------------------------------------------------------- everything
@@ -1175,27 +1362,67 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes, G extends 
 
   private state(): Promise<SubjectState> {
     const key = `rbac:${JSON.stringify([this.guardName, this.teamId, this.subject.type, String(this.subject.id)])}`
-    return this.#core.remember(key, async () => {
-      const { adapter } = this.rbac
+    return this.#core.remember(
+      key,
+      async () => {
+        const { adapter } = this.rbac
 
-      const roleIds = await adapter.getSubjectRoleIds(this.subject, this.teamId)
-      const roles = roleIds.length > 0 ? await adapter.findRoles({ ids: roleIds, guardName: this.guardName }) : []
+        // Expired links are dropped here, against the engine's clock (with expiry off: every link).
+        const roleLinks = await this.#core.subjectLinks('roles', this.subject, this.teamId)
+        const roleIds = [...roleLinks.values()].map((l) => l.id)
+        const roles = roleIds.length > 0 ? await adapter.findRoles({ ids: roleIds, guardName: this.guardName }) : []
 
-      const directIds = await adapter.getSubjectPermissionIds(this.subject, this.teamId)
-      const direct =
-        directIds.length > 0 ? await adapter.findPermissions({ ids: directIds, guardName: this.guardName }) : []
+        const directLinks = await this.#core.subjectLinks('permissions', this.subject, this.teamId)
+        const directIds = [...directLinks.values()].map((l) => l.id)
+        const direct =
+          directIds.length > 0 ? await adapter.findPermissions({ ids: directIds, guardName: this.guardName }) : []
 
-      const links = roles.length > 0 ? await adapter.getRolePermissionLinks(roles.map((r) => r.id)) : []
-      const viaRoles =
-        links.length > 0
-          ? await adapter.findPermissions({ ids: links.map((l) => l.permissionId), guardName: this.guardName })
-          : []
+        const links = roles.length > 0 ? await adapter.getRolePermissionLinks(roles.map((r) => r.id)) : []
+        const viaRoles =
+          links.length > 0
+            ? await adapter.findPermissions({ ids: links.map((l) => l.permissionId), guardName: this.guardName })
+            : []
 
-      return { roles, direct, viaRoles }
-    })
+        const state: SubjectState = { roles, direct, viaRoles }
+        const expiring = (items: readonly { id: Id }[], active: ActiveLinks): Record<string, number> => {
+          const out: Record<string, number> = {}
+          for (const item of items) {
+            const ms = active.get(idKey(item.id))?.expiresAt
+            if (ms !== undefined && ms !== null) out[idKey(item.id)] = ms
+          }
+          return out
+        }
+        const expires = { roles: expiring(roles, roleLinks), direct: expiring(direct, directLinks) }
+        const validUntil = earliest([...Object.values(expires.roles), ...Object.values(expires.direct)])
+        if (validUntil !== undefined) {
+          state.expires = expires
+          state.validUntil = validUntil
+        }
+        return state
+      },
+      (state) => state.validUntil,
+    )
   }
 
-  private async emitRoles(event: 'role.attached' | 'role.detached', roles: Role[]): Promise<void> {
+  /** Attaches links, passing the expiry to adapters that store it (with expiry off it is always `null`). */
+  private async attach(kind: 'roles' | 'permissions', items: readonly { id: Id }[], expiresAt: Date | null): Promise<void> {
+    const { adapter } = this.rbac
+    const ids = items.map((item) => item.id)
+    const options = this.#core.expiry ? ([{ expiresAt }] as const) : ([] as const)
+    if (kind === 'roles') await adapter.attachSubjectRoles(this.subject, ids, this.teamId, ...options)
+    else await adapter.attachSubjectPermissions(this.subject, ids, this.teamId, ...options)
+  }
+
+  /** `expiresAt` for event payloads: only with expiry on, and only on `*.attached`. */
+  private expiryField(expiresAt: Date | null | undefined): { expiresAt?: Date | null } {
+    return expiresAt === undefined || !this.#core.expiry ? {} : { expiresAt }
+  }
+
+  private async emitRoles(
+    event: 'role.attached' | 'role.detached',
+    roles: Role[],
+    expiresAt?: Date | null,
+  ): Promise<void> {
     if (roles.length === 0) return
     await this.#core.events.emit({
       event,
@@ -1203,12 +1430,14 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes, G extends 
       roles,
       guardName: this.guardName,
       teamId: this.teamId,
+      ...this.expiryField(expiresAt),
     }, this.#actor)
   }
 
   private async emitPermissions(
     event: 'permission.attached' | 'permission.detached',
     permissions: Permission[],
+    expiresAt?: Date | null,
   ): Promise<void> {
     if (permissions.length === 0) return
     await this.#core.events.emit({
@@ -1218,7 +1447,12 @@ export class SubjectRbac<T extends RbacTypeConfig = DefaultRbacTypes, G extends 
       permissions,
       guardName: this.guardName,
       teamId: this.teamId,
+      ...this.expiryField(expiresAt),
     }, this.#actor)
+  }
+
+  private static toDate(ms: number | null | undefined): Date | null {
+    return ms === undefined || ms === null ? null : new Date(ms)
   }
 
   private static roleMatches(role: Role, wanted: RoleInput): boolean {

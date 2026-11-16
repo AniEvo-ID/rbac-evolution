@@ -54,6 +54,7 @@ interface RoleAttachedEvent extends RbacEventBase {
   roles: Role[]          // only the roles that actually changed
   guardName: string
   teamId: TeamId         // the subject's team scope
+  expiresAt?: Date | null // role.attached with an expiry-enabled adapter: when they end (null = never)
 }
 
 // permission.attached / permission.detached
@@ -66,6 +67,7 @@ type PermissionAttachedEvent = {
   permissions: Permission[]    // only the permissions that actually changed
   guardName: string
   teamId: TeamId               // subject's team scope, or the role's teamId
+  expiresAt?: Date | null      // like role.attached, for target: 'subject' only
 } & PermissionTarget & RbacEventBase
 
 // role.created / role.deleted
@@ -149,6 +151,23 @@ export const rbac = createRbac({
 - The core imports nothing runtime-specific: `getActor` can read any context. `AsyncLocalStorage` exists on Node.js
   and Bun, and on Cloudflare Workers with the `nodejs_compat` flag. Where there is none, pass `actor` per call. See
   [Runtimes](/guide/runtimes).
+
+## Expiry
+
+With an adapter created with `{ expiry: true }` (see [Temporary access](/basic-usage/temporary-access)):
+
+- `role.attached` and `permission.attached` (`target: 'subject'`) carry **`expiresAt`**: the `Date` the listed links
+  end, or `null` for permanent ones. Without expiry support the field is absent, as in 1.1. Role permissions never
+  expire, so `target: 'role'` events never have it.
+- A call that **changes the expiry** of a link the subject already holds (`assignRole('on-call', { expiresAt })`
+  again with another date, or without one) emits `*.attached` again for that link, with the new `expiresAt`. A call
+  that changes nothing emits nothing, as before.
+- **Nothing fires when a link expires.** The engine has no timer: the link simply stops counting at `expiresAt`. Record
+  the end from the `attached` event if your audit log needs it.
+- **`pruneExpired()` emits nothing**: the access ended at `expiresAt`, and a `detached` event now would put the
+  wrong time in an audit log.
+- `removeRole()`, `revokePermissionTo()`, `syncRoles()`, `revokeAll()` and `deleteTeam()` delete expired links too,
+  but their `*.detached` events only list the links that were still active.
 
 ## Ordering and await semantics
 

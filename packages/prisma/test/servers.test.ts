@@ -55,6 +55,16 @@ function serverSuite(label: string, envVar: string, connect: (url: string) => Se
       return new PrismaAdapter(prisma, { skipDuplicates: true })
     })
 
+    runAdapterTests(`PrismaAdapter (${label}, expiry)`, async () => {
+      await reset()
+      return new PrismaAdapter(prisma, { expiry: true })
+    })
+
+    runAdapterTests(`PrismaAdapter (${label}, expiry + skipDuplicates)`, async () => {
+      await reset()
+      return new PrismaAdapter(prisma, { expiry: true, skipDuplicates: true })
+    })
+
     describe(`PrismaAdapter (${label}): specifics`, () => {
       const alice = { type: 'user', id: 1 }
 

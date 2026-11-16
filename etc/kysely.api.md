@@ -4,18 +4,20 @@
 
 ## `@anievo-id/rbac-evolution-kysely`
 
-19 exports.
+22 exports.
 
 ```ts
 // KyselyAdapterOptions: interface
 interface KyselyAdapterOptions extends RbacTableOptions {
     dialect?: RbacDialect | undefined;
+    expiry?: boolean | undefined;
 }
 
 // KyselyRbacAdapter: class
 declare class KyselyRbacAdapter implements RbacAdapter {
     readonly dialect: RbacDialect;
     readonly tables: RbacTableNames;
+    readonly supportsExpiry: boolean;
     constructor(db: AnyDb, options?: KyselyAdapterOptions);
     createPermission(data: {
         name: string;
@@ -34,13 +36,16 @@ declare class KyselyRbacAdapter implements RbacAdapter {
     attachRolePermissions(roleId: Id, permissionIds: readonly Id[]): Promise<void>;
     detachRolePermissions(roleId: Id, permissionIds?: readonly Id[]): Promise<void>;
     getSubjectRoleIds(subject: Subject, teamId: TeamId): Promise<Id[]>;
-    attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId): Promise<void>;
+    attachSubjectRoles(subject: Subject, roleIds: readonly Id[], teamId: TeamId, options?: AttachLinkOptions): Promise<void>;
     detachSubjectRoles(subject: Subject, roleIds: readonly Id[] | undefined, teamId: TeamId): Promise<void>;
     getSubjectPermissionIds(subject: Subject, teamId: TeamId): Promise<Id[]>;
-    attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId): Promise<void>;
+    attachSubjectPermissions(subject: Subject, permissionIds: readonly Id[], teamId: TeamId, options?: AttachLinkOptions): Promise<void>;
     detachSubjectPermissions(subject: Subject, permissionIds: readonly Id[] | undefined, teamId: TeamId): Promise<void>;
-    getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId): Promise<Id[]>;
-    getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId): Promise<Id[]>;
+    getSubjectIdsWithRoles(subjectType: string, roleIds: readonly Id[], teamId: TeamId, options?: ActiveLinkOptions): Promise<Id[]>;
+    getSubjectIdsWithPermissions(subjectType: string, permissionIds: readonly Id[], teamId: TeamId, options?: ActiveLinkOptions): Promise<Id[]>;
+    getSubjectRoleLinks(subject: Subject, teamId: TeamId): Promise<SubjectRoleLink[]>;
+    getSubjectPermissionLinks(subject: Subject, teamId: TeamId): Promise<SubjectPermissionLink[]>;
+    deleteExpiredLinks(now: Date): Promise<DeletedLinkCounts>;
     getSubjectLinks(subject: Subject): Promise<SubjectLinks>;
     getTeamLinks(teamId: Id): Promise<SubjectLinks>;
     detachTeamLinks(teamId: Id): Promise<void>;
@@ -82,6 +87,7 @@ type RbacDialect = 'postgres' | 'mysql' | 'sqlite' | 'mssql';
 // RbacMigrationOptions: interface
 interface RbacMigrationOptions extends RbacTableOptions {
     dialect?: RbacDialect | undefined;
+    expiry?: boolean | undefined;
 }
 
 // RbacTableNames: interface
@@ -117,17 +123,26 @@ interface RolesTable {
     updated_at: RbacTimestamp;
 }
 
+// addRbacExpiryColumns: function
+declare function addRbacExpiryColumns(db: Kysely<any>, options?: RbacMigrationOptions): Promise<void>;
+
 // createRbacTables: function
 declare function createRbacTables(db: Kysely<any>, options?: RbacMigrationOptions): Promise<void>;
 
 // detectDialect: function
 declare function detectDialect(db: Kysely<any>): RbacDialect;
 
+// dropRbacExpiryColumns: function
+declare function dropRbacExpiryColumns(db: Kysely<any>, options?: RbacTableOptions): Promise<void>;
+
 // dropRbacTables: function
 declare function dropRbacTables(db: Kysely<any>, options?: RbacTableOptions): Promise<void>;
 
 // kyselyAdapter: function
 declare function kyselyAdapter(db: Kysely<any>, options?: KyselyAdapterOptions): KyselyRbacAdapter;
+
+// rbacExpiryMigration: function
+declare function rbacExpiryMigration(options?: RbacMigrationOptions): Migration;
 
 // rbacMigration: function
 declare function rbacMigration(options?: RbacMigrationOptions): Migration;
