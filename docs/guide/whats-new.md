@@ -1,8 +1,23 @@
 # What's new
 
-The highlights of each minor release. Every package shares one version number, so `0.8.x` of one package works
-with `0.8.x` of all the others. Full details are in the
+The highlights of each minor release. Every package shares one version number, so `1.x` of one package works
+with `1.x` of all the others. Full details are in the
 [changelog](https://github.com/AniEvo-ID/rbac-evolution/blob/main/packages/core/CHANGELOG.md).
+
+## 1.0: the stable API
+
+1.0 has no breaking changes from 0.9. What it adds is a promise: the public API of every package only changes in a
+breaking way in a new major version, every supported runtime, database and framework version is tested in CI, and
+security fixes have a supported version range. See [versioning](/guide/versioning) and, from older releases, the
+[upgrade guide](/guide/upgrading).
+
+Since 0.8, closer to spatie/laravel-permission:
+
+- `hasAnyDirectPermission()`, `hasAllDirectPermissions()` and `checkPermissionTo()` on `rbac.for(user)`.
+- `findRoleById()`, `findPermissionById()` and `rolesWithPermission()` on the engine.
+- `rbac.for(user).withScope({ guard: 'api' })`, and a per-route `guard` option on every integration, like
+  `role:admin,api`.
+- `<UnlessRole>` in React, like `@unlessrole`.
 
 ## 0.8: typed names in every guard
 

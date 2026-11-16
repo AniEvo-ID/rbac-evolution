@@ -26,8 +26,7 @@
   ✨ <a href="https://creation.anievo.id/rbac-evolution/guide/whats-new">What's new</a>
 </p>
 
-> **Status: 🚀 1.0 release candidate.** The API is frozen: until 1.0.0, only bug fixes land. Try it with
-> `npm i @anievo-id/rbac-evolution@rc` (0.9 stays on `latest`) and report anything odd in an issue. Every release is
+> **Status: ✅ stable (1.0).** The public API only changes in a breaking way in a new major version. Every release is
 > tested against real PostgreSQL, MySQL, SQL Server and MongoDB servers, the oldest and newest supported framework
 > versions, end-to-end in a browser, and on Node.js 20, 22, 24 and Bun. See [versioning](https://creation.anievo.id/rbac-evolution/guide/versioning).
 
@@ -155,7 +154,9 @@ Every push to `main` refreshes the public [Test report](https://creation.anievo.
 - [x] `canAny()` / `canAll()` guards in every integration (spatie v8.5)
 - [x] `rbac.role(…).syncSubjects()` (spatie `Role::syncModels()`)
 - [x] One shared guard implementation for all integrations (0.6.0)
-- [ ] 1.0: stable API
+- [x] Typed names in every guard, decorator, server helper and the CLI seed (0.8)
+- [x] spatie parity: direct-permission checks, `checkPermissionTo`, `findById`, `rolesWithPermission`, guard per check and per route (`role:admin,api`), `<UnlessRole>` (0.9)
+- [x] 1.0: stable API, with a [versioning promise](https://creation.anievo.id/rbac-evolution/guide/versioning)
 
 ## Contributing
 
