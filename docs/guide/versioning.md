@@ -101,6 +101,12 @@ package still resolves there, but subpaths such as `/testing`, `/pg` or `/middle
   `NODE_ENV` is `development`.
 - Every deprecation is listed in the changelog and in the [upgrade guide](/guide/upgrading).
 
+## Docs for older versions
+
+These docs follow the latest release. The docs of the last 0.x release (0.9.0) stay online, frozen, at
+[/rbac-evolution/0.x/](https://creation.anievo.id/rbac-evolution/0.x/) (also under **Versions** in the top bar). They
+are built from that release's own sources and are not updated: read the [upgrade guide](./upgrading) to move to 1.x.
+
 ## Security fixes
 
 The latest 1.x minor gets security fixes. After 1.0 ships, 0.x gets fixes for critical issues for three months. See

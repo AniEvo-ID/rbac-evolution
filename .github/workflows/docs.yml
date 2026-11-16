@@ -90,6 +90,9 @@ jobs:
           pnpm --filter rbac-evolution-e2e test:e2e || echo "::warning::Some E2E tests failed, see the Test report page."
       # Rebuild so the site ships the fresh reports in docs/public/reports.
       - run: pnpm --filter @anievo-id/rbac-evolution-docs build
+      # The frozen 0.x docs, built from the last 0.x release tag into dist/0.x/ (docs/scripts/archive.mjs).
+      - name: Archived 0.x docs
+        run: node docs/scripts/archive.mjs
       - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:

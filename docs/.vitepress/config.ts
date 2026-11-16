@@ -89,6 +89,15 @@ export default defineConfig({
           { text: 'Contributing', link: `${repo}/blob/main/CONTRIBUTING.md` },
         ],
       },
+      {
+        // Version switcher. The 0.x docs are a separate, frozen build (docs/scripts/archive.mjs), so the link is a full
+        // URL that leaves this site's router instead of a route of its own.
+        text: 'Versions',
+        items: [
+          { text: `${version.split('.')[0]}.x (latest)`, link: '/guide/introduction' },
+          { text: '0.x (archived)', link: 'https://creation.anievo.id/rbac-evolution/0.x/', target: '_self' },
+        ],
+      },
     ],
 
     sidebar: {
