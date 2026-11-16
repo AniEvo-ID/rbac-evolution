@@ -1,5 +1,50 @@
 # @anievo-id/rbac-evolution
 
+## 1.2.0
+
+### Minor Changes
+
+- 54bbcc9: Temporary access: optional expiry on role assignments and direct permissions.
+  
+  - `assignRole()`, `givePermissionTo()`, `syncRoles()` and `syncPermissions()` take an optional last
+    `{ expiresAt: Date | null }`. From `expiresAt` on, every check treats the link as absent: `can()`, `hasRole()`,
+    `snapshot()`, `subjectsWithRole()` / `subjectsWithPermission()`, `teams()`, `revokeAll()` and `deleteTeam()`
+    events. Expired rows stay in the database until `rbac.pruneExpired()` deletes them (no events).
+  - Re-assigning: the latest call wins (`assignRole()` without `expiresAt` makes the link permanent). `syncRoles()` /
+    `syncPermissions()` without `expiresAt` keep the expiry of the links that stay.
+  - `rbac.for(subject).getRoleAssignments()` and `getDirectPermissionAssignments()` return each link with its
+    `expiresAt`. `role.attached` / `permission.attached` (subject) payloads carry `expiresAt` with an expiry-enabled
+    adapter, and are also emitted when a call changes the expiry of a held link.
+  - Cached subject states and `teams()` entries never outlive the earliest expiry inside them: the entry TTL is
+    capped, and the state carries its `validUntil` for shared stores that round TTLs. New `createRbac({ now })`
+    option to inject the engine clock (tests).
+  - **Opt-in per adapter, no schema change by default.** Expiry needs an `expires_at` column, so every adapter keeps
+    the 1.1 behaviour (and never touches that column) unless created with `{ expiry: true }`:
+    `new PrismaAdapter(prisma, { expiry: true })`, `drizzlePgAdapter(db, pgRbacSchema({ expiry: true }), { expiry: true })`,
+    `kyselyAdapter(db, { expiry: true })`, `mongooseAdapter({ expiry: true })`, `new MemoryAdapter({ expiry: true })`.
+    Giving an `expiresAt` to an adapter without it throws the new `RbacError` code `EXPIRY_NOT_SUPPORTED`, never
+    granting permanent access.
+  - Migrations: an optional `expiresAt` field in `schema/rbac.prisma`; `sql/{pg,sqlite,mysql}-expiry.sql` and
+    `{pg,sqlite,mysql}RbacSchema({ expiry: true })` for Drizzle; `addRbacExpiryColumns()`, `rbacExpiryMigration()`
+    and `createRbacTables({ expiry: true })` for Kysely; an optional `expiresAt` field on the Mongoose link schemas
+    (no migration). See each adapter's upgrade steps.
+  - `RbacAdapter` gets an optional `supportsExpiry` flag and three optional methods, `getSubjectRoleLinks()`,
+    `getSubjectPermissionLinks()` and `deleteExpiredLinks()`; `attachSubject*()` and `getSubjectIdsWith*()` get an
+    optional last argument that the engine only passes when `supportsExpiry` is `true`. Existing custom adapters keep
+    working unchanged. The conformance suite runs its new expiry tests only for adapters that declare
+    `supportsExpiry`.
+- 54bbcc9: Typed names per guard: a permission that only exists in `api` is a type error on a `web` subject or route.
+  
+  - **Type config.** `createRbac<{ guards: { web: { roles; permissions }; api: { roles; permissions } }; defaultGuard: 'web' }>()` types the names of each guard (`RbacTypeConfig` gains the optional `guards` and `defaultGuard` keys). `rbac.for(user)` takes the default guard's names; `rbac.for(key, { guard: 'api' })`, `.withScope({ guard })`, `rbac.role(name, { guard })`, `createRole` / `createPermission` / `find*` / `delete*` / `subjectsWith*` with `{ guard }` take that guard's names, and `sync()` checks each block against its own `guard`. A non-literal `guard` accepts the names of every guard; an unknown literal is a type error. New types: `GuardName<T>`, `DefaultGuardName<T>`, `CheckGuard<T, G>`, `ScopedGuardName<T, G>`, `RbacGuardTypes`, `SyncDefinitions<T, G>`, `GuardSyncDefinition<T, G>`, `RbacGuardNames<T, G>`, and for the integrations `RequirementName<T, K, G>`, `RequirementGuard<A, G>`, `GuardRequirementArgs<A, T, K, G, O>`, `CheckRequirementGuard<T, G>`, `UnknownGuardName<G>`. `PermissionName`, `RoleName`, `SubjectRbac`, `RoleRbac`, `GuardOptions`, `ScopeOptions`, `SyncOptions`, `SyncDefinition`, `SnapshotOptions` and `SubjectsWithPermissionOptions` take an optional guard type argument.
+  - **`isRoleName()` / `isPermissionName()`** take `{ guard }` and check the list of that guard, from the new `names.guards` option (`names: { guards: { api: { permissions } } }`); a guard without a list uses `names.roles` / `names.permissions`.
+  - **Integrations.** `createGuards<AppRbac, 'api'>()` (Express, Fastify, Hono) and `createRbacDecorators<AppRbac, 'api'>()` (NestJS) check names in the guard of the request, and a route's `{ guard }` option takes the names of that guard. They return the new `ScopedGuards` / `ScopedRbacDecorators` for a per-guard config, and the 1.1 `Guards` / `RbacDecorators` otherwise (`GuardsFor`, `RbacDecoratorsFor`). `RbacRequest<T, Req, G>` (Express, Fastify), `RbacVariables<T, G>` / `RbacEnv<T, G>` (Hono, inferred from `rbacMiddleware({ guard })`), `getRbac<T, G>()` (NestJS) type the request's subject for a guard. Next.js: `createNextRbac({ rbac, guard })` returns a `ScopedNextRbac` whose helpers take `{ guard }` per call. Nuxt: `createRbacServer({ rbac, guard })` returns a `ScopedRbacServer` whose helpers return the subject typed for the guard they checked in. CLI: `seed` is checked block by block.
+  
+  Flat configs (`{ roles; permissions }`) and untyped engines are unchanged: their types resolve to the 1.1 ones. No runtime change, except `names.guards` for the type guards.
+
+### Patch Changes
+
+- 54bbcc9: `runAdapterTests` no longer fails on Bun's test runner for adapters without the optional methods (or without expiry): the tests that don't apply end early instead of calling Vitest's `ctx.skip()`, which Bun doesn't provide.
+
 ## 1.1.0
 
 ### Minor Changes
