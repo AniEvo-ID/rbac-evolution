@@ -7,7 +7,7 @@ made internal or removed **before** 1.0, while breaking changes are still cheap.
 
 Generate the list of public exports per package and review it in one pull request.
 
-- [ ] Script `scripts/list-exports.mjs`: for each package, list every export of every `exports` entry (values and types)
+- [x] Script `scripts/list-exports.mjs`: for each package, list every export of every `exports` entry (values and types)
 - [ ] Commit the output as `planning/api-inventory.md` and mark each export: **keep**, **rename**, **internal**, **remove**
 
 Entry points today (from `package.json` `exports`):
@@ -17,7 +17,7 @@ Entry points today (from `package.json` `exports`):
 | core | 3 (main, `/testing`, `package.json`) |
 | drizzle | 8 (one per dialect schema) |
 | next | 3 (server, middleware, `package.json`) |
-| nuxt | 4 (module, server, runtime) |
+| nuxt | 3 (module, `/server`, `/rule`) |
 | the other 10 | 2 each |
 
 ## Questions to settle

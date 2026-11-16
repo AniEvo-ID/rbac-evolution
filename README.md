@@ -151,7 +151,7 @@ Every push to `main` refreshes the public [Test report](https://creation.anievo.
 - [x] Documentation site, test report, E2E tests, verified releases
 - [x] `canAny()` / `canAll()` guards in every integration (spatie v8.5)
 - [x] `rbac.role(…).syncSubjects()` (spatie `Role::syncModels()`)
-- [ ] One shared guard implementation for all integrations
+- [x] One shared guard implementation for all integrations (0.6.0)
 - [ ] 1.0: stable API
 
 ## Contributing

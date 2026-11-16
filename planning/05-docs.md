@@ -17,7 +17,7 @@ Goal: a new user succeeds without reading the source, and an existing user upgra
 - [ ] **Recipes**: Auth.js / Lucia / Clerk session to subject, multi-tenant SaaS with teams, admin UI for roles, audit log from events.
 - [ ] **Doc tests**: run the code blocks of the guides (or the main ones) in CI so examples can't rot.
 - [ ] **README per package**: same short structure (install, 10-line example, link to docs) for all 14.
-- [ ] **Housekeeping**: tick "One shared guard implementation" in the README roadmap (shipped in 0.6.0).
+- [x] **Housekeeping**: tick "One shared guard implementation" in the README roadmap (shipped in 0.6.0).
 
 ## Done when
 
