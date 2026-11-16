@@ -1,5 +1,42 @@
 # @anievo-id/rbac-evolution
 
+## 1.1.0
+
+### Minor Changes
+
+- 278d65a: Remove a subject from everything, delete a team, and list a subject's teams.
+  
+  - `rbac.for(subject).revokeAll(options?)` removes every role and direct permission of the subject in the current
+    guard and team (`syncRoles([])` plus `syncPermissions([])` in one call). `{ allGuards: true }` and
+    `{ allTeams: true }` widen it; both together remove the subject from everything, like spatie does when a model
+    is deleted. Emits `role.detached` / `permission.detached` per team and guard.
+  - `rbac.deleteTeam(teamId)` removes every role and direct permission held in the team (any subject, any guard) and
+    every role scoped to the team. Emits `role.detached` / `permission.detached` per subject and guard, then
+    `role.deleted` per team role, and clears the cache. Throws `TEAMS_NOT_ENABLED` without `teams: true`.
+  - `rbac.for(subject).teams(options?)` returns the ids of the teams where the subject has a role or a direct
+    permission (current guard, or every guard with `{ allGuards: true }`). Cached like other lookups.
+  - `RbacAdapter` gets three **optional** methods: `getSubjectLinks(subject)`, `getTeamLinks(teamId)` and
+    `detachTeamLinks(teamId)`, with the `SubjectLinks`, `SubjectRoleLink` and `SubjectPermissionLink` types. Existing
+    custom adapters keep working: `revokeAll()` in the current team only needs the required methods, `deleteTeam()`
+    falls back to per-subject detaches without `detachTeamLinks`, and the calls that need `getSubjectLinks` or
+    `getTeamLinks` throw an `RbacError` with the new code `ADAPTER_METHOD_MISSING` (before writing anything).
+  - Every built-in adapter (memory, Prisma, Drizzle, Kysely, Mongoose) implements the three methods, with the same
+    exact matching of subject and team ids as the other methods, whatever the database collation.
+  - The conformance suite (`runAdapterTests`) tests the optional methods an adapter has, and skips the others.
+  - The engine no longer ends up in client bundles that only use `wildcardImplies` (React, Vue, the Next.js
+    middleware): a `static {}` block kept bundlers from tree-shaking it. Those bundles shrink by about 4.5 kB
+    (minified and brotlied).
+- 278d65a: Typed names reach the request's subject, and user input can be checked against them.
+  
+  - **Request helpers keep typed names.** The options of every integration are generic over the engine (`RbacMiddlewareOptions<T>`, `RbacPluginOptions<T>`, `RbacModuleOptions<T>`, ...) and infer `T` from `rbac`. Hono: `RbacVariables<T>` / `RbacEnv<T>` take the names type or `typeof rbac`, `rbacMiddleware({ rbac })` adds a typed `c.var.rbac`, and the guards of `createGuards<T>()` keep it typed after them. Express and Fastify type the request globally, so register the engine once (`declare module '@anievo-id/rbac-evolution-express' { interface RbacRegister { rbac: typeof rbac } }`, same for Fastify) or type a handler's request as `RbacRequest<typeof rbac>`. NestJS: `getRbac<T>(context)`, and `createRbacDecorators<typeof rbac>()` takes the engine type like `createGuards`. The `onUnauthenticated` / `onForbidden` handlers of `createGuards<T>()` get the typed request (`GuardRequest<T>`, `GuardHandlerContext<T>` in Hono). Without a type argument or a registration, every type is the same as in 1.0.
+  - **`isRoleName(rbac, value)` / `isPermissionName(rbac, value)`**: type guards that check user input against the new `names` option of `createRbac()` (`names: { roles, permissions }`), and narrow it to `RoleName<T>` / `PermissionName<T>`. They check the list, not the database: exact names, no query. Without the list for that kind, they throw a `TypeError`.
+- 278d65a: Wildcard queries, a warning for prefix wildcards, `before` denials in the UI, and the actor in events. Everything is opt-in or additive: existing code gets the same results, payloads and snapshots as in 1.0.
+  
+  - **`subjectsWithPermission(type, names, { expandWildcards: true })`.** With `wildcard: true`, also returns the subjects whose granted permission is a wildcard that implies one of the names (`articles.*`, `articles`, `*` for `articles.edit`), directly or through a role. The names then don't need to exist as permissions. The default is still exact matching. New type: `SubjectsWithPermissionOptions`.
+  - **Prefix wildcard check.** With `wildcard: true`, a shorter permission implies every longer one below it: `orders.refund` also grants `orders.refund.large`. `sync()` and `createPermission()` now report such pairs. The new `wildcardPrefixCheck` option chooses what happens: `'warn'` (default) logs a one-time `console.warn` per pair only when `NODE_ENV` is `development`, `'error'` throws an `RbacError` with code `INVALID_WILDCARD_PERMISSION` before anything is written (dry runs included), `'off'` disables it. New type: `WildcardPrefixCheck`.
+  - **`before` denials in the snapshot.** `rbac.for(user).snapshot({ checkBefore: ['audit-log.delete'] })` runs the `before` hook for those names and lists the ones it denies in the new optional `RbacSnapshot.denied`. The React checker (`<RbacProvider>`, `useCan`, `<Can>`, `createRbacChecker`), the Vue state (`can`, `v-can`, `<Can>`, `$can`) and Next's `snapshotSatisfies` treat those names as not allowed, even for super-admins. Snapshots without `denied` behave as before. New type: `SnapshotOptions`.
+  - **`actor` in events.** Write calls accept `actor` (`rbac.for(user, { actor })`, `rbac.role(name, { actor })`, `createRole`, `createPermission`, `deleteRole`, `deletePermission`, `findOrCreate*`, `sync(definition, { actor })`), and `createRbac({ getActor })` reads it from your request context (for example an `AsyncLocalStorage`) when a call passes none. Events then carry `actor`. Without either, payloads have no `actor` field, as before. New types: `RbacActor`, `ActorOptions`, `ActorResolver`, `RbacEventBase`.
+
 ## 1.0.0
 
 ### Major Changes
