@@ -337,4 +337,20 @@ describe('1.1 configs keep their meaning', () => {
     const context: BeforeContext = {} as BeforeContext<Flat>
     expect([asDefault, subject, role, options, definition, names, context]).toHaveLength(7)
   })
+
+  describe('with expiry (1.2)', () => {
+    it('checks the names of the scope guard before a trailing { expiresAt }', () => {
+      const typeOnly = (rbac: Rbac<AppRbac>, expiresAt: Date) => {
+        const key = { type: 'api-key', id: 1 }
+        void rbac.for(key, { guard: 'api' }).assignRole('read-only', { expiresAt })
+        void rbac.for(key, { guard: 'api' }).givePermissionTo('orders.read', 'orders.write', { expiresAt })
+        void rbac.for(key, { guard: 'api' }).syncRoles(['full-access'], { expiresAt: null })
+        // @ts-expect-error `admin` is a `web` role
+        void rbac.for(key, { guard: 'api' }).assignRole('admin', { expiresAt })
+        // @ts-expect-error `orders.read` is an `api` permission
+        void rbac.for(key).givePermissionTo('orders.read', { expiresAt })
+      }
+      expect(typeOnly).toBeTypeOf('function')
+    })
+  })
 })

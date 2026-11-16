@@ -159,7 +159,7 @@ export interface PrismaAdapterOptions {
   skipDuplicates?: boolean | undefined
   /**
    * Store an expiry per role assignment and direct permission (`assignRole(role, { expiresAt })`). Needs the
-   * optional `expiresAt` field on `RbacModelHasRole` and `RbacModelHasPermission` (see `schema/rbac.prisma`
+   * optional `expiresAt` field on `RbacModelHasRole` and `RbacModelHasPermission` (see `schema/rbac-expiry.prisma`
    * and the upgrade steps). Default: `false`: the adapter never reads or writes that field, so a 1.1 schema
    * keeps working unchanged.
    */

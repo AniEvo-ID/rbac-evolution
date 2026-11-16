@@ -32,7 +32,7 @@ Use `@prisma/client` **5.12 or later, or 6**. Prisma 7 is not supported yet. Old
 
 ## 1. Add the models to your schema
 
-Copy these five models into `schema.prisma`. If your schema is split into a folder (`prismaSchemaFolder`), you can instead copy the file that ships with the package, `node_modules/@anievo-id/rbac-evolution-prisma/schema/rbac.prisma`, into that folder unchanged.
+Copy these five models into `schema.prisma`. If your schema is split into a folder (`prismaSchemaFolder`), you can instead copy the file that ships with the package, `node_modules/@anievo-id/rbac-evolution-prisma/schema/rbac.prisma`, into that folder unchanged. It is the 1.1 schema in every 1.x release; the expiry variant ships separately as `schema/rbac-expiry.prisma` (see [Expiry (1.2)](#expiry-1-2)).
 
 ```prisma
 model RbacPermission {
@@ -78,11 +78,10 @@ model RbacRoleHasPermission {
 }
 
 model RbacModelHasRole {
-  roleId      Int       @map("role_id")
-  subjectType String    @map("subject_type")
-  subjectId   String    @map("subject_id")
-  teamId      String    @default("") @map("team_id")
-  expiresAt   DateTime? @map("expires_at") // optional, for { expiry: true }
+  roleId      Int    @map("role_id")
+  subjectType String @map("subject_type")
+  subjectId   String @map("subject_id")
+  teamId      String @default("") @map("team_id")
 
   role RbacRole @relation(fields: [roleId], references: [id], onDelete: Cascade)
 
@@ -92,11 +91,10 @@ model RbacModelHasRole {
 }
 
 model RbacModelHasPermission {
-  permissionId Int       @map("permission_id")
-  subjectType  String    @map("subject_type")
-  subjectId    String    @map("subject_id")
-  teamId       String    @default("") @map("team_id")
-  expiresAt    DateTime? @map("expires_at") // optional, for { expiry: true }
+  permissionId Int    @map("permission_id")
+  subjectType  String @map("subject_type")
+  subjectId    String @map("subject_id")
+  teamId       String @default("") @map("team_id")
 
   permission RbacPermission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
@@ -197,8 +195,9 @@ the option too (new links get `NULL`).
 
 To turn it on in an existing app:
 
-1. Add one line to each of the two link models (both are in the [models above](#_1-add-the-models-to-your-schema) and
-   in the shipped `schema/rbac.prisma`):
+1. Add one line to each of the two link models of the [models above](#_1-add-the-models-to-your-schema). With a schema
+   folder, you can instead replace the copied `rbac.prisma` with the shipped `schema/rbac-expiry.prisma`, which is the
+   same models plus these two lines:
 
    ```prisma
    model RbacModelHasRole {
@@ -268,7 +267,7 @@ The default cache lives in process memory. If you run several app instances agai
 
 ## How it's tested
 
-The adapter runs the shared conformance suite (`runAdapterTests` from `@anievo-id/rbac-evolution/testing`) against clients generated from the shipped `schema/rbac.prisma`:
+The adapter runs the shared conformance suite (`runAdapterTests` from `@anievo-id/rbac-evolution/testing`) against clients generated from the shipped `schema/rbac-expiry.prisma`, plus a client generated from the 1.1 `schema/rbac.prisma` without the option:
 
 | Database | When |
 | --- | --- |

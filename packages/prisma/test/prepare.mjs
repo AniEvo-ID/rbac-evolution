@@ -1,4 +1,4 @@
-// Builds the test schemas from the shipped models (schema/rbac.prisma) and generates one client per provider:
+// Builds the test schemas from the shipped models (schema/rbac-expiry.prisma and schema/rbac.prisma) and generates one client per provider:
 // - SQLite     → test/generated        (always pushed: throwaway file test/.tmp/test.db, deleted and re-pushed)
 // - SQLite, 1.1 models (no `expiresAt`) → test/generated-legacy (always pushed: test/.tmp/legacy.db)
 // - PostgreSQL → test/generated-pg     (pushed only when PG_URL is set)
@@ -14,12 +14,10 @@ import { fileURLToPath } from 'node:url'
 const here = dirname(fileURLToPath(import.meta.url))
 const root = join(here, '..')
 const tmp = join(here, '.tmp')
-const models = readFileSync(join(root, 'schema', 'rbac.prisma'), 'utf8')
-/** The shipped models without the optional `expiresAt` fields: the schema of a 1.1 install. */
-const legacyModels = models
-  .split('\n')
-  .filter((line) => !/^\s*expiresAt\s/.test(line))
-  .join('\n')
+/** The shipped models with expiry (schema/rbac-expiry.prisma). */
+const models = readFileSync(join(root, 'schema', 'rbac-expiry.prisma'), 'utf8')
+/** The shipped default models (schema/rbac.prisma): the schema of a 1.1 install, without `expiresAt`. */
+const legacyModels = readFileSync(join(root, 'schema', 'rbac.prisma'), 'utf8')
 const generateOnly = process.argv.includes('--generate-only')
 
 /** Keep in sync with test/servers.ts. */
