@@ -133,7 +133,8 @@ function linkModules() {
     const at = path.join(nm, name)
     if (fs.existsSync(at)) return
     fs.mkdirSync(path.dirname(at), { recursive: true })
-    fs.symlinkSync(fs.realpathSync(target), at, 'dir')
+    // A junction needs no admin rights on Windows; other platforms ignore the type.
+    fs.symlinkSync(fs.realpathSync(target), at, 'junction')
   }
   const pkgDirs = fs
     .readdirSync(path.join(root, 'packages'))

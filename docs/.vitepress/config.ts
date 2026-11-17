@@ -198,6 +198,7 @@ export default defineConfig({
             { text: 'Multi-tenant SaaS', link: '/recipes/multi-tenant' },
             { text: 'Admin UI for roles', link: '/recipes/admin-ui' },
             { text: 'Audit log', link: '/recipes/audit-log' },
+            { text: 'Koa', link: '/recipes/koa' },
           ],
         },
         {

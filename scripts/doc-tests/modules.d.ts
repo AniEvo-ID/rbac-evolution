@@ -136,3 +136,28 @@ declare module '@prisma/client' {
 
 /** `import 'dotenv/config'` (loads `.env`), as in a Prisma 7 `prisma.config.ts`. */
 declare module 'dotenv/config' {}
+
+/** Koa 2/3, the parts the Koa recipe uses. */
+declare module 'koa' {
+  export type Next = () => Promise<unknown>
+  export interface Context {
+    state: Record<string, any>
+    status: number
+    body: unknown
+  }
+  export type Middleware = (ctx: Context, next: Next) => unknown
+  export default class Koa {
+    use(middleware: Middleware): this
+    listen(port: number): unknown
+  }
+}
+
+/** @koa/router, the parts the Koa recipe uses. */
+declare module '@koa/router' {
+  import type { Middleware } from 'koa'
+  export default class Router {
+    get(path: string, ...middleware: Middleware[]): this
+    patch(path: string, ...middleware: Middleware[]): this
+    routes(): Middleware
+  }
+}
