@@ -20,7 +20,7 @@
     "clean": "turbo run clean && rm -rf node_modules",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo run build --filter=./packages/* && changeset publish",
+    "release": "node scripts/check-npm-names.mjs && turbo run build --filter=./packages/* && changeset publish",
     "api:inventory": "node scripts/list-exports.mjs",
     "api:snapshot": "node scripts/api-snapshot.mjs",
     "api:check": "node scripts/api-snapshot.mjs --check",
