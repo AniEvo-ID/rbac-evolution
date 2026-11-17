@@ -116,6 +116,10 @@ Both packages work from a `snapshot()` sent by the server. See [React](/framewor
 
 See [Express](/frameworks/express) and [Next.js](/frameworks/nextjs).
 
+Passport's client credentials middleware (`client:...`) has no separate counterpart: a machine client is a subject like
+any other, for example `{ type: 'api_key', id }` on an `api` guard, checked with the same middleware. See
+[Public REST API with API keys](/use-cases/public-api).
+
 ## Artisan commands
 
 | Artisan | CLI |
