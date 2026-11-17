@@ -89,7 +89,7 @@ app.listen(3000)
 ## Going further
 
 - **Teams and guards**: pass `{ team, guard }` to `rbac.for(subject, { ... })` in the middleware. See
-  [Teams](/basic-usage/teams) and [Guards](/basic-usage/guards).
+  [Teams](/basic-usage/teams) and [Multiple guards](/basic-usage/multiple-guards).
 - **Any of the permissions**: `permissionRequirement(names, { any: true })`; all of the roles:
   `roleRequirement(names, { all: true })`.
 - **Typed names**: type the arguments as `PermissionName<AppRbac>` instead of `RequirementNames`. See
