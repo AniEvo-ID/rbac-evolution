@@ -11,8 +11,10 @@
     "@anievo-id/rbac-evolution": "workspace:*",
     "@anievo-id/rbac-evolution-cli": "workspace:*",
     "@anievo-id/rbac-evolution-drizzle": "workspace:*",
+    "@anievo-id/rbac-evolution-elysia": "workspace:*",
     "@anievo-id/rbac-evolution-hono": "workspace:*",
     "drizzle-orm": "^0.44.0",
+    "elysia": "^1.4.0",
     "hono": "^4.6.0"
   },
   "devDependencies": {

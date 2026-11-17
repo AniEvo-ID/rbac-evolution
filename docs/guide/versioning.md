@@ -71,6 +71,7 @@ These only change in a major release:
 | Express | 4, 5 |
 | Fastify | 5 |
 | Hono | 4 |
+| Elysia | 1.2+ |
 | Next.js | 14, 15, 16 |
 | Nuxt | 3, 4 |
 | NestJS | 10, 11, 12 |

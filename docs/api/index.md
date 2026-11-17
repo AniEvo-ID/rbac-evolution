@@ -22,6 +22,7 @@ listed on their package's page. For how to use them, start with the [guide](/gui
 | [`@anievo-id/rbac-evolution-sveltekit`](/api/sveltekit/) | `.`, [`/server`](/api/sveltekit/server/) |
 | [`@anievo-id/rbac-evolution-express`](/api/express/) | `.` |
 | [`@anievo-id/rbac-evolution-hono`](/api/hono/) | `.` |
+| [`@anievo-id/rbac-evolution-elysia`](/api/elysia/) | `.` |
 | [`@anievo-id/rbac-evolution-fastify`](/api/fastify/) | `.` |
 | [`@anievo-id/rbac-evolution-nestjs`](/api/nestjs/) | `.` |
 | [`@anievo-id/rbac-evolution-trpc`](/api/trpc/) | `.` |

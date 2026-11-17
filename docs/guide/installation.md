@@ -80,6 +80,7 @@ All integrations are optional.
 | Vue | `@anievo-id/rbac-evolution-vue` | `vue` 3.3+ |
 | SvelteKit | `@anievo-id/rbac-evolution-sveltekit` | `@sveltejs/kit` 2+, `svelte` 5+ |
 | Express | `@anievo-id/rbac-evolution-express` | `express` 4+ |
+| Elysia | `@anievo-id/rbac-evolution-elysia` | `elysia` 1.2+ |
 | tRPC | `@anievo-id/rbac-evolution-trpc` | `@trpc/server` 11+ |
 
 For example, a Next.js app using Prisma:

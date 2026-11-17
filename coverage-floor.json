@@ -29,6 +29,12 @@
     "functions": 100,
     "statements": 100
   },
+  "@anievo-id/rbac-evolution-elysia": {
+    "lines": 100,
+    "branches": 100,
+    "functions": 100,
+    "statements": 100
+  },
   "@anievo-id/rbac-evolution-hono": {
     "lines": 100,
     "branches": 100,
