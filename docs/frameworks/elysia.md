@@ -70,7 +70,7 @@ const app = new Elysia()
 
 ## `rbac` in the context
 
-`rbac` is the subject's `SubjectRbac` (see [Roles](/basic-usage/roles) and [Permissions](/basic-usage/permissions)),
+`rbac` is the subject's `SubjectRbac` (see [Roles](/basic-usage/roles) and [Direct permissions](/basic-usage/direct-permissions)),
 or `null` for guests:
 
 ```ts
@@ -194,4 +194,4 @@ const api = new Elysia({ prefix: '/api' })
 ```
 
 To check one route in another guard, like spatie's `role:admin,api`, pass `{ guard: 'api' }` to the guard.
-See [Guards](/basic-usage/guards) and [Public REST API with API keys](/use-cases/public-api).
+See [Multiple guards](/basic-usage/multiple-guards) and [Public REST API with API keys](/use-cases/public-api).
