@@ -27,6 +27,7 @@ body:
         - "@anievo-id/rbac-evolution-next"
         - "@anievo-id/rbac-evolution-nuxt"
         - "@anievo-id/rbac-evolution-react"
+        - "@anievo-id/rbac-evolution-react-router"
         - "@anievo-id/rbac-evolution-trpc"
         - "@anievo-id/rbac-evolution-vue"
     validations:

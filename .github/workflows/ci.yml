@@ -131,6 +131,9 @@ jobs:
           - name: express 4
             pkg: '@anievo-id/rbac-evolution-express'
             deps: express@4 @types/express@4
+          - name: react-router 7.0
+            pkg: '@anievo-id/rbac-evolution-react-router'
+            deps: react-router@7.0.0
           - name: hono 4.0
             pkg: '@anievo-id/rbac-evolution-hono'
             deps: hono@4.0.0

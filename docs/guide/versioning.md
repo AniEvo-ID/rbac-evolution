@@ -76,6 +76,7 @@ These only change in a major release:
 | NestJS | 10, 11, 12 |
 | tRPC | 11 |
 | React | 18, 19 |
+| React Router | 7, 8 (framework mode), Remix 2 |
 | Vue | 3.3+ |
 | SvelteKit | 2, 3 (with Svelte 5) |
 | Prisma | 5.12+, 6, 7 |

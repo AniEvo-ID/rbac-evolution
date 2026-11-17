@@ -107,6 +107,7 @@ check inside a handler is typed like a call on the engine:
 | Integration | How the names get there |
 | --- | --- |
 | Express, Fastify | Register the engine once (`interface RbacRegister { rbac: typeof rbac }`), or type a handler's request as `RbacRequest<typeof rbac>`. |
+| React Router | `createRbacServer({ rbac })` infers them for the guards and the subjects they return. |
 | Hono | `RbacVariables<typeof rbac>` / `RbacEnv<typeof rbac>` in the app's env; `rbacMiddleware({ rbac })` infers them. |
 | NestJS | `@CurrentRbac() access: SubjectRbac<AppRbac>`, or `getRbac<AppRbac>(context)`. |
 | Next.js, Nuxt | Inferred from `rbac`: the helpers return a `SubjectRbac<AppRbac>`. |
