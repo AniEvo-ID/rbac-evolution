@@ -3,24 +3,24 @@
     "name": "@anievo-id/rbac-evolution-react",
     "path": "packages/react/dist/index.js",
     "ignore": ["react", "react-dom"],
-    "limit": "6.5 kB"
+    "limit": "2 kB"
   },
   {
     "name": "@anievo-id/rbac-evolution-vue",
     "path": "packages/vue/dist/index.js",
     "ignore": ["vue"],
-    "limit": "7 kB"
+    "limit": "2.5 kB"
   },
   {
     "name": "@anievo-id/rbac-evolution-sveltekit (context + checker)",
     "path": "packages/sveltekit/dist/context.svelte.js",
     "ignore": ["svelte"],
-    "limit": "2 kB"
+    "limit": "1.5 kB"
   },
   {
     "name": "@anievo-id/rbac-evolution-next/middleware",
     "path": "packages/next/dist/middleware.js",
     "ignore": ["next", "react"],
-    "limit": "7 kB"
+    "limit": "2.5 kB"
   }
 ]
