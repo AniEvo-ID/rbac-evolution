@@ -92,6 +92,17 @@ Every change to a published package needs a changeset: run `pnpm changeset`, pic
 packages share one version number. See [.changeset/README.md](./.changeset/README.md) and
 [versioning](https://creation.anievo.id/rbac-evolution/guide/versioning) for what each bump may contain.
 
+### Adding a new package
+
+Releases publish with npm Trusted Publishing, which npm only offers for a package that already exists. So the first
+version of a new package can't come from CI, and the release check (`scripts/check-npm-names.mjs`, run by
+`pnpm release`) stops the whole release, before anything is published, while a package is missing on npm. Before
+merging the release PR that first includes a new package, an owner of the `@anievo-id` npm scope:
+
+1. publishes a placeholder of it by hand (version `0.0.0`, only a `package.json`), and
+2. adds a trusted publisher in the package settings on npmjs.com: GitHub Actions, `AniEvo-ID/rbac-evolution`,
+   workflow `release.yml`. npm expects the first publish through it within two days.
+
 ## Governance
 
 Who maintains the project, how changes are merged and released, and how decisions are made: see
