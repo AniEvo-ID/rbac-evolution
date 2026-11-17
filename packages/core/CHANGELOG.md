@@ -1,5 +1,11 @@
 # @anievo-id/rbac-evolution
 
+## 1.4.0
+
+### Minor Changes
+
+- 38f3970: Release housekeeping. No API changes. The SvelteKit and tRPC integrations stay unpublished (marked `private`) until their first manual publish and npm Trusted Publishing setup are done.
+
 ## 1.3.0
 
 No changes in this release.
