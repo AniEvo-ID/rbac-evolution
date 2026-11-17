@@ -62,6 +62,55 @@ importers:
         specifier: ^1.6.4
         version: 1.6.4(@algolia/client-search@5.64.0)(@types/node@22.20.5)(lightningcss@1.33.0)(postcss@8.5.33)(search-insights@2.17.3)(terser@5.51.2)(typescript@5.9.3)
 
+  examples/nestjs-kysely:
+    dependencies:
+      '@anievo-id/rbac-evolution':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@anievo-id/rbac-evolution-kysely':
+        specifier: workspace:*
+        version: link:../../packages/kysely
+      '@anievo-id/rbac-evolution-nestjs':
+        specifier: workspace:*
+        version: link:../../packages/nestjs
+      '@libsql/kysely-libsql':
+        specifier: ^0.4.1
+        version: 0.4.1(kysely@0.28.20)
+      '@nestjs/common':
+        specifier: ^12.5.0
+        version: 12.5.0(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/core':
+        specifier: ^12.5.0
+        version: 12.5.0(@nestjs/common@12.5.0(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/platform-express@12.5.0)(reflect-metadata@0.2.2)(rxjs@7.8.2)
+      '@nestjs/platform-express':
+        specifier: ^12.5.0
+        version: 12.5.0(@nestjs/common@12.5.0(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@12.5.0)(rxjs@7.8.2)
+      kysely:
+        specifier: ^0.28.0
+        version: 0.28.20
+      reflect-metadata:
+        specifier: ^0.2.2
+        version: 0.2.2
+      rxjs:
+        specifier: ^7.8.2
+        version: 7.8.2
+    devDependencies:
+      '@types/express':
+        specifier: ^5.0.0
+        version: 5.0.6
+      '@types/node':
+        specifier: ^22.20.5
+        version: 22.20.5
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.33)(tsx@4.23.15)(typescript@5.9.3)(yaml@2.9.1)
+      tsx:
+        specifier: ^4.19.0
+        version: 4.23.15
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+
   examples/next-prisma:
     dependencies:
       '@anievo-id/rbac-evolution':
@@ -612,6 +661,31 @@ importers:
       vue:
         specifier: ^3.5.0
         version: 3.5.45(typescript@5.9.3)
+
+  tests/bench:
+    dependencies:
+      '@anievo-id/rbac-evolution':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@anievo-id/rbac-evolution-drizzle':
+        specifier: workspace:*
+        version: link:../../packages/drizzle
+      '@libsql/client':
+        specifier: ^0.15.0
+        version: 0.15.15
+      drizzle-orm:
+        specifier: ^0.44.0
+        version: 0.44.7(@electric-sql/pglite@0.3.16)(@libsql/client@0.15.15)(@prisma/client@7.10.1(prisma@7.10.1(@types/node@22.20.5)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(better-sqlite3@12.11.1)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.9.3))(typescript@5.9.3))(@types/pg@8.23.1)(better-sqlite3@12.11.1)(bun-types@1.4.4)(kysely@0.28.20)(mysql2@3.24.6(@types/node@22.20.5))(pg@8.23.1)(postgres@3.4.7)(prisma@7.10.1(@types/node@22.20.5)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(better-sqlite3@12.11.1)(magicast@0.5.5)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(typescript@5.9.3))
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.5
+        version: 22.20.5
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.20.5)(jsdom@25.0.1)(lightningcss@1.33.0)(terser@5.51.2)
 
   tests/bun:
     dependencies:

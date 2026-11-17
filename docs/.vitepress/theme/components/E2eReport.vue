@@ -21,6 +21,7 @@ interface E2eReport {
 const LABELS: Record<string, string> = {
   'vue-express': 'Vue 3 + Express + Drizzle (SQLite)',
   'next-prisma': 'Next.js App Router + Prisma (SQLite)',
+  'nestjs-kysely': 'NestJS + Kysely (SQLite), API only',
   docs: 'This docs site',
 }
 

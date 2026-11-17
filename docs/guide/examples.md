@@ -1,8 +1,9 @@
 # Example apps
 
-Two complete apps live in the [`examples/`](https://github.com/AniEvo-ID/rbac-evolution/tree/main/examples) folder of
-the repository. Both use a SQLite file, so they run without any database server, and both use a fake login: you pick a
-demo user and it is stored in a cookie. Swap that part for your real authentication.
+Three complete apps live in the [`examples/`](https://github.com/AniEvo-ID/rbac-evolution/tree/main/examples) folder of
+the repository. All use a SQLite file, so they run without any database server, and all use a fake login: you pick a
+demo user and it is stored in a cookie. Swap that part for your real authentication. The
+[end-to-end tests](/quality#end-to-end-tests) run against the production build of each.
 
 Each app seeds the same roles and users:
 
@@ -64,7 +65,30 @@ pnpm --filter rbac-evolution-example-vue-express db:setup
 pnpm --filter rbac-evolution-example-vue-express dev   # SPA on http://localhost:5173, API on :4000
 ```
 
+## NestJS + Kysely
+
+[`examples/nestjs-kysely`](https://github.com/AniEvo-ID/rbac-evolution/tree/main/examples/nestjs-kysely) — a NestJS 12
+API (no UI) with [`@anievo-id/rbac-evolution-nestjs`](/frameworks/nestjs) and the [Kysely adapter](/adapters/kysely)
+on SQLite (libsql).
+
+- `RbacModule.forRoot({ rbac, getSubject, globalGuard: true })` puts `RbacGuard` on every route; routes without a
+  decorator stay public.
+- `@RequirePermissions()` on handlers, `@RequireRoles('admin')` on a whole controller, and
+  `@RequireRoleOrPermission('admin|publish articles')` for a role OR a permission. The decorators come from
+  `createRbacDecorators<AppRbac>()`, so names are type-checked.
+- `@CurrentRbac()` checks more inside a handler: viewers only see published articles.
+- One `Kysely` instance for the app tables and `kyselyAdapter(db)`; `createRbacTables(db)` creates the rbac tables.
+- Builds with tsup (esbuild) and runs with tsx: no `emitDecoratorMetadata` needed.
+
+```bash
+pnpm install
+pnpm turbo run build --filter=rbac-evolution-example-nestjs-kysely^...
+pnpm --filter rbac-evolution-example-nestjs-kysely db:setup
+pnpm --filter rbac-evolution-example-nestjs-kysely dev   # http://localhost:4200
+curl -i -b demo_user=2 http://localhost:4200/api/admin/users   # 403 FORBIDDEN, reason: role
+```
+
 ::: warning UI checks are not security
-In both apps, `<Can>`, `v-can` and the router guards only decide what the UI shows. Every action is checked again on
+In the apps with a UI, `<Can>`, `v-can` and the router guards only decide what the UI shows. Every action is checked again on
 the server — that is what the "Bypass the UI" buttons demonstrate.
 :::
