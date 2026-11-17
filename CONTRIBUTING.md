@@ -63,7 +63,7 @@ To see coverage against the floors in `coverage-floor.json`, run
 
 ## Running the end-to-end tests
 
-Playwright runs the two example apps and the docs site:
+Playwright runs the three example apps and the docs site:
 
 ```bash
 pnpm turbo run build --filter=./packages/*
@@ -71,6 +71,19 @@ pnpm --filter rbac-evolution-e2e exec playwright install chromium
 pnpm --filter rbac-evolution-e2e prepare:apps
 pnpm --filter rbac-evolution-e2e test:e2e
 ```
+
+## Running the benchmarks
+
+On demand only, not on every pull request: `can()` cold and cached, `syncRoles()` and reverse lookups on 100k role
+links, on the memory adapter and on SQLite (`tests/bench`). About two minutes; `BENCH_SUBJECTS=10000` for a quick run.
+
+```bash
+pnpm turbo run build --filter=./packages/*
+pnpm --filter rbac-evolution-bench bench
+```
+
+The **Benchmarks** workflow (Actions → Benchmarks → Run workflow) runs the same on a CI runner and puts a table in the
+job summary. Compare a change against `main` on the same machine: absolute numbers vary between runners.
 
 ## Changesets
 

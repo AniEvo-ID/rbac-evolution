@@ -2,7 +2,8 @@
 
 1.0 contains no breaking changes compared to the last 0.x release. Code that runs on 0.8 runs on 1.0. If you come
 from an older 0.x version, these are the changes to look at, newest first. Each one links to its release in the
-[changelog](https://github.com/AniEvo-ID/rbac-evolution/blob/main/packages/core/CHANGELOG.md).
+[changelog](https://github.com/AniEvo-ID/rbac-evolution/blob/main/packages/core/CHANGELOG.md). The 0.x docs are
+[archived](https://creation.anievo.id/rbac-evolution/0.x/) as they were at 0.9.0.
 
 ## From 0.7 to 0.8
 
