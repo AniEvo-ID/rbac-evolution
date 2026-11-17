@@ -180,6 +180,14 @@ jobs:
           - name: mongoose 8.0
             pkg: '@anievo-id/rbac-evolution-mongoose'
             deps: mongoose@8.0.0
+          - name: astro 4.0
+            pkg: '@anievo-id/rbac-evolution-astro'
+            deps: astro@4.0.0
+          # Newer than the dev dependency, which stays on 5.x because the `ci` job runs Node 20 and Astro 6+
+          # needs Node 22 (this job runs on 22).
+          - name: astro 7
+            pkg: '@anievo-id/rbac-evolution-astro'
+            deps: astro@7
           - name: trpc 11.0
             pkg: '@anievo-id/rbac-evolution-trpc'
             deps: '@trpc/server@11.0.0 @trpc/client@11.0.0'

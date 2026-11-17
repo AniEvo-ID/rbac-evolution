@@ -79,6 +79,7 @@ All integrations are optional.
 | React | `@anievo-id/rbac-evolution-react` | `react` 18+ |
 | Vue | `@anievo-id/rbac-evolution-vue` | `vue` 3.3+ |
 | SvelteKit | `@anievo-id/rbac-evolution-sveltekit` | `@sveltejs/kit` 2+, `svelte` 5+ |
+| Astro | `@anievo-id/rbac-evolution-astro` | `astro` 4+ |
 | Express | `@anievo-id/rbac-evolution-express` | `express` 4+ |
 | tRPC | `@anievo-id/rbac-evolution-trpc` | `@trpc/server` 11+ |
 
