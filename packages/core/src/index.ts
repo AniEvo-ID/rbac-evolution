@@ -22,7 +22,7 @@ export type {
   SyncRolePermissions,
   SyncRoleUpdate,
 } from './sync'
-export type { SubjectsWithPermissionOptions } from './query'
+export type { SubjectsWithoutPermissionOptions, SubjectsWithoutRoleOptions, SubjectsWithPermissionOptions } from './query'
 export type { ExpiryArgs, ExpiryOptions, PermissionAssignment, RoleAssignment } from './expiry'
 
 export type {
