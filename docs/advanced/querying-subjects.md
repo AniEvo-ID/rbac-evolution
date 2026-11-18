@@ -1,6 +1,6 @@
 # Querying subjects
 
-Most checks start from a subject ("can **this user** edit articles?"). Sometimes you need the reverse: "**which users** are writers?" or "who may edit articles?". The engine has two methods for that, plus `hasExactRoles` for strict role checks on one subject.
+Most checks start from a subject ("can **this user** edit articles?"). Sometimes you need the reverse: "**which users** are writers?" or "who may edit articles?". The engine has two methods for that, two for the opposite ("which of these users are **not** admins?"), plus `hasExactRoles` for strict role checks on one subject.
 
 ## `subjectsWithRole`
 
@@ -62,9 +62,54 @@ await rbac.subjectsWithPermission('user', 'articles.edit', { expandWildcards: tr
 - Without `wildcard: true` the option has no effect: only exact rows match and unknown names throw.
 - The default stays `false`, so existing calls return what they returned before.
 
+## `subjectsWithoutRole` and `subjectsWithoutPermission`
+
+The opposite queries (spatie: `User::withoutRole()`, `User::withoutPermission()`). The engine only knows the
+subjects that have assignments, not your whole users table, so you pass the candidates in `among`, and it returns
+the ones that have **none** of the given roles or permissions:
+
+<!-- doc-test: skip -->
+```ts
+rbac.subjectsWithoutRole(
+  subjectType: string,
+  roles: RoleName | Role | (RoleName | Role)[],
+  options: { among: Id[]; guard?: string; team?: TeamId },
+): Promise<Id[]>
+
+rbac.subjectsWithoutPermission(
+  subjectType: string,
+  permissions: PermissionName | Permission | (PermissionName | Permission)[],
+  options: { among: Id[]; guard?: string; team?: TeamId; expandWildcards?: boolean },
+): Promise<Id[]>
+```
+
+```ts
+const page = await prisma.user.findMany({ take: 50 })
+
+// The users on this page who are not admins
+await rbac.subjectsWithoutRole('user', 'admin', { among: page.map((u) => u.id) })
+
+// ... who may not publish, in team 42
+await rbac.subjectsWithoutPermission('user', 'publish articles', { among: page.map((u) => u.id), team: 42 })
+```
+
+- The result keeps the order of `among`. Ids are compared as strings, so a numeric primary key matches the
+  string ids SQL adapters store.
+- Same scope, options and errors as `subjectsWithRole` / `subjectsWithPermission`. An expired assignment doesn't
+  count, so its subject is returned.
+- For a query over the whole table (with pagination in the database), filter with `NOT IN` instead:
+
+```ts
+const admins = await rbac.subjectsWithRole('user', 'admin')
+const nonAdmins = await prisma.user.findMany({
+  where: { id: { notIn: admins.map(Number) } },
+  take: 50,
+})
+```
+
 ## Loading the records
 
-Both methods return **ids only**. Load the records with your own ORM:
+All four methods return **ids only**. Load the records with your own ORM:
 
 ::: code-group
 

@@ -143,6 +143,8 @@ describe('expiry: checks follow the engine clock', () => {
     expect(await user.can('read')).toBe(false)
     expect(await rbac.subjectsWithRole('user', 'on-call')).toEqual([])
     expect(await rbac.subjectsWithPermission('user', 'read')).toEqual([])
+    // An expired assignment counts as "without", like in spatie.
+    expect(await rbac.subjectsWithoutRole('user', 'on-call', { among: [1] })).toEqual([1])
     expect(await user.snapshot()).toEqual({ roles: [], permissions: [] })
     expect(await user.getRoleAssignments()).toEqual([])
   })

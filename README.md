@@ -103,6 +103,7 @@ The API follows [spatie/laravel-permission](https://spatie.be/docs/laravel-permi
 | Artisan `permission:create-role`, `create-permission`, `assign-role`, `show` | ✅ [CLI](https://creation.anievo.id/rbac-evolution/basic-usage/cli) with the same commands |
 | Database seeding | ✅ declarative `rbac.sync()` / `rbac-evolution sync` |
 | `User::role('writer')`, `User::permission('edit')` | ✅ `subjectsWithRole()`, `subjectsWithPermission()` |
+| `User::withoutRole('writer')`, `User::withoutPermission('edit')` | ✅ `subjectsWithoutRole()`, `subjectsWithoutPermission()` |
 | `role`, `permission`, `role_or_permission` middleware | ✅ Express, Fastify, Hono, NestJS, Next.js, Nuxt, SvelteKit, tRPC |
 | Route-group authorization (v8.4) | ✅ router-level middleware in every integration |
 | Backed enums for role and permission names (v8.0) | ✅ [typed names](https://creation.anievo.id/rbac-evolution/basic-usage/typed-names): unions or TypeScript string enums |

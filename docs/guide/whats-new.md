@@ -4,6 +4,13 @@ The highlights of each minor release. Every package shares one version number, s
 with `1.x` of all the others. Full details are in the
 [changelog](https://github.com/AniEvo-ID/rbac-evolution/blob/main/packages/core/CHANGELOG.md).
 
+## 1.5
+
+- **`subjectsWithoutRole()` and `subjectsWithoutPermission()`.** The opposite of `subjectsWithRole()` /
+  `subjectsWithPermission()` (spatie's `User::withoutRole()` / `withoutPermission()`): pass candidate ids in
+  `among`, get back the ones without any of the roles or permissions. See
+  [Querying subjects](/advanced/querying-subjects#subjectswithoutrole-and-subjectswithoutpermission).
+
 ## 1.4
 
 - **tRPC.** `@anievo-id/rbac-evolution-trpc` guards tRPC v11 procedures:

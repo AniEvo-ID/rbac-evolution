@@ -99,7 +99,7 @@ declare module 'next-auth/jwt' {
  */
 declare module '@prisma/client' {
   type Delegate<Row> = {
-    findMany(args?: { where?: object; orderBy?: object; select?: object }): Promise<Row[]>
+    findMany(args?: { where?: object; orderBy?: object; select?: object; take?: number }): Promise<Row[]>
     findUnique(args: { where: object; select?: object; include?: object }): Promise<Row | null>
     findUniqueOrThrow(args: { where: object; select?: object; include?: object }): Promise<Row>
     findFirst(args?: { where?: object; select?: object }): Promise<Row | null>

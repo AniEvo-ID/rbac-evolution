@@ -86,6 +86,12 @@ describe('typed names', () => {
       // @ts-expect-error unknown permission
       await rbac.subjectsWithPermission('user', 'fly')
       // @ts-expect-error unknown role
+      await rbac.subjectsWithoutRole('user', 'ghost', { among: [1] })
+      // @ts-expect-error unknown permission
+      await rbac.subjectsWithoutPermission('user', 'fly', { among: [1] })
+      // @ts-expect-error `among` is required
+      await rbac.subjectsWithoutRole('user', 'writer')
+      // @ts-expect-error unknown role
       createRbac<AppTypes>({ adapter: new MemoryAdapter(), superAdminRoles: ['ghost'] })
 
       // Objects are always accepted.
