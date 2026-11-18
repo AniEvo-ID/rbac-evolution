@@ -35,6 +35,7 @@ flowchart LR
     hono["hono"]
     nestjs["nestjs"]
     next["next"]
+    tanstack["tanstack-start"]
     trpc["trpc"]
   end
 
@@ -56,6 +57,7 @@ flowchart LR
   hono --> core
   nestjs --> core
   next --> core
+  tanstack --> core
   trpc --> core
   react --> core
   vue --> core
@@ -83,6 +85,7 @@ Most packages also have a peer dependency on the library they plug into, so you 
 | `-vue` | `vue` 3.3+ | |
 | `-nuxt` | `nuxt` 3 or 4, `vue` 3.3+ | `-vue`, `@nuxt/kit` |
 | `-sveltekit` | `@sveltejs/kit` 2+, `svelte` 5+ | |
+| `-tanstack-start` | none (no runtime import; TanStack Start 1.x) | |
 | `-cli` | | `jiti` (loads `rbac.config.ts` without a build step) |
 
 The Nuxt module is listed with the UI packages, but it also has server helpers for Nitro routes. The Next.js package does not use the React package. They work well together, but you install them separately.
@@ -274,7 +277,7 @@ Some details:
 - With wildcards off, the engine also reads the cached list of the guard's permission names, the same way.
 - Every guard is wrapped in `asyncHandler()`, so an error (for example from the database) goes to `next(err)` on Express 4 and 5.
 
-The other integrations follow the same shape: resolve the subject once per request, scope it with `rbac.for()`, then check it in a guard. Fastify, Hono, NestJS, tRPC and the Nuxt and SvelteKit server helpers use the same `satisfiesRequirement()` from the core, so the checks are identical. Fastify, Hono, NestJS and Next.js send the same 401 and 403 JSON bodies. Nuxt's and SvelteKit's server helpers throw an error with status 401 or 403 and put the same fields in it, and tRPC throws a `TRPCError` (`UNAUTHORIZED` / `FORBIDDEN`) whose `cause` carries them. See [Frameworks](/frameworks/express).
+The other integrations follow the same shape: resolve the subject once per request, scope it with `rbac.for()`, then check it in a guard. Fastify, Hono, NestJS, tRPC, TanStack Start and the Nuxt and SvelteKit server helpers use the same `satisfiesRequirement()` from the core, so the checks are identical. Fastify, Hono, NestJS, Next.js and TanStack Start send the same 401 and 403 JSON bodies. Nuxt's and SvelteKit's server helpers throw an error with status 401 or 403 and put the same fields in it, and tRPC throws a `TRPCError` (`UNAUTHORIZED` / `FORBIDDEN`) whose `cause` carries them. See [Frameworks](/frameworks/express).
 
 The tRPC middleware uses `satisfiesRequirement()` too. It throws a `TRPCError` (`UNAUTHORIZED` or `FORBIDDEN`) whose cause carries the same fields, and `rbacErrorFormatter` sends them to the client as `error.data.rbac`. See [tRPC](/frameworks/trpc).
 
@@ -384,5 +387,5 @@ Reads that don't go through the subject state are not cached at all: `findRole()
 - [Wildcard permissions](/basic-usage/wildcard-permissions)
 - [Super-admin](/basic-usage/super-admin): `superAdminRoles` and the `before` hook
 - [Cache](/advanced/cache) and [Events](/advanced/events)
-- Frameworks: [Express](/frameworks/express), [Fastify](/frameworks/fastify), [Hono](/frameworks/hono), [NestJS](/frameworks/nestjs), [Next.js](/frameworks/nextjs), [Nuxt](/frameworks/nuxt), [React](/frameworks/react), [Vue](/frameworks/vue)
+- Frameworks: [Express](/frameworks/express), [Fastify](/frameworks/fastify), [Hono](/frameworks/hono), [NestJS](/frameworks/nestjs), [Next.js](/frameworks/nextjs), [Nuxt](/frameworks/nuxt), [TanStack Start](/frameworks/tanstack-start), [React](/frameworks/react), [Vue](/frameworks/vue)
 - Adapters: [Overview](/adapters/overview), [Prisma](/adapters/prisma), [Drizzle](/adapters/drizzle), [Kysely](/adapters/kysely), [Mongoose](/adapters/mongoose), [Memory](/adapters/memory), [Custom adapter](/adapters/custom)

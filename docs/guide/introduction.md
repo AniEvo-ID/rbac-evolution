@@ -19,7 +19,7 @@ Laravel developers have a de-facto standard for roles and permissions. In JavaSc
 RBAC Evolution keeps the logic in one framework-agnostic core and moves the rest into small packages:
 
 - an **adapter** decides where roles and permissions are stored (Prisma, Drizzle, Kysely, Mongoose, memory, or your own),
-- an **integration** connects the engine to your framework (Express, Fastify, Hono, NestJS, Next.js, Nuxt, SvelteKit, tRPC, React, Vue).
+- an **integration** connects the engine to your framework (Express, Fastify, Hono, NestJS, Next.js, Nuxt, SvelteKit, TanStack Start, tRPC, React, Vue).
 
 You install only the pieces you use.
 
@@ -35,7 +35,7 @@ You install only the pieces you use.
 - Built-in caching with pluggable stores (Redis, KV, ...)
 - Events when roles or permissions are created, deleted, attached or detached
 - A [CLI](/basic-usage/cli) similar to `php artisan permission:*`
-- UI helpers for React, Vue and Svelte, and route protection for Express, Fastify, Hono, NestJS, Next.js, Nuxt, SvelteKit and tRPC
+- UI helpers for React, Vue and Svelte, and route protection for Express, Fastify, Hono, NestJS, Next.js, Nuxt, SvelteKit, TanStack Start and tRPC
 
 ## Packages
 
@@ -49,6 +49,7 @@ You install only the pieces you use.
 | `@anievo-id/rbac-evolution-next` | Next.js server helpers, server action / route handler guards and middleware |
 | `@anievo-id/rbac-evolution-nuxt` | Nuxt module: SSR-hydrated permissions, auto-imported composables, route middleware and Nitro helpers |
 | `@anievo-id/rbac-evolution-sveltekit` | SvelteKit `handle` hook, guards for `load`, form actions and `+server.ts` endpoints, and Svelte 5 `<Can>` / `<HasRole>` with a runes-based context |
+| `@anievo-id/rbac-evolution-tanstack-start` | Guards for TanStack Start server functions, middleware and server routes, snapshot for `<RbacProvider>` |
 | `@anievo-id/rbac-evolution-react` | `<RbacProvider>`, `<Can>`, `<Cannot>`, `<HasRole>`, `useCan()` and other hooks |
 | `@anievo-id/rbac-evolution-vue` | `v-can` / `v-role` directives, `<Can>` / `<HasRole>` components and composables |
 | `@anievo-id/rbac-evolution-express` | Express middleware: `requirePermission`, `requireRole`, `requireRoleOrPermission` |
