@@ -1,5 +1,11 @@
 # @anievo-id/rbac-evolution-express
 
+## 1.6.0
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@1.6.0
+
 ## 1.5.0
 
 ### Patch Changes
