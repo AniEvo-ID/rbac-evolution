@@ -86,6 +86,15 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 20
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
       mssql:
         image: mcr.microsoft.com/mssql/server:2022-latest
         env:
@@ -104,6 +113,7 @@ jobs:
       MYSQL_URL: mysql://root:rbac@127.0.0.1:3306/rbac
       MONGO_URL: mongodb://localhost:27017/rbac
       MSSQL_URL: mssql://sa:Rbac_Test_2026@localhost:1433/master
+      REDIS_URL: redis://localhost:6379
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1

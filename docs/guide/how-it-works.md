@@ -46,6 +46,7 @@ flowchart LR
   end
 
   cli["cli"]
+  redis["redis (cache store)"]
 
   prisma --> core
   drizzle --> core
@@ -63,6 +64,7 @@ flowchart LR
   nuxt --> vue
   sveltekit --> core
   cli --> core
+  redis --> core
 ```
 
 Most packages also have a peer dependency on the library they plug into, so you bring your own version:
@@ -83,6 +85,7 @@ Most packages also have a peer dependency on the library they plug into, so you 
 | `-vue` | `vue` 3.3+ | |
 | `-nuxt` | `nuxt` 3 or 4, `vue` 3.3+ | `-vue`, `@nuxt/kit` |
 | `-sveltekit` | `@sveltejs/kit` 2+, `svelte` 5+ | |
+| `-redis` | none (takes an ioredis or node-redis client) | |
 | `-cli` | | `jiti` (loads `rbac.config.ts` without a build step) |
 
 The Nuxt module is listed with the UI packages, but it also has server helpers for Nitro routes. The Next.js package does not use the React package. They work well together, but you install them separately.

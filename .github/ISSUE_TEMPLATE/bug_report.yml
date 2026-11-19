@@ -19,6 +19,7 @@ body:
         - "@anievo-id/rbac-evolution-drizzle"
         - "@anievo-id/rbac-evolution-kysely"
         - "@anievo-id/rbac-evolution-mongoose"
+        - "@anievo-id/rbac-evolution-redis"
         - "@anievo-id/rbac-evolution-prisma"
         - "@anievo-id/rbac-evolution-express"
         - "@anievo-id/rbac-evolution-fastify"

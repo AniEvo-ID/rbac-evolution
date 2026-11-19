@@ -6,6 +6,7 @@ declare module 'ioredis' {
   export class Redis {
     constructor(url?: string)
     get(key: string): Promise<string | null>
+    call(command: string, ...args: (string | number)[]): Promise<unknown>
     set(key: string, value: string | number, mode: 'PX' | 'EX', ttl: number): Promise<'OK' | null>
     set(key: string, value: string | number): Promise<'OK'>
     del(...keys: string[]): Promise<number>

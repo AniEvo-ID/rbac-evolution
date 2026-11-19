@@ -120,6 +120,7 @@ The API follows [spatie/laravel-permission](https://spatie.be/docs/laravel-permi
 | [`@anievo-id/rbac-evolution-drizzle`](./packages/drizzle) | Drizzle adapter (PostgreSQL, MySQL, SQLite) |
 | [`@anievo-id/rbac-evolution-kysely`](./packages/kysely) | Kysely adapter (PostgreSQL, MySQL, SQLite, SQL Server) |
 | [`@anievo-id/rbac-evolution-mongoose`](./packages/mongoose) | Mongoose adapter (MongoDB) |
+| [`@anievo-id/rbac-evolution-redis`](./packages/redis) | Shared cache store for Redis and Valkey (ioredis or node-redis) |
 | [`@anievo-id/rbac-evolution-express`](./packages/express) | Express middleware and route guards |
 | [`@anievo-id/rbac-evolution-fastify`](./packages/fastify) | Fastify plugin and preHandler guards |
 | [`@anievo-id/rbac-evolution-hono`](./packages/hono) | Hono middleware (Node.js, Bun, Workers, Edge) |
@@ -141,8 +142,8 @@ To see how the packages fit together, how a check is decided and which tables th
 
 Every push to `main` refreshes the public [Test report](https://creation.anievo.id/rbac-evolution/quality):
 
-- **Unit and integration tests** for all 16 packages, with code coverage, including the adapter suites against real
-  PostgreSQL 16, MySQL 8 and MongoDB 7 servers.
+- **Unit and integration tests** for all 17 packages, with code coverage, including the adapter suites against real
+  PostgreSQL 16, MySQL 8 and MongoDB 7 servers, and the Redis cache store against Redis 7.
 - **End-to-end tests** with Playwright on the three [example apps](./examples) (Vue + Express + Drizzle,
   Next.js + Prisma, NestJS + Kysely) and the docs site: `401` for guests, `403` without access, a revoked role denied on the next
   request, and the right UI shown per role.
