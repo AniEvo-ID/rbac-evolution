@@ -118,7 +118,7 @@ Pick one of these:
 
 | Setup                                          | Effect                                                                 |
 | ---------------------------------------------- | ---------------------------------------------------------------------- |
-| Shared `CacheStore` (e.g. Redis-backed)        | `clear()` reaches every process. Best for multi-instance deployments. |
+| Shared `CacheStore` (e.g. [Redis](/advanced/cache#redis-and-valkey)) | `clear()` reaches every process. Best for multi-instance deployments. |
 | Short `cacheTtl`                               | Bounded staleness, more database reads.                                |
 | `cache: false`                                 | Always fresh, every check hits the adapter.                            |
 

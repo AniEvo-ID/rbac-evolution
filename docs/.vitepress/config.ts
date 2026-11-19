@@ -12,7 +12,7 @@ const apiSidebar: DefaultTheme.SidebarItem[] = existsSync(apiSidebarFile)
   ? JSON.parse(readFileSync(apiSidebarFile, 'utf8'))
   : []
 // `/api/` lists the packages; each `/api/<dir>/` page only gets its own package's tree, so a page
-// doesn't render the members of all 17 packages in its sidebar.
+// doesn't render the members of all 18 packages in its sidebar.
 const apiPackages: DefaultTheme.SidebarItem = {
   text: 'API reference',
   items: [{ text: 'All packages', link: '/api/' }, ...apiSidebar.map(({ text, link }) => ({ text, link }))],

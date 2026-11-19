@@ -46,6 +46,7 @@ You install only the pieces you use.
 | `@anievo-id/rbac-evolution-drizzle` | Storage adapter for Drizzle (PostgreSQL, MySQL and SQLite) |
 | `@anievo-id/rbac-evolution-kysely` | Storage adapter for Kysely (PostgreSQL, MySQL, SQLite and SQL Server) |
 | `@anievo-id/rbac-evolution-mongoose` | Storage adapter for Mongoose (MongoDB) |
+| `@anievo-id/rbac-evolution-redis` | Cache store shared by every process, in Redis or Valkey |
 | `@anievo-id/rbac-evolution-next` | Next.js server helpers, server action / route handler guards and middleware |
 | `@anievo-id/rbac-evolution-nuxt` | Nuxt module: SSR-hydrated permissions, auto-imported composables, route middleware and Nitro helpers |
 | `@anievo-id/rbac-evolution-sveltekit` | SvelteKit `handle` hook, guards for `load`, form actions and `+server.ts` endpoints, and Svelte 5 `<Can>` / `<HasRole>` with a runes-based context |

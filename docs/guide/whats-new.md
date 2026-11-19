@@ -10,6 +10,10 @@ with `1.x` of all the others. Full details are in the
   middleware and server routes: `await rbacServer.requirePermission(getRequest(), 'edit articles')` resolves to the
   subject or throws the usual 401 / 403 `Response`, and a handler can return TanStack Router's `redirect()` for
   pages. See [TanStack Start](/frameworks/tanstack-start).
+- **Redis cache store.** The new `@anievo-id/rbac-evolution-redis` package shares the cache between every process:
+  `createRbac({ adapter, cache: new RedisCache({ client: redis }) })` with an ioredis or node-redis client.
+  `clear()` is a single `INCR`, and a lookup that overlaps a change elsewhere is never served after it. See
+  [Cache](/advanced/cache#redis-and-valkey).
 - **`subjectsWithoutRole()` and `subjectsWithoutPermission()`.** The opposite of `subjectsWithRole()` /
   `subjectsWithPermission()` (spatie's `User::withoutRole()` / `withoutPermission()`): pass candidate ids in
   `among`, get back the ones without any of the roles or permissions. See
