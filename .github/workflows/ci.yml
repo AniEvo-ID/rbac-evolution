@@ -168,6 +168,14 @@ jobs:
           - name: react 18
             pkg: '@anievo-id/rbac-evolution-react'
             deps: react@18 react-dom@18 @types/react@18 @types/react-dom@18
+          - name: solid 1.8
+            pkg: '@anievo-id/rbac-evolution-solid'
+            deps: solid-js@1.8.0
+          # Solid 2 moved the renderer to `@solidjs/web`; the dev dependency is the newest 1.x, which the ecosystem
+          # (Solid Router, SolidStart, TanStack Solid) still uses.
+          - name: solid 2
+            pkg: '@anievo-id/rbac-evolution-solid'
+            deps: solid-js@2 @solidjs/web@2
           - name: vue 3.3
             pkg: '@anievo-id/rbac-evolution-vue'
             deps: vue@3.3

@@ -82,7 +82,7 @@ app.use(rbacMiddleware({ rbac, getSubject: (req) => (req.user ? { type: 'user', 
 app.put('/articles/:id', requirePermission('edit articles'), handler) // 401 for guests, 403 without access
 ```
 
-> ⚠️ Client-side checks (React, Vue) only decide what the UI shows. Always enforce permissions on the server.
+> ⚠️ Client-side checks (React, Vue, Solid) only decide what the UI shows. Always enforce permissions on the server.
 
 ## Coming from spatie/laravel-permission v8
 
@@ -134,6 +134,7 @@ The API follows [spatie/laravel-permission](https://spatie.be/docs/laravel-permi
 | [`@anievo-id/rbac-evolution-sveltekit`](./packages/sveltekit) | SvelteKit `handle` hook, guards for loads, actions and endpoints, Svelte 5 `<Can>` / `<HasRole>` |
 | [`@anievo-id/rbac-evolution-tanstack-start`](./packages/tanstack-start) | TanStack Start guards for server functions, middleware and server routes, snapshot for `<RbacProvider>` |
 | [`@anievo-id/rbac-evolution-react`](./packages/react) | `<Can>`, `<Cannot>`, `<HasRole>`, `useCan()` |
+| [`@anievo-id/rbac-evolution-solid`](./packages/solid) | Solid 1.x and 2.x: `<Can>`, `<HasRole>`, `useCan()` accessors, SSR included |
 | [`@anievo-id/rbac-evolution-vue`](./packages/vue) | `v-can`, `v-role`, `<Can>`, composables |
 | [`@anievo-id/rbac-evolution-cli`](./packages/cli) | CLI like `php artisan permission:*` |
 
@@ -146,7 +147,7 @@ To see how the packages fit together, how a check is decided and which tables th
 
 Every push to `main` refreshes the public [Test report](https://creation.anievo.id/rbac-evolution/quality):
 
-- **Unit and integration tests** for all 21 packages, with code coverage, including the adapter suites against real
+- **Unit and integration tests** for all 22 packages, with code coverage, including the adapter suites against real
   PostgreSQL 16, MySQL 8 and MongoDB 7 servers, and the Redis cache store against Redis 7.
 - **End-to-end tests** with Playwright on the three [example apps](./examples) (Vue + Express + Drizzle,
   Next.js + Prisma, NestJS + Kysely) and the docs site: `401` for guests, `403` without access, a revoked role denied on the next
@@ -159,7 +160,7 @@ Every push to `main` refreshes the public [Test report](https://creation.anievo.
 
 - [x] Core: roles, permissions, direct permissions, guards, wildcards, teams, cache, events, typed names
 - [x] Adapters: memory, Prisma, Drizzle (PostgreSQL, MySQL, SQLite), Kysely, Mongoose
-- [x] Integrations: Express, Fastify, Hono, Elysia, NestJS, Next.js, React Router, Nuxt, SvelteKit, Astro, TanStack Start, tRPC, React, Vue
+- [x] Integrations: Express, Fastify, Hono, Elysia, NestJS, Next.js, React Router, Nuxt, SvelteKit, Astro, TanStack Start, tRPC, React, Vue, Solid
 - [x] CLI and declarative seeding
 - [x] Documentation site, test report, E2E tests, verified releases
 - [x] `canAny()` / `canAll()` guards in every integration (spatie v8.5)

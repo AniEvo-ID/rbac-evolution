@@ -16,6 +16,7 @@ listed on their package's page. For how to use them, start with the [guide](/gui
 | Package | Entry points |
 | ------- | ------------ |
 | [`@anievo-id/rbac-evolution-react`](/api/react/) | `.` |
+| [`@anievo-id/rbac-evolution-solid`](/api/solid/) | `.` |
 | [`@anievo-id/rbac-evolution-react-router`](/api/react-router/) | `.` |
 | [`@anievo-id/rbac-evolution-next`](/api/next/) | `.`, [`/middleware`](/api/next/middleware/) |
 | [`@anievo-id/rbac-evolution-vue`](/api/vue/) | `.` |

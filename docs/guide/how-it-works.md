@@ -44,6 +44,7 @@ flowchart LR
 
   subgraph ui["UI integrations"]
     react["react"]
+    solid["solid"]
     vue["vue"]
     nuxt["nuxt"]
     sveltekit["sveltekit"]
@@ -67,6 +68,7 @@ flowchart LR
   astro --> core
   trpc --> core
   react --> core
+  solid --> core
   vue --> core
   nuxt --> core
   nuxt --> vue
@@ -92,6 +94,7 @@ Most packages also have a peer dependency on the library they plug into, so you 
 | `-react-router` | `react-router` 7+ (optional: no runtime import) | |
 | `-trpc` | `@trpc/server` 11+ | |
 | `-react` | `react` 18+ | |
+| `-solid` | `solid-js` 1.8+ or 2.x | |
 | `-vue` | `vue` 3.3+ | |
 | `-nuxt` | `nuxt` 3 or 4, `vue` 3.3+ | `-vue`, `@nuxt/kit` |
 | `-sveltekit` | `@sveltejs/kit` 2+, `svelte` 5+ | |
