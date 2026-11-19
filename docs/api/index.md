@@ -39,6 +39,7 @@ listed on their package's page. For how to use them, start with the [guide](/gui
 | [`@anievo-id/rbac-evolution-drizzle`](/api/drizzle/) | `.`, [`/pg`](/api/drizzle/pg/), [`/sqlite`](/api/drizzle/sqlite/), [`/mysql`](/api/drizzle/mysql/) |
 | [`@anievo-id/rbac-evolution-kysely`](/api/kysely/) | `.` |
 | [`@anievo-id/rbac-evolution-typeorm`](/api/typeorm/) | `.` |
+| [`@anievo-id/rbac-evolution-sequelize`](/api/sequelize/) | `.` |
 | [`@anievo-id/rbac-evolution-mongoose`](/api/mongoose/) | `.` |
 | [`@anievo-id/rbac-evolution-redis`](/api/redis/) | `.` |
 

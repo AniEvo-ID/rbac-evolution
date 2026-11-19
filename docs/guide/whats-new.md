@@ -8,6 +8,10 @@ with `1.x` of all the others. Full details are in the
 
 - **MikroORM.** MikroORM 7 runs on Kysely, so the Kysely adapter works on `orm.em.getKysely()` with no extra
   package, and inside `em.transactional()` too. See [MikroORM](/adapters/mikro-orm).
+- **Sequelize.** The new `@anievo-id/rbac-evolution-sequelize` package stores roles and permissions through a
+  Sequelize 6 instance: `createRbac({ adapter: sequelizeAdapter(sequelize) })`, or `sequelizeAdapter(t)` inside
+  `sequelize.transaction()`. `rbacMigration()` creates the tables from sequelize-cli or Umzug. See
+  [Sequelize](/adapters/sequelize).
 
 ## 1.6
 

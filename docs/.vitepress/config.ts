@@ -12,7 +12,7 @@ const apiSidebar: DefaultTheme.SidebarItem[] = existsSync(apiSidebarFile)
   ? JSON.parse(readFileSync(apiSidebarFile, 'utf8'))
   : []
 // `/api/` lists the packages; each `/api/<dir>/` page only gets its own package's tree, so a page
-// doesn't render the members of all 23 packages in its sidebar.
+// doesn't render the members of all 24 packages in its sidebar.
 const apiPackages: DefaultTheme.SidebarItem = {
   text: 'API reference',
   items: [{ text: 'All packages', link: '/api/' }, ...apiSidebar.map(({ text, link }) => ({ text, link }))],
@@ -162,6 +162,7 @@ export default defineConfig({
             { text: 'Kysely', link: '/adapters/kysely' },
             { text: 'TypeORM', link: '/adapters/typeorm' },
             { text: 'MikroORM', link: '/adapters/mikro-orm' },
+            { text: 'Sequelize', link: '/adapters/sequelize' },
             { text: 'Mongoose (MongoDB)', link: '/adapters/mongoose' },
             { text: 'Memory', link: '/adapters/memory' },
             { text: 'Custom adapter', link: '/adapters/custom' },
