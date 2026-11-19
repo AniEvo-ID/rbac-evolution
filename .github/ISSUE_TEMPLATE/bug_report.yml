@@ -26,6 +26,7 @@ body:
         - "@anievo-id/rbac-evolution-hono"
         - "@anievo-id/rbac-evolution-elysia"
         - "@anievo-id/rbac-evolution-nestjs"
+        - "@anievo-id/rbac-evolution-astro"
         - "@anievo-id/rbac-evolution-next"
         - "@anievo-id/rbac-evolution-nuxt"
         - "@anievo-id/rbac-evolution-react"

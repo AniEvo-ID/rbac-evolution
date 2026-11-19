@@ -81,6 +81,7 @@ These only change in a major release:
 | Vue | 3.3+ |
 | SvelteKit | 2, 3 (with Svelte 5) |
 | TanStack Start | 1.x (React and Solid) |
+| Astro | 4, 5, 6, 7 |
 | Prisma | 5.12+, 6, 7 |
 | Drizzle ORM | 0.38+ |
 | Kysely | 0.28, 0.29 (Node.js 22+ and TypeScript 5.4+, Kysely's own minimums) |

@@ -12,7 +12,7 @@ const apiSidebar: DefaultTheme.SidebarItem[] = existsSync(apiSidebarFile)
   ? JSON.parse(readFileSync(apiSidebarFile, 'utf8'))
   : []
 // `/api/` lists the packages; each `/api/<dir>/` page only gets its own package's tree, so a page
-// doesn't render the members of all 20 packages in its sidebar.
+// doesn't render the members of all 21 packages in its sidebar.
 const apiPackages: DefaultTheme.SidebarItem = {
   text: 'API reference',
   items: [{ text: 'All packages', link: '/api/' }, ...apiSidebar.map(({ text, link }) => ({ text, link }))],
@@ -143,6 +143,7 @@ export default defineConfig({
             { text: 'Nuxt', link: '/frameworks/nuxt' },
             { text: 'SvelteKit', link: '/frameworks/sveltekit' },
             { text: 'TanStack Start', link: '/frameworks/tanstack-start' },
+            { text: 'Astro', link: '/frameworks/astro' },
             { text: 'Express', link: '/frameworks/express' },
             { text: 'Hono', link: '/frameworks/hono' },
             { text: 'Elysia', link: '/frameworks/elysia' },

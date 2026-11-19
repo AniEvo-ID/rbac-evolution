@@ -195,3 +195,10 @@ declare module '@tanstack/react-router' {
   }) => unknown
   export function redirect(options: { to: string }): Response
 }
+
+/** Astro's virtual `astro:middleware` module (resolved by Astro's Vite plugin, not from node_modules). */
+declare module 'astro:middleware' {
+  import type { MiddlewareHandler } from 'astro'
+  export function defineMiddleware(fn: MiddlewareHandler): MiddlewareHandler
+  export function sequence(...handlers: MiddlewareHandler[]): MiddlewareHandler
+}

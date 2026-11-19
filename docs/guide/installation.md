@@ -81,6 +81,7 @@ All integrations are optional.
 | Vue | `@anievo-id/rbac-evolution-vue` | `vue` 3.3+ |
 | SvelteKit | `@anievo-id/rbac-evolution-sveltekit` | `@sveltejs/kit` 2+, `svelte` 5+ |
 | TanStack Start | `@anievo-id/rbac-evolution-tanstack-start` | `@tanstack/react-start` or `@tanstack/solid-start` 1.x |
+| Astro | `@anievo-id/rbac-evolution-astro` | `astro` 4+ |
 | Express | `@anievo-id/rbac-evolution-express` | `express` 4+ |
 | Elysia | `@anievo-id/rbac-evolution-elysia` | `elysia` 1.2+ |
 | tRPC | `@anievo-id/rbac-evolution-trpc` | `@trpc/server` 11+ |

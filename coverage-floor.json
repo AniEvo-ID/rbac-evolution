@@ -89,6 +89,12 @@
     "functions": 100,
     "statements": 100
   },
+  "@anievo-id/rbac-evolution-astro": {
+    "lines": 100,
+    "branches": 100,
+    "functions": 100,
+    "statements": 100
+  },
   "@anievo-id/rbac-evolution-react": {
     "lines": 98,
     "branches": 98,

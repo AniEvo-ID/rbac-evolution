@@ -6,6 +6,10 @@ with `1.x` of all the others. Full details are in the
 
 ## 1.5
 
+- **Astro.** The new `@anievo-id/rbac-evolution-astro` package guards Astro 4 to 7 pages, endpoints and middleware:
+  `const denied = await rbacServer.requirePermission(Astro, 'edit articles')` is `undefined` when the check passes,
+  or the 401 / 403 `Response` (or a redirect) to return. `getSnapshot(context)` feeds `<RbacProvider>` in a client
+  island. See [Astro](/frameworks/astro).
 - **React Router.** The new `@anievo-id/rbac-evolution-react-router` package guards the loaders and actions of
   React Router 7 and 8 (framework mode) and Remix 2: `await rbacServer.requirePermission(args, 'edit articles')`
   resolves to the subject or throws the usual 401 / 403 `Response`, and `getSnapshot(args)` feeds `<RbacProvider>`
