@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-next",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Next.js helpers for rbac-evolution: middleware, server components & server action guards.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",

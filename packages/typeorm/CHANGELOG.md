@@ -1,5 +1,12 @@
 # @anievo-id/rbac-evolution-typeorm
 
+## 1.7.0
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@1.7.0
+  - @anievo-id/rbac-evolution-kysely@1.7.0
+
 ## 1.6.0
 
 ### Minor Changes
