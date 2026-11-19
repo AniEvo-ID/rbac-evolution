@@ -161,7 +161,7 @@ Every push to `main` refreshes the public [Test report](https://creation.anievo.
 ## Roadmap
 
 - [x] Core: roles, permissions, direct permissions, guards, wildcards, teams, cache, events, typed names
-- [x] Adapters: memory, Prisma, Drizzle (PostgreSQL, MySQL, SQLite), Kysely, TypeORM, Sequelize, Mongoose
+- [x] Adapters: memory, Prisma, Drizzle (PostgreSQL, MySQL, SQLite), Kysely (also MikroORM 7), TypeORM, Sequelize, Mongoose
 - [x] Integrations: Express, Fastify, Hono, Elysia, NestJS, Next.js, React Router, Nuxt, SvelteKit, Astro, TanStack Start, tRPC, React, Vue, Solid
 - [x] CLI and declarative seeding
 - [x] Documentation site, test report, E2E tests, verified releases

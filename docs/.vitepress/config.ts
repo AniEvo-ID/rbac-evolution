@@ -161,6 +161,7 @@ export default defineConfig({
             { text: 'Drizzle', link: '/adapters/drizzle' },
             { text: 'Kysely', link: '/adapters/kysely' },
             { text: 'TypeORM', link: '/adapters/typeorm' },
+            { text: 'MikroORM', link: '/adapters/mikro-orm' },
             { text: 'Sequelize', link: '/adapters/sequelize' },
             { text: 'Mongoose (MongoDB)', link: '/adapters/mongoose' },
             { text: 'Memory', link: '/adapters/memory' },
