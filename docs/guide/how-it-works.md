@@ -12,7 +12,7 @@ Everything is built around one engine, the core package. It has no runtime depen
 - An **integration** connects the engine to a framework. It finds the current user and calls the engine.
 - The **CLI** loads your engine from a config file and runs commands against it.
 
-Each arrow means "depends on". In the diagram, `express` is short for `@anievo-id/rbac-evolution-express`, and so on. Every package depends on the core. The Nuxt module also builds on the Vue package, and the TypeORM adapter on the Kysely adapter.
+Each arrow means "depends on". In the diagram, `express` is short for `@anievo-id/rbac-evolution-express`, and so on. Every package depends on the core. The Nuxt module also builds on the Vue package, and the TypeORM and Sequelize adapters on the Kysely adapter.
 
 ```mermaid
 flowchart LR
@@ -21,6 +21,7 @@ flowchart LR
     drizzle["drizzle"]
     kysely["kysely"]
     typeorm["typeorm"]
+    sequelize["sequelize"]
     mongoose["mongoose"]
   end
 
@@ -58,6 +59,7 @@ flowchart LR
   drizzle --> core
   kysely --> core
   typeorm --> kysely
+  sequelize --> kysely
   mongoose --> core
   express --> core
   fastify --> core
@@ -87,6 +89,7 @@ Most packages also have a peer dependency on the library they plug into, so you 
 | `-drizzle` | `drizzle-orm` 0.38+ | |
 | `-kysely` | `kysely` 0.28 or 0.29 | |
 | `-typeorm` | `typeorm` 0.3.20+ or 1.x | `-kysely`, `kysely` |
+| `-sequelize` | `sequelize` 6.1+ | `-kysely`, `kysely` |
 | `-mongoose` | `mongoose` 8 or 9 | |
 | `-express` | `express` 4+ | |
 | `-fastify` | `fastify` 5+ | `fastify-plugin` |
@@ -301,7 +304,7 @@ The tRPC middleware uses `satisfiesRequirement()` too. It throws a `TRPCError` (
 
 ## Data model
 
-The SQL adapters (Prisma, Drizzle, Kysely and TypeORM) use the same five tables, with the same table and column names. This diagram uses the PostgreSQL types. The Mongoose adapter stores the same data in five collections with camelCase field names.
+The SQL adapters (Prisma, Drizzle, Kysely, TypeORM and Sequelize) use the same five tables, with the same table and column names. This diagram uses the PostgreSQL types. The Mongoose adapter stores the same data in five collections with camelCase field names.
 
 ```mermaid
 erDiagram
@@ -406,4 +409,4 @@ Reads that don't go through the subject state are not cached at all: `findRole()
 - [Super-admin](/basic-usage/super-admin): `superAdminRoles` and the `before` hook
 - [Cache](/advanced/cache) and [Events](/advanced/events)
 - Frameworks: [Express](/frameworks/express), [Fastify](/frameworks/fastify), [Hono](/frameworks/hono), [Elysia](/frameworks/elysia), [NestJS](/frameworks/nestjs), [Next.js](/frameworks/nextjs), [React Router](/frameworks/react-router), [Nuxt](/frameworks/nuxt), [Astro](/frameworks/astro), [TanStack Start](/frameworks/tanstack-start), [React](/frameworks/react), [Vue](/frameworks/vue)
-- Adapters: [Overview](/adapters/overview), [Prisma](/adapters/prisma), [Drizzle](/adapters/drizzle), [Kysely](/adapters/kysely), [TypeORM](/adapters/typeorm), [Mongoose](/adapters/mongoose), [Memory](/adapters/memory), [Custom adapter](/adapters/custom)
+- Adapters: [Overview](/adapters/overview), [Prisma](/adapters/prisma), [Drizzle](/adapters/drizzle), [Kysely](/adapters/kysely), [TypeORM](/adapters/typeorm), [Sequelize](/adapters/sequelize), [Mongoose](/adapters/mongoose), [Memory](/adapters/memory), [Custom adapter](/adapters/custom)

@@ -4,6 +4,13 @@ The highlights of each minor release. Every package shares one version number, s
 with `1.x` of all the others. Full details are in the
 [changelog](https://github.com/AniEvo-ID/rbac-evolution/blob/main/packages/core/CHANGELOG.md).
 
+## 1.7
+
+- **Sequelize.** The new `@anievo-id/rbac-evolution-sequelize` package stores roles and permissions through a
+  Sequelize 6 instance: `createRbac({ adapter: sequelizeAdapter(sequelize) })`, or `sequelizeAdapter(t)` inside
+  `sequelize.transaction()`. `rbacMigration()` creates the tables from sequelize-cli or Umzug. See
+  [Sequelize](/adapters/sequelize).
+
 ## 1.6
 
 - **Solid.** The new `@anievo-id/rbac-evolution-solid` package brings `<RbacProvider>`, `<Can>`, `<HasRole>` and
