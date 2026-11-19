@@ -239,3 +239,18 @@ declare module 'umzug' {
     up(): Promise<unknown[]>
   }
 }
+
+/** Clerk, the parts the Clerk recipe uses. */
+declare module '@clerk/nextjs/server' {
+  export function auth(): Promise<{ userId: string | null; orgId?: string | null | undefined }>
+}
+declare module '@clerk/nextjs/webhooks' {
+  export function verifyWebhook(request: Request): Promise<
+    { type: 'user.created'; data: { id: string } } | { type: 'user.deleted'; data: { id?: string } } | { type: 'session.created'; data: { id: string } }
+  >
+}
+declare module '@clerk/express' {
+  import type { Request, RequestHandler } from 'express'
+  export function clerkMiddleware(): RequestHandler
+  export function getAuth(req: Request): { userId: string | null; orgId?: string | null | undefined }
+}

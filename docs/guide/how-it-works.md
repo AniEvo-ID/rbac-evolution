@@ -54,6 +54,7 @@ flowchart LR
 
   cli["cli"]
   redis["redis (cache store)"]
+  betterauth["better-auth (plugin)"]
 
   prisma --> core
   drizzle --> core
@@ -79,6 +80,7 @@ flowchart LR
   sveltekit --> core
   cli --> core
   redis --> core
+  betterauth --> core
 ```
 
 Most packages also have a peer dependency on the library they plug into, so you bring your own version:
@@ -106,6 +108,7 @@ Most packages also have a peer dependency on the library they plug into, so you 
 | `-sveltekit` | `@sveltejs/kit` 2+, `svelte` 5+ | |
 | `-tanstack-start` | none (no runtime import; TanStack Start 1.x) | |
 | `-redis` | none (takes an ioredis or node-redis client) | |
+| `-better-auth` | `better-auth` 1.4+ | |
 | `-astro` | `astro` 4+ (optional: no runtime import) | |
 | `-cli` | | `jiti` (loads `rbac.config.ts` without a build step) |
 

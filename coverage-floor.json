@@ -5,6 +5,12 @@
     "functions": 98,
     "statements": 99
   },
+  "@anievo-id/rbac-evolution-better-auth": {
+    "lines": 100,
+    "branches": 100,
+    "functions": 100,
+    "statements": 100
+  },
   "@anievo-id/rbac-evolution-cli": {
     "lines": 92,
     "branches": 88,

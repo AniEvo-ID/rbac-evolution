@@ -12,7 +12,7 @@ const apiSidebar: DefaultTheme.SidebarItem[] = existsSync(apiSidebarFile)
   ? JSON.parse(readFileSync(apiSidebarFile, 'utf8'))
   : []
 // `/api/` lists the packages; each `/api/<dir>/` page only gets its own package's tree, so a page
-// doesn't render the members of all 24 packages in its sidebar.
+// doesn't render the members of all 25 packages in its sidebar.
 const apiPackages: DefaultTheme.SidebarItem = {
   text: 'API reference',
   items: [{ text: 'All packages', link: '/api/' }, ...apiSidebar.map(({ text, link }) => ({ text, link }))],
@@ -203,6 +203,8 @@ export default defineConfig({
           text: 'Recipes',
           items: [
             { text: 'Auth.js in Next.js', link: '/recipes/authjs' },
+            { text: 'Better Auth', link: '/recipes/better-auth' },
+            { text: 'Clerk', link: '/recipes/clerk' },
             { text: 'Multi-tenant SaaS', link: '/recipes/multi-tenant' },
             { text: 'Admin UI for roles', link: '/recipes/admin-ui' },
             { text: 'Audit log', link: '/recipes/audit-log' },

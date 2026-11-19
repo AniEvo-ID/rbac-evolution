@@ -42,5 +42,6 @@ listed on their package's page. For how to use them, start with the [guide](/gui
 | [`@anievo-id/rbac-evolution-sequelize`](/api/sequelize/) | `.` |
 | [`@anievo-id/rbac-evolution-mongoose`](/api/mongoose/) | `.` |
 | [`@anievo-id/rbac-evolution-redis`](/api/redis/) | `.` |
+| [`@anievo-id/rbac-evolution-better-auth`](/api/better-auth/) | `.`, `./client` |
 
 The memory adapter ships with the core package: [`MemoryAdapter`](/api/core/classes/MemoryAdapter).

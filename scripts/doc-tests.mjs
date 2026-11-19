@@ -94,6 +94,7 @@ const STUB_SETS = {
   'frameworks-nextjs': ['_next'],
   'frameworks-react': ['_next'],
   'recipes-authjs': ['_next'],
+  'recipes-clerk': ['_next'],
   'use-cases-saas-multi-tenant': ['_next'],
 }
 
