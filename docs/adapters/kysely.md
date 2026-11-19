@@ -9,6 +9,8 @@
 | SQLite | `SqliteDialect` (better-sqlite3), libsql / Turso, D1, Bun SQLite, ... | Tested |
 | SQL Server | `MssqlDialect` (tedious) | Tested (SQL Server 2022) |
 
+[MikroORM](/adapters/mikro-orm) 7 runs on Kysely too: pass `em.getKysely()`.
+
 The adapter detects the dialect family from your `Kysely` instance. Third-party dialects that reuse Kysely's built-in adapters (nearly all of them) are detected too. If detection fails, pass `{ dialect }` explicitly.
 
 ## Install

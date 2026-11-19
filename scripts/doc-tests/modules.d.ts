@@ -202,3 +202,24 @@ declare module 'astro:middleware' {
   export function defineMiddleware(fn: MiddlewareHandler): MiddlewareHandler
   export function sequence(...handlers: MiddlewareHandler[]): MiddlewareHandler
 }
+
+/** MikroORM 7, the parts the MikroORM page uses: an SQL EntityManager with `getKysely()`. */
+declare module '@mikro-orm/postgresql' {
+  export interface SqlEntityManager {
+    getKysely(): import('kysely').Kysely<any>
+    fork(): SqlEntityManager
+    transactional<T>(cb: (em: SqlEntityManager) => Promise<T>): Promise<T>
+    create<T>(entity: new () => T, data: Partial<T>): T
+    flush(): Promise<void>
+  }
+  export class MikroORM {
+    em: SqlEntityManager
+  }
+}
+declare module '@mikro-orm/migrations' {
+  export abstract class Migration {
+    abstract up(): Promise<void>
+    down(): Promise<void>
+    getEntityManager(): import('@mikro-orm/postgresql').SqlEntityManager
+  }
+}

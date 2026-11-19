@@ -406,4 +406,4 @@ Reads that don't go through the subject state are not cached at all: `findRole()
 - [Super-admin](/basic-usage/super-admin): `superAdminRoles` and the `before` hook
 - [Cache](/advanced/cache) and [Events](/advanced/events)
 - Frameworks: [Express](/frameworks/express), [Fastify](/frameworks/fastify), [Hono](/frameworks/hono), [Elysia](/frameworks/elysia), [NestJS](/frameworks/nestjs), [Next.js](/frameworks/nextjs), [React Router](/frameworks/react-router), [Nuxt](/frameworks/nuxt), [Astro](/frameworks/astro), [TanStack Start](/frameworks/tanstack-start), [React](/frameworks/react), [Vue](/frameworks/vue)
-- Adapters: [Overview](/adapters/overview), [Prisma](/adapters/prisma), [Drizzle](/adapters/drizzle), [Kysely](/adapters/kysely), [TypeORM](/adapters/typeorm), [Mongoose](/adapters/mongoose), [Memory](/adapters/memory), [Custom adapter](/adapters/custom)
+- Adapters: [Overview](/adapters/overview), [Prisma](/adapters/prisma), [Drizzle](/adapters/drizzle), [Kysely](/adapters/kysely), [TypeORM](/adapters/typeorm), [MikroORM](/adapters/mikro-orm), [Mongoose](/adapters/mongoose), [Memory](/adapters/memory), [Custom adapter](/adapters/custom)

@@ -4,6 +4,11 @@ The highlights of each minor release. Every package shares one version number, s
 with `1.x` of all the others. Full details are in the
 [changelog](https://github.com/AniEvo-ID/rbac-evolution/blob/main/packages/core/CHANGELOG.md).
 
+## 1.7
+
+- **MikroORM.** MikroORM 7 runs on Kysely, so the Kysely adapter works on `orm.em.getKysely()` with no extra
+  package, and inside `em.transactional()` too. See [MikroORM](/adapters/mikro-orm).
+
 ## 1.6
 
 - **Solid.** The new `@anievo-id/rbac-evolution-solid` package brings `<RbacProvider>`, `<Can>`, `<HasRole>` and
