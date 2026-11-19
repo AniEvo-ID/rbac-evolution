@@ -597,6 +597,28 @@ importers:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.20.5)(jsdom@25.0.1)(lightningcss@1.33.0)(terser@5.51.2)
 
+  packages/redis:
+    dependencies:
+      '@anievo-id/rbac-evolution':
+        specifier: workspace:^
+        version: link:../core
+    devDependencies:
+      ioredis:
+        specifier: ^5.4.0
+        version: 5.11.1
+      redis:
+        specifier: ^5.0.0
+        version: 5.12.4
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.33)(tsx@4.23.15)(typescript@5.9.3)(yaml@2.9.1)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.20.5)(jsdom@25.0.1)(lightningcss@1.33.0)(terser@5.51.2)
+
   packages/sveltekit:
     dependencies:
       '@anievo-id/rbac-evolution':
@@ -630,6 +652,25 @@ importers:
       vite:
         specifier: ^5.4.21
         version: 5.4.21(@types/node@22.20.5)(lightningcss@1.33.0)(terser@5.51.2)
+      vitest:
+        specifier: ^2.1.0
+        version: 2.1.9(@types/node@22.20.5)(jsdom@25.0.1)(lightningcss@1.33.0)(terser@5.51.2)
+
+  packages/tanstack-start:
+    dependencies:
+      '@anievo-id/rbac-evolution':
+        specifier: workspace:^
+        version: link:../core
+    devDependencies:
+      '@tanstack/router-core':
+        specifier: ^1.171.39
+        version: 1.171.39
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.33)(tsx@4.23.15)(typescript@5.9.3)(yaml@2.9.1)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
       vitest:
         specifier: ^2.1.0
         version: 2.1.9(@types/node@22.20.5)(jsdom@25.0.1)(lightningcss@1.33.0)(terser@5.51.2)
@@ -2539,6 +2580,42 @@ packages:
       '@types/react':
         optional: true
 
+  '@redis/bloom@5.12.4':
+    resolution: {integrity: sha512-ASe3hQTNFjIr4aFMuUOY89iP9Qu/1aYgMAZreIZDzBu5WDfArF/1r3r8Dd2ZttAlWTFqYYxhfy6o+Mu+Tk40Yw==}
+    engines: {node: '>= 18.19.0'}
+    peerDependencies:
+      '@redis/client': ^5.12.4
+
+  '@redis/client@5.12.4':
+    resolution: {integrity: sha512-FggDHx7cDwHmCpDda2rgtDSTjC73fTwL2ldzBsRkGyRFzbv5U1VbIzJNuNjHmBimOAAxzmlNuUsVr6DyUNK05w==}
+    engines: {node: '>= 18.19.0'}
+    peerDependencies:
+      '@node-rs/xxhash': ^1.1.0
+      '@opentelemetry/api': '>=1 <2'
+    peerDependenciesMeta:
+      '@node-rs/xxhash':
+        optional: true
+      '@opentelemetry/api':
+        optional: true
+
+  '@redis/json@5.12.4':
+    resolution: {integrity: sha512-UTaOzJ2vGZUJ8rTcs0vgkKIb6FsczM7b4vKOmkBj0Kp5Bz30/9VybM7vJSgzXs0S1ki7U8aLJYnWP8uHUVfWRQ==}
+    engines: {node: '>= 18.19.0'}
+    peerDependencies:
+      '@redis/client': ^5.12.4
+
+  '@redis/search@5.12.4':
+    resolution: {integrity: sha512-cSurnSnCM5+q772/SxHfGSomQNu7Nv+j+IbuXd2RFY9WSfjOxDBAiPw3tVHTmDJVKBZVAZ6oA2IbtOjr1xvSyw==}
+    engines: {node: '>= 18.19.0'}
+    peerDependencies:
+      '@redis/client': ^5.12.4
+
+  '@redis/time-series@5.12.4':
+    resolution: {integrity: sha512-4n1p8Y9GPwNMOrVcmIekqOt18JJIC153qSzSfKGSTYBVmAxn2562Nedu14CCDsI6IfQQfcFYsM3eIT43np4XNA==}
+    engines: {node: '>= 18.19.0'}
+    peerDependencies:
+      '@redis/client': ^5.12.4
+
   '@rolldown/binding-android-arm-eabi@1.2.19':
     resolution: {integrity: sha512-e+Ebe0WT+9tbXmNKPIiC8YrWAHYwug3m6i4p3rZGGulfZri1jtI4HslT+OZnFf/OIHowWF71DTlHwXBP2SiA7A==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -2981,6 +3058,14 @@ packages:
 
   '@swc/helpers@0.5.15':
     resolution: {integrity: sha512-JQ5TuMi45Owi4/BIMAJBoSQoOJu12oOk/gADqlcUL9JEdHB8vyjUSsxqeNXnmXHjYKMi2WcYtezGEEhqUI/E2g==}
+
+  '@tanstack/history@1.162.5':
+    resolution: {integrity: sha512-w1+YvwmTkwt5n8yUqEH3IWZ9DsmorCZW/EQ3KYHnqEgIkOZpH54NvW6/Epq3Dzb8H0ifIeYX8PExvrNLIH5FIA==}
+    engines: {node: '>=20.19'}
+
+  '@tanstack/router-core@1.171.39':
+    resolution: {integrity: sha512-qUhoJ0meuSUqGYQbHbcJYdASr06YtK+bulbj6vtrhKYFkLgkSsZ6tXmMyym7sFxiSJSPYgasgozrL01LyyR/6A==}
+    engines: {node: '>=20.19'}
 
   '@testing-library/dom@10.4.2':
     resolution: {integrity: sha512-yzr2S9HyAIdhz2/6qHgbs665Q7PKVcDF05vsOlHPxG1mo36gKVesdYVeDLnXgfjJ03CrKRk08knc6+E/9m8v2Q==}
@@ -4066,6 +4151,10 @@ packages:
 
   cluster-key-slot@1.1.1:
     resolution: {integrity: sha512-rwHwUfXL40Chm1r08yrhU3qpUvdVlgkKNeyeGPOxnW8/SyVDvgRaed/Uz54AqWNaTCAThlj6QAs3TZcKI0xDEw==}
+    engines: {node: '>=0.10.0'}
+
+  cluster-key-slot@1.1.2:
+    resolution: {integrity: sha512-RMr0FhtfXemyinomL4hrWcYJxmX6deFdCxpJzhDttxgO1+bcCnkk+9drydLVDmAMG7NE6aN/fl4F7ucU/90gAA==}
     engines: {node: '>=0.10.0'}
 
   color-convert@2.0.1:
@@ -6660,6 +6749,10 @@ packages:
     resolution: {integrity: sha512-DJnGAeenTdpMEH6uAJRK/uiyEIH9WVsUmoLwzudwGJUwZPp80PDBWPHXSAGNPwNvIXAbe7MSUB1zQFugFml66A==}
     engines: {node: '>=4'}
 
+  redis@5.12.4:
+    resolution: {integrity: sha512-2xH6L9GwpB96JOcxFjdmDpPigCZ36AmXrr1iGr/j6Skigb08i7oWZIJ8mAba+BdgzV4vjjNl3gaxZpg6+1XAKg==}
+    engines: {node: '>= 18.19.0'}
+
   reflect-metadata@0.2.2:
     resolution: {integrity: sha512-urBwgfrvVP/eAyXx4hluJivBKzuEbSQs9rKWCrCkbSxNv8mxPcUZKeuoF3Uy4mJl3Lwprp6yy5/39VWigZ4K6Q==}
 
@@ -6824,6 +6917,12 @@ packages:
   serialize-javascript@7.1.4:
     resolution: {integrity: sha512-FqlEuoTq/zRmA4Lg6aOqyH3lCHbUtCB0bmHCeFniX2GBdDqMJM3FwdvEhlE5Pim1dlt2FfBdVPmUNNiGhhKqpw==}
     engines: {node: '>=20.0.0'}
+
+  seroval-plugins@1.8.0:
+    resolution: {integrity: sha512-96vBb12rDvPPwdKUgWw1op3fGq8AVBFOr0IllbnM72yR5J9WWXF18cQ4g1XfDO7HCyh2dt70P3XdtyRayP8FWg==}
+    engines: {node: '>=20'}
+    peerDependencies:
+      seroval: ^1.8.0
 
   seroval@1.8.1:
     resolution: {integrity: sha512-7z9x1flFYfZBz+LfDkXNfm5UIhZJ/97ASaV8Q1wctoVkeqVfv+tLPsWebeMXBNw6XprvwxDE5wC5Ylqmr+iSrA==}
@@ -10040,6 +10139,26 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
 
+  '@redis/bloom@5.12.4(@redis/client@5.12.4)':
+    dependencies:
+      '@redis/client': 5.12.4
+
+  '@redis/client@5.12.4':
+    dependencies:
+      cluster-key-slot: 1.1.2
+
+  '@redis/json@5.12.4(@redis/client@5.12.4)':
+    dependencies:
+      '@redis/client': 5.12.4
+
+  '@redis/search@5.12.4(@redis/client@5.12.4)':
+    dependencies:
+      '@redis/client': 5.12.4
+
+  '@redis/time-series@5.12.4(@redis/client@5.12.4)':
+    dependencies:
+      '@redis/client': 5.12.4
+
   '@rolldown/binding-android-arm-eabi@1.2.19':
     optional: true
 
@@ -10382,6 +10501,15 @@ snapshots:
   '@swc/helpers@0.5.15':
     dependencies:
       tslib: 2.9.1
+
+  '@tanstack/history@1.162.5': {}
+
+  '@tanstack/router-core@1.171.39':
+    dependencies:
+      '@tanstack/history': 1.162.5
+      cookie-es: 3.1.1
+      seroval: 1.8.1
+      seroval-plugins: 1.8.0(seroval@1.8.1)
 
   '@testing-library/dom@10.4.2':
     dependencies:
@@ -11609,6 +11737,8 @@ snapshots:
   clsx@2.1.1: {}
 
   cluster-key-slot@1.1.1: {}
+
+  cluster-key-slot@1.1.2: {}
 
   color-convert@2.0.1:
     dependencies:
@@ -14387,6 +14517,17 @@ snapshots:
     dependencies:
       redis-errors: 1.2.0
 
+  redis@5.12.4:
+    dependencies:
+      '@redis/bloom': 5.12.4(@redis/client@5.12.4)
+      '@redis/client': 5.12.4
+      '@redis/json': 5.12.4(@redis/client@5.12.4)
+      '@redis/search': 5.12.4(@redis/client@5.12.4)
+      '@redis/time-series': 5.12.4(@redis/client@5.12.4)
+    transitivePeerDependencies:
+      - '@node-rs/xxhash'
+      - '@opentelemetry/api'
+
   reflect-metadata@0.2.2: {}
 
   regex-recursion@6.0.2:
@@ -14578,6 +14719,10 @@ snapshots:
       - supports-color
 
   serialize-javascript@7.1.4: {}
+
+  seroval-plugins@1.8.0(seroval@1.8.1):
+    dependencies:
+      seroval: 1.8.1
 
   seroval@1.8.1: {}
 

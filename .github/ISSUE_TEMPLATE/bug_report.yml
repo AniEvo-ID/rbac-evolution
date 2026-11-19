@@ -19,6 +19,7 @@ body:
         - "@anievo-id/rbac-evolution-drizzle"
         - "@anievo-id/rbac-evolution-kysely"
         - "@anievo-id/rbac-evolution-mongoose"
+        - "@anievo-id/rbac-evolution-redis"
         - "@anievo-id/rbac-evolution-prisma"
         - "@anievo-id/rbac-evolution-express"
         - "@anievo-id/rbac-evolution-fastify"
@@ -28,6 +29,7 @@ body:
         - "@anievo-id/rbac-evolution-next"
         - "@anievo-id/rbac-evolution-nuxt"
         - "@anievo-id/rbac-evolution-react"
+        - "@anievo-id/rbac-evolution-tanstack-start"
         - "@anievo-id/rbac-evolution-trpc"
         - "@anievo-id/rbac-evolution-vue"
     validations:

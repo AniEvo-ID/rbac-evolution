@@ -21,9 +21,11 @@ the TTL runs out. The default TTL is 24 hours.
 Pick one:
 
 ```ts
-createRbac({ adapter, cache: new RedisCache(redis) })  // shared store (RedisCache: see the Cache page)
-createRbac({ adapter, cacheTtl: 60_000 })               // short TTL: stale for at most a minute
-createRbac({ adapter, cache: false })                   // always fresh, more queries
+import { RedisCache } from '@anievo-id/rbac-evolution-redis'
+
+createRbac({ adapter, cache: new RedisCache({ client: redis }) }) // shared store in Redis or Valkey
+createRbac({ adapter, cacheTtl: 60_000 })                         // short TTL: stale for at most a minute
+createRbac({ adapter, cache: false })                             // always fresh, more queries
 ```
 
 A shared store must be dedicated to RBAC Evolution or namespaced, because the engine calls `clear()` after every

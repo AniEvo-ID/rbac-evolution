@@ -4,6 +4,25 @@ The highlights of each minor release. Every package shares one version number, s
 with `1.x` of all the others. Full details are in the
 [changelog](https://github.com/AniEvo-ID/rbac-evolution/blob/main/packages/core/CHANGELOG.md).
 
+## 1.5
+
+- **Elysia.** The new `@anievo-id/rbac-evolution-elysia` package is an Elysia plugin: `rbacPlugin()` puts a typed
+  `rbac` on the request context, and `requirePermission`, `requireRole`, `requireRoleOrPermission`, `canAny` and
+  `canAll` run as `beforeHandle` hooks on a route or a whole `app.guard()` group, with the same 401 / 403 bodies as
+  the other integrations. Bun first, also on Node, Deno and Cloudflare Workers. See [Elysia](/frameworks/elysia).
+- **TanStack Start.** The new `@anievo-id/rbac-evolution-tanstack-start` package guards server functions,
+  middleware and server routes: `await rbacServer.requirePermission(getRequest(), 'edit articles')` resolves to the
+  subject or throws the usual 401 / 403 `Response`, and a handler can return TanStack Router's `redirect()` for
+  pages. See [TanStack Start](/frameworks/tanstack-start).
+- **Redis cache store.** The new `@anievo-id/rbac-evolution-redis` package shares the cache between every process:
+  `createRbac({ adapter, cache: new RedisCache({ client: redis }) })` with an ioredis or node-redis client.
+  `clear()` is a single `INCR`, and a lookup that overlaps a change elsewhere is never served after it. See
+  [Cache](/advanced/cache#redis-and-valkey).
+- **`subjectsWithoutRole()` and `subjectsWithoutPermission()`.** The opposite of `subjectsWithRole()` /
+  `subjectsWithPermission()` (spatie's `User::withoutRole()` / `withoutPermission()`): pass candidate ids in
+  `among`, get back the ones without any of the roles or permissions. See
+  [Querying subjects](/advanced/querying-subjects#subjectswithoutrole-and-subjectswithoutpermission).
+
 ## 1.4
 
 - **tRPC.** `@anievo-id/rbac-evolution-trpc` guards tRPC v11 procedures:
