@@ -101,6 +101,12 @@
     "functions": 96,
     "statements": 98
   },
+  "@anievo-id/rbac-evolution-sequelize": {
+    "lines": 99,
+    "branches": 90,
+    "functions": 85,
+    "statements": 99
+  },
   "@anievo-id/rbac-evolution-solid": {
     "lines": 96,
     "branches": 90,

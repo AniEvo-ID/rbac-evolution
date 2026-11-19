@@ -202,3 +202,19 @@ declare module 'astro:middleware' {
   export function defineMiddleware(fn: MiddlewareHandler): MiddlewareHandler
   export function sequence(...handlers: MiddlewareHandler[]): MiddlewareHandler
 }
+
+/** Umzug, the migration runner of the Sequelize adapter page. */
+declare module 'umzug' {
+  export class SequelizeStorage {
+    constructor(options: { sequelize: unknown })
+  }
+  export class Umzug {
+    constructor(options: {
+      migrations: { name: string; up: (params: { context: any }) => Promise<unknown>; down?: (params: { context: any }) => Promise<unknown> }[]
+      context: unknown
+      storage?: unknown
+      logger?: unknown
+    })
+    up(): Promise<unknown[]>
+  }
+}

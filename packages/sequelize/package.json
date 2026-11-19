@@ -1,0 +1,80 @@
+{
+  "name": "@anievo-id/rbac-evolution-sequelize",
+  "version": "1.6.0",
+  "description": "Sequelize adapter for rbac-evolution: PostgreSQL, MySQL / MariaDB, SQLite and SQL Server through your Sequelize instance.",
+  "license": "MIT",
+  "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
+  "homepage": "https://creation.anievo.id/rbac-evolution/adapters/sequelize",
+  "bugs": {
+    "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AniEvo-ID/rbac-evolution.git",
+    "directory": "packages/sequelize"
+  },
+  "keywords": [
+    "rbac",
+    "permissions",
+    "roles",
+    "authorization",
+    "sequelize",
+    "postgresql",
+    "mysql",
+    "sqlite",
+    "sqlserver"
+  ],
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@anievo-id/rbac-evolution": "workspace:^",
+    "@anievo-id/rbac-evolution-kysely": "workspace:^",
+    "kysely": "^0.28.0"
+  },
+  "peerDependencies": {
+    "sequelize": "^6.1.0"
+  },
+  "devDependencies": {
+    "mysql2": "^3.15.3",
+    "pg": "^8.13.0",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.8",
+    "sqlite3": "^5.1.7",
+    "tedious": "^18.6.1",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
