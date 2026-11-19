@@ -122,6 +122,12 @@ describe('sequelize dialect', () => {
     expect(f.calls[0]?.sql).not.toMatch(/@\d/)
   })
 
+  it('binds a Date on SQL Server as a UTC datetime string', async () => {
+    const f = fake('mssql', 0)
+    await sequelizeAdapter(f.sequelize, { expiry: true }).deleteExpiredLinks(new Date('2026-11-19T10:20:30.456Z'))
+    expect(f.calls[0]?.options.bind).toEqual(['2026-11-19 10:20:30.456'])
+  })
+
   it('starts, commits and rolls back its own transactions', async () => {
     const ok = fake('postgres', 0)
     await sequelizeAdapter(ok.sequelize).deleteRole(1)

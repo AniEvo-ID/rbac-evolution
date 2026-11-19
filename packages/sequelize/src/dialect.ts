@@ -85,6 +85,14 @@ export const toBindSql = (sql: string, dialect: RbacDialect): string => {
   return sql.replace(/\?/g, () => `$${++n}`)
 }
 
+/**
+ * Sequelize binds every SQL Server parameter that isn't a number, boolean or Buffer as NVarChar, which tedious rejects
+ * for a Date. A UTC `YYYY-MM-DD HH:mm:ss.sss` string converts to the `datetime2` column whatever the DATEFORMAT, and
+ * matches what tedious reads back (`useUTC`, its default and Sequelize's).
+ */
+const mssqlValue = (value: unknown): unknown =>
+  value instanceof Date ? value.toISOString().replace('T', ' ').replace('Z', '') : value
+
 type Kind = 'SELECT' | 'INSERT' | 'BULKDELETE' | 'RAW'
 
 /**
@@ -118,7 +126,7 @@ class SequelizeConnection implements DatabaseConnection {
     // `run()`, which drops the rows of RETURNING. A leading comment makes it use `all()`, which returns them.
     if (type === 'SELECT' && this.dialect === 'sqlite' && compiled.query.kind !== 'SelectQueryNode') sql = `/* rows */ ${sql}`
     const result = await this.sequelize.query(sql, {
-      bind: [...compiled.parameters],
+      bind: this.dialect === 'mssql' ? compiled.parameters.map(mssqlValue) : [...compiled.parameters],
       type,
       raw: true,
       ...(this.transaction ? { transaction: this.transaction } : {}),
