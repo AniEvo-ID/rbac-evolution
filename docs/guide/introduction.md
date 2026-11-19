@@ -18,7 +18,7 @@ Laravel developers have a de-facto standard for roles and permissions. In JavaSc
 
 RBAC Evolution keeps the logic in one framework-agnostic core and moves the rest into small packages:
 
-- an **adapter** decides where roles and permissions are stored (Prisma, Drizzle, Kysely, Mongoose, memory, or your own),
+- an **adapter** decides where roles and permissions are stored (Prisma, Drizzle, Kysely, TypeORM, Mongoose, memory, or your own),
 - an **integration** connects the engine to your framework (Express, Fastify, Hono, Elysia, NestJS, Next.js, React Router, Nuxt, SvelteKit, Astro, TanStack Start, tRPC, React, Vue, Solid).
 
 You install only the pieces you use.
@@ -45,6 +45,7 @@ You install only the pieces you use.
 | `@anievo-id/rbac-evolution-prisma` | Storage adapter for Prisma |
 | `@anievo-id/rbac-evolution-drizzle` | Storage adapter for Drizzle (PostgreSQL, MySQL and SQLite) |
 | `@anievo-id/rbac-evolution-kysely` | Storage adapter for Kysely (PostgreSQL, MySQL, SQLite and SQL Server) |
+| `@anievo-id/rbac-evolution-typeorm` | Storage adapter for TypeORM 0.3 and 1.x (PostgreSQL, MySQL, SQLite and SQL Server) |
 | `@anievo-id/rbac-evolution-mongoose` | Storage adapter for Mongoose (MongoDB) |
 | `@anievo-id/rbac-evolution-redis` | Cache store shared by every process, in Redis or Valkey |
 | `@anievo-id/rbac-evolution-next` | Next.js server helpers, server action / route handler guards and middleware |

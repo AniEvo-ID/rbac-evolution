@@ -119,6 +119,7 @@ The API follows [spatie/laravel-permission](https://spatie.be/docs/laravel-permi
 | [`@anievo-id/rbac-evolution-prisma`](./packages/prisma) | Prisma adapter (PostgreSQL, MySQL, SQLite, SQL Server) |
 | [`@anievo-id/rbac-evolution-drizzle`](./packages/drizzle) | Drizzle adapter (PostgreSQL, MySQL, SQLite) |
 | [`@anievo-id/rbac-evolution-kysely`](./packages/kysely) | Kysely adapter (PostgreSQL, MySQL, SQLite, SQL Server) |
+| [`@anievo-id/rbac-evolution-typeorm`](./packages/typeorm) | TypeORM adapter (PostgreSQL, MySQL, SQLite, SQL Server), TypeORM 0.3 and 1.x |
 | [`@anievo-id/rbac-evolution-mongoose`](./packages/mongoose) | Mongoose adapter (MongoDB) |
 | [`@anievo-id/rbac-evolution-redis`](./packages/redis) | Shared cache store for Redis and Valkey (ioredis or node-redis) |
 | [`@anievo-id/rbac-evolution-express`](./packages/express) | Express middleware and route guards |
@@ -147,7 +148,7 @@ To see how the packages fit together, how a check is decided and which tables th
 
 Every push to `main` refreshes the public [Test report](https://creation.anievo.id/rbac-evolution/quality):
 
-- **Unit and integration tests** for all 22 packages, with code coverage, including the adapter suites against real
+- **Unit and integration tests** for all 23 packages, with code coverage, including the adapter suites against real
   PostgreSQL 16, MySQL 8 and MongoDB 7 servers, and the Redis cache store against Redis 7.
 - **End-to-end tests** with Playwright on the three [example apps](./examples) (Vue + Express + Drizzle,
   Next.js + Prisma, NestJS + Kysely) and the docs site: `401` for guests, `403` without access, a revoked role denied on the next
@@ -159,7 +160,7 @@ Every push to `main` refreshes the public [Test report](https://creation.anievo.
 ## Roadmap
 
 - [x] Core: roles, permissions, direct permissions, guards, wildcards, teams, cache, events, typed names
-- [x] Adapters: memory, Prisma, Drizzle (PostgreSQL, MySQL, SQLite), Kysely, Mongoose
+- [x] Adapters: memory, Prisma, Drizzle (PostgreSQL, MySQL, SQLite), Kysely, TypeORM, Mongoose
 - [x] Integrations: Express, Fastify, Hono, Elysia, NestJS, Next.js, React Router, Nuxt, SvelteKit, Astro, TanStack Start, tRPC, React, Vue, Solid
 - [x] CLI and declarative seeding
 - [x] Documentation site, test report, E2E tests, verified releases
