@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-tanstack-start",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "TanStack Start guards for rbac-evolution: server functions, middleware and server routes, and a snapshot for <RbacProvider>.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
