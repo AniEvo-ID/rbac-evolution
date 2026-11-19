@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-redis",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Redis and Valkey cache store for rbac-evolution: one shared cache for every process, works with ioredis and node-redis.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",

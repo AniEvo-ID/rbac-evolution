@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-sequelize",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Sequelize adapter for rbac-evolution: PostgreSQL, MySQL / MariaDB, SQLite and SQL Server through your Sequelize instance.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",

@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-elysia",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Elysia plugin and beforeHandle guards for rbac-evolution — Bun-first, also on Node, Deno and Cloudflare Workers.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",

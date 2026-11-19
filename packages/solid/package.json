@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-solid",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Solid bindings for rbac-evolution: <Can>, <HasRole>, useCan() accessors. Solid 1.8+ and 2.x, SSR included.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",

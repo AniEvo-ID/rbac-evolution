@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-vue",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Vue 3 bindings for rbac-evolution: v-can directive & composables.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
