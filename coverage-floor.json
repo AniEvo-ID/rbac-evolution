@@ -29,6 +29,12 @@
     "functions": 100,
     "statements": 100
   },
+  "@anievo-id/rbac-evolution-elysia": {
+    "lines": 100,
+    "branches": 100,
+    "functions": 100,
+    "statements": 100
+  },
   "@anievo-id/rbac-evolution-hono": {
     "lines": 100,
     "branches": 100,
@@ -71,6 +77,18 @@
     "functions": 100,
     "statements": 100
   },
+  "@anievo-id/rbac-evolution-tanstack-start": {
+    "lines": 100,
+    "branches": 100,
+    "functions": 100,
+    "statements": 100
+  },
+  "@anievo-id/rbac-evolution-react-router": {
+    "lines": 100,
+    "branches": 100,
+    "functions": 100,
+    "statements": 100
+  },
   "@anievo-id/rbac-evolution-astro": {
     "lines": 100,
     "branches": 100,
@@ -84,6 +102,12 @@
     "statements": 98
   },
   "@anievo-id/rbac-evolution-sveltekit": {
+    "lines": 100,
+    "branches": 100,
+    "functions": 100,
+    "statements": 100
+  },
+  "@anievo-id/rbac-evolution-redis": {
     "lines": 100,
     "branches": 100,
     "functions": 100,

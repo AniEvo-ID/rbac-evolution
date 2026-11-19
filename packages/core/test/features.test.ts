@@ -297,6 +297,32 @@ describe('queries', () => {
     await expect(rbac.subjectsWithPermission('user', 'fly')).rejects.toBeInstanceOf(PermissionDoesNotExist)
   })
 
+  it('subjectsWithoutRole / subjectsWithoutPermission filter the candidates', async () => {
+    await rbac.for(alice).assignRole('writer') // edit via role
+    await rbac.for(bob).givePermissionTo('publish articles') // directly
+    await rbac.for(robot).assignRole('editor') // another subject type
+
+    const among = [3, '1', 2, 4] // order kept, 1 and '1' are the same id
+    expect(await rbac.subjectsWithoutRole('user', 'writer', { among })).toEqual([3, 2, 4])
+    expect(await rbac.subjectsWithoutRole('user', ['writer', 'editor'], { among })).toEqual([3, 2, 4])
+    expect(await rbac.subjectsWithoutRole('client', 'editor', { among: [1, 2] })).toEqual([2])
+    expect(await rbac.subjectsWithoutPermission('user', 'edit articles', { among })).toEqual([3, 2, 4])
+    expect(await rbac.subjectsWithoutPermission('user', ['edit articles', 'publish articles'], { among })).toEqual([3, 4])
+    expect(await rbac.subjectsWithoutRole('user', 'writer', { among: [] })).toEqual([])
+    await expect(rbac.subjectsWithoutRole('user', 'nope', { among })).rejects.toBeInstanceOf(RoleDoesNotExist)
+    await expect(rbac.subjectsWithoutPermission('user', 'fly', { among })).rejects.toBeInstanceOf(PermissionDoesNotExist)
+  })
+
+  it('subjectsWithoutPermission passes scope and expandWildcards on', async () => {
+    const wild = createRbac({ adapter: new MemoryAdapter(), wildcard: true, teams: true })
+    await wild.createPermission('articles.*')
+    await wild.for(alice, { team: 1 }).givePermissionTo('articles.*')
+    const among = [1, 2]
+    expect(await wild.subjectsWithoutPermission('user', 'articles.edit', { among, team: 1, expandWildcards: true })).toEqual([2])
+    expect(await wild.subjectsWithoutPermission('user', 'articles.edit', { among, team: 2, expandWildcards: true })).toEqual([1, 2])
+    expect(await wild.subjectsWithoutRole('user', [], { among })).toEqual([1, 2])
+  })
+
   it('queries respect teams', async () => {
     const teams = createRbac({ adapter: new MemoryAdapter(), teams: true })
     await teams.createPermission('manage billing')

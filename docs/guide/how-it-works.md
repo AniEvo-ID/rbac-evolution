@@ -33,8 +33,11 @@ flowchart LR
     express["express"]
     fastify["fastify"]
     hono["hono"]
+    elysia["elysia"]
     nestjs["nestjs"]
     next["next"]
+    tanstack["tanstack-start"]
+    reactrouter["react-router"]
     astro["astro"]
     trpc["trpc"]
   end
@@ -47,6 +50,7 @@ flowchart LR
   end
 
   cli["cli"]
+  redis["redis (cache store)"]
 
   prisma --> core
   drizzle --> core
@@ -55,8 +59,11 @@ flowchart LR
   express --> core
   fastify --> core
   hono --> core
+  elysia --> core
   nestjs --> core
   next --> core
+  tanstack --> core
+  reactrouter --> core
   astro --> core
   trpc --> core
   react --> core
@@ -65,6 +72,7 @@ flowchart LR
   nuxt --> vue
   sveltekit --> core
   cli --> core
+  redis --> core
 ```
 
 Most packages also have a peer dependency on the library they plug into, so you bring your own version:
@@ -78,13 +86,17 @@ Most packages also have a peer dependency on the library they plug into, so you 
 | `-express` | `express` 4+ | |
 | `-fastify` | `fastify` 5+ | `fastify-plugin` |
 | `-hono` | `hono` 4+ | |
+| `-elysia` | `elysia` 1.2+ | |
 | `-nestjs` | `@nestjs/common`, `@nestjs/core` 10 to 12, `reflect-metadata` | |
 | `-next` | `next` 14+, `react` 18+ | |
+| `-react-router` | `react-router` 7+ (optional: no runtime import) | |
 | `-trpc` | `@trpc/server` 11+ | |
 | `-react` | `react` 18+ | |
 | `-vue` | `vue` 3.3+ | |
 | `-nuxt` | `nuxt` 3 or 4, `vue` 3.3+ | `-vue`, `@nuxt/kit` |
 | `-sveltekit` | `@sveltejs/kit` 2+, `svelte` 5+ | |
+| `-tanstack-start` | none (no runtime import; TanStack Start 1.x) | |
+| `-redis` | none (takes an ioredis or node-redis client) | |
 | `-astro` | `astro` 4+ (optional: no runtime import) | |
 | `-cli` | | `jiti` (loads `rbac.config.ts` without a build step) |
 
@@ -277,7 +289,7 @@ Some details:
 - With wildcards off, the engine also reads the cached list of the guard's permission names, the same way.
 - Every guard is wrapped in `asyncHandler()`, so an error (for example from the database) goes to `next(err)` on Express 4 and 5.
 
-The other integrations follow the same shape: resolve the subject once per request, scope it with `rbac.for()`, then check it in a guard. Fastify, Hono, NestJS, tRPC, Astro and the Nuxt and SvelteKit server helpers use the same `satisfiesRequirement()` from the core, so the checks are identical. Fastify, Hono, NestJS, Next.js and Astro send the same 401 and 403 JSON bodies. Nuxt's and SvelteKit's server helpers throw an error with status 401 or 403 and put the same fields in it, and tRPC throws a `TRPCError` (`UNAUTHORIZED` / `FORBIDDEN`) whose `cause` carries them. See [Frameworks](/frameworks/express).
+The other integrations follow the same shape: resolve the subject once per request, scope it with `rbac.for()`, then check it in a guard. Fastify, Hono, Elysia, NestJS, tRPC, React Router, TanStack Start, Astro and the Nuxt and SvelteKit server helpers use the same `satisfiesRequirement()` from the core, so the checks are identical. Fastify, Hono, NestJS, Next.js, TanStack Start and Astro send the same 401 and 403 JSON bodies. Nuxt's and SvelteKit's server helpers throw an error with status 401 or 403 and put the same fields in it, and tRPC throws a `TRPCError` (`UNAUTHORIZED` / `FORBIDDEN`) whose `cause` carries them. See [Frameworks](/frameworks/express).
 
 The tRPC middleware uses `satisfiesRequirement()` too. It throws a `TRPCError` (`UNAUTHORIZED` or `FORBIDDEN`) whose cause carries the same fields, and `rbacErrorFormatter` sends them to the client as `error.data.rbac`. See [tRPC](/frameworks/trpc).
 
@@ -387,5 +399,5 @@ Reads that don't go through the subject state are not cached at all: `findRole()
 - [Wildcard permissions](/basic-usage/wildcard-permissions)
 - [Super-admin](/basic-usage/super-admin): `superAdminRoles` and the `before` hook
 - [Cache](/advanced/cache) and [Events](/advanced/events)
-- Frameworks: [Express](/frameworks/express), [Fastify](/frameworks/fastify), [Hono](/frameworks/hono), [NestJS](/frameworks/nestjs), [Next.js](/frameworks/nextjs), [Nuxt](/frameworks/nuxt), [Astro](/frameworks/astro), [React](/frameworks/react), [Vue](/frameworks/vue)
+- Frameworks: [Express](/frameworks/express), [Fastify](/frameworks/fastify), [Hono](/frameworks/hono), [Elysia](/frameworks/elysia), [NestJS](/frameworks/nestjs), [Next.js](/frameworks/nextjs), [React Router](/frameworks/react-router), [Nuxt](/frameworks/nuxt), [Astro](/frameworks/astro), [TanStack Start](/frameworks/tanstack-start), [React](/frameworks/react), [Vue](/frameworks/vue)
 - Adapters: [Overview](/adapters/overview), [Prisma](/adapters/prisma), [Drizzle](/adapters/drizzle), [Kysely](/adapters/kysely), [Mongoose](/adapters/mongoose), [Memory](/adapters/memory), [Custom adapter](/adapters/custom)

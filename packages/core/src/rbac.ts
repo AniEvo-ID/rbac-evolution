@@ -16,7 +16,13 @@ import {
   type RbacEventListener,
   type RbacEventName,
 } from './events'
-import { expandWildcardPermissions, type SubjectsWithPermissionOptions } from './query'
+import {
+  expandWildcardPermissions,
+  idsWithout,
+  type SubjectsWithoutPermissionOptions,
+  type SubjectsWithoutRoleOptions,
+  type SubjectsWithPermissionOptions,
+} from './query'
 import { type RbacNames, registerNames } from './names'
 import { type SyncDefinition, type SyncDefinitions, type SyncOptions, type SyncResult, syncDefinition } from './sync'
 import { deleteTeam, type RevokeAllOptions, revokeAll, subjectTeams, type SubjectTeamsOptions } from './bulk'
@@ -606,6 +612,41 @@ export class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
       roleIds.length > 0 ? await this.adapter.getSubjectIdsWithRoles(subjectType, roleIds, teamId, ...active) : []
     const direct = await this.adapter.getSubjectIdsWithPermissions(subjectType, permissionIds, teamId, ...active)
     return uniqueIds([...viaRoles, ...direct])
+  }
+
+  /**
+   * The ids of `options.among` that have NONE of the given roles in the given scope
+   * (spatie: `User::withoutRole('writer')->get()`). The engine only knows subjects with assignments, so pass the
+   * candidates: a page of your users, for example. Same rules and errors as {@link subjectsWithRole}: an expired
+   * assignment doesn't count, and unknown roles throw `RoleDoesNotExist`.
+   *
+   * ```ts
+   * const ids = users.map((u) => u.id)
+   * await rbac.subjectsWithoutRole('user', 'admin', { among: ids }) // the non-admins among them
+   * ```
+   */
+  async subjectsWithoutRole<G extends string = DefaultGuardName<T>>(
+    subjectType: string,
+    roles: Many<RoleInput<RoleName<T, G>>>,
+    options: SubjectsWithoutRoleOptions<CheckGuard<T, G>>,
+  ): Promise<Id[]> {
+    const { among, ...scope } = options
+    return idsWithout(among, await this.subjectsWithRole<G>(subjectType, roles, scope))
+  }
+
+  /**
+   * The ids of `options.among` that have NONE of the given permissions in the given scope, directly or through a
+   * role (spatie: `User::withoutPermission('edit')->get()`). Same rules, options and errors as
+   * {@link subjectsWithPermission}, including `expandWildcards`. Super-admins and the `before` hook are not taken
+   * into account: only stored data is.
+   */
+  async subjectsWithoutPermission<G extends string = DefaultGuardName<T>>(
+    subjectType: string,
+    permissions: Many<PermissionInput<PermissionName<T, G>>>,
+    options: SubjectsWithoutPermissionOptions<CheckGuard<T, G>>,
+  ): Promise<Id[]> {
+    const { among, ...scope } = options
+    return idsWithout(among, await this.subjectsWithPermission<G>(subjectType, permissions, scope))
   }
 
   // ------------------------------------------------------------------------ teams

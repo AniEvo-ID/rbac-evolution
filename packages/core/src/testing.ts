@@ -619,6 +619,8 @@ export function runAdapterTests(
         expect(await user.can('impersonate')).toBe(true)
         expect((await user.getRoleAssignments()).map((a) => ms(a.expiresAt))).toEqual([T.getTime()])
         expect(s(await rbac.subjectsWithPermission('user', 'impersonate'))).toEqual(['1'])
+        // The adapter's ids (strings in SQL) match the app's ids (numbers here).
+        expect(await rbac.subjectsWithoutPermission('user', 'impersonate', { among: [1, 2] })).toEqual([2])
 
         now = at(-1800)
         expect(await user.can('impersonate')).toBe(false)
@@ -629,6 +631,7 @@ export function runAdapterTests(
         expect(await user.hasRole('on-call')).toBe(false)
         expect(await user.can('read')).toBe(false)
         expect(await rbac.subjectsWithRole('user', 'on-call')).toEqual([])
+        expect(await rbac.subjectsWithoutRole('user', 'on-call', { among: [1, 2] })).toEqual([1, 2])
         expect(await user.snapshot()).toEqual({ roles: [], permissions: [] })
 
         if (adapter.deleteExpiredLinks) expect(await rbac.pruneExpired()).toEqual({ roles: 1, permissions: 1 })
