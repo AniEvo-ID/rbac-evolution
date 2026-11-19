@@ -1,0 +1,80 @@
+{
+  "name": "@anievo-id/rbac-evolution-typeorm",
+  "version": "1.5.0",
+  "description": "TypeORM adapter for rbac-evolution: PostgreSQL, MySQL / MariaDB, SQLite and SQL Server through your DataSource.",
+  "license": "MIT",
+  "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
+  "homepage": "https://creation.anievo.id/rbac-evolution/adapters/typeorm",
+  "bugs": {
+    "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AniEvo-ID/rbac-evolution.git",
+    "directory": "packages/typeorm"
+  },
+  "keywords": [
+    "rbac",
+    "permissions",
+    "roles",
+    "authorization",
+    "typeorm",
+    "postgresql",
+    "mysql",
+    "sqlite",
+    "sqlserver"
+  ],
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@anievo-id/rbac-evolution": "workspace:^",
+    "@anievo-id/rbac-evolution-kysely": "workspace:^",
+    "kysely": "^0.28.0"
+  },
+  "peerDependencies": {
+    "typeorm": "^0.3.20 || ^1.0.0"
+  },
+  "devDependencies": {
+    "better-sqlite3": "^12.0.0",
+    "mssql": "^12.0.0",
+    "mysql2": "^3.15.3",
+    "pg": "^8.13.0",
+    "reflect-metadata": "^0.2.2",
+    "tsup": "^8.3.0",
+    "typeorm": "^1.1.3",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -21,13 +21,14 @@ The engine handles the logic: name validation, guards, teams, wildcards, caching
 | [`drizzleSqliteAdapter`](/adapters/drizzle) | `@anievo-id/rbac-evolution-drizzle` | `import { drizzleSqliteAdapter } from '@anievo-id/rbac-evolution-drizzle/sqlite'` | SQLite (libsql/Turso, better-sqlite3, D1, Bun, ...) |
 | [`drizzleMysqlAdapter`](/adapters/drizzle) | `@anievo-id/rbac-evolution-drizzle` | `import { drizzleMysqlAdapter } from '@anievo-id/rbac-evolution-drizzle/mysql'` | MySQL 8, MariaDB (mysql2, PlanetScale, ...) |
 | [`kyselyAdapter`](/adapters/kysely) | `@anievo-id/rbac-evolution-kysely` | `import { kyselyAdapter } from '@anievo-id/rbac-evolution-kysely'` | PostgreSQL, MySQL, SQLite, SQL Server |
+| [`typeormAdapter`](/adapters/typeorm) | `@anievo-id/rbac-evolution-typeorm` | `import { typeormAdapter } from '@anievo-id/rbac-evolution-typeorm'` | PostgreSQL, MySQL, SQLite, SQL Server |
 | [`mongooseAdapter`](/adapters/mongoose) | `@anievo-id/rbac-evolution-mongoose` | `import { mongooseAdapter } from '@anievo-id/rbac-evolution-mongoose'` | MongoDB |
 | [Your own](/adapters/custom) | — | `implements RbacAdapter` | Anything |
 
 ::: tip Which one should I pick?
-- Already using Prisma, Drizzle, Kysely or Mongoose? Use the matching adapter.
+- Already using Prisma, Drizzle, Kysely, TypeORM or Mongoose? Use the matching adapter.
 - Writing tests, a prototype, or an app whose roles never change at runtime? Use `MemoryAdapter`.
-- Using another ORM or database (TypeORM, MikroORM, a REST API)? [Write a custom adapter](/adapters/custom) and check it with the shared conformance tests.
+- Using another ORM or database (MikroORM, Sequelize, a REST API)? [Write a custom adapter](/adapters/custom) and check it with the shared conformance tests.
 :::
 
 ## The five tables
@@ -46,7 +47,7 @@ The three link tables use composite primary keys, so each link exists only once.
 
 ## Storage conventions
 
-The SQL adapters (Prisma, Drizzle, Kysely) follow the same conventions, so their data looks the same in any of them.
+The SQL adapters (Prisma, Drizzle, Kysely, TypeORM) follow the same conventions, so their data looks the same in any of them.
 
 ### Integer ids for roles and permissions
 

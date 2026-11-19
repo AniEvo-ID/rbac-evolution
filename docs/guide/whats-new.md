@@ -4,6 +4,13 @@ The highlights of each minor release. Every package shares one version number, s
 with `1.x` of all the others. Full details are in the
 [changelog](https://github.com/AniEvo-ID/rbac-evolution/blob/main/packages/core/CHANGELOG.md).
 
+## 1.6
+
+- **TypeORM.** The new `@anievo-id/rbac-evolution-typeorm` package stores roles and permissions through a TypeORM
+  0.3.20+ or 1.x `DataSource`: `createRbac({ adapter: typeormAdapter(dataSource) })`, or `typeormAdapter(manager)`
+  inside `dataSource.transaction()`. `rbacMigration()` creates the tables as a regular TypeORM migration. See
+  [TypeORM](/adapters/typeorm).
+
 ## 1.5
 
 - **Astro.** The new `@anievo-id/rbac-evolution-astro` package guards Astro 4 to 7 pages, endpoints and middleware:
