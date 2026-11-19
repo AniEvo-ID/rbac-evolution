@@ -5,6 +5,17 @@ import { loadWeb } from './web'
 
 const { renderToString } = await loadWeb()
 
+/** The rendered text without Solid's hydration markers (`<!--!$-->`), removed until none is left. */
+function visible(html: string): string {
+  let previous: string
+  let text = html
+  do {
+    previous = text
+    text = text.replace(/<!--[^>]*-->/g, '')
+  } while (text !== previous)
+  return text
+}
+
 describe('server rendering', () => {
   it('renders the allowed branches into the HTML', () => {
     let canEdit: boolean | undefined
@@ -23,7 +34,7 @@ describe('server rendering', () => {
         },
       }),
     )
-    expect(html.replace(/<!--[^>]*-->/g, '')).toBe('edit;no-delete;cannot-delete;writer;not-admin;')
+    expect(visible(html)).toBe('edit;no-delete;cannot-delete;writer;not-admin;')
     expect(canEdit).toBe(true)
   })
 
@@ -37,6 +48,6 @@ describe('server rendering', () => {
         },
       }),
     )
-    expect(html.replace(/<!--[^>]*-->/g, '')).toBe('')
+    expect(visible(html)).toBe('')
   })
 })
