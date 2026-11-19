@@ -161,3 +161,36 @@ declare module '@koa/router' {
     routes(): Middleware
   }
 }
+
+/** TanStack Start, the parts the TanStack Start guide uses (server functions and function middleware). */
+declare module '@tanstack/react-start' {
+  type Next = <C extends object>(options?: { context: C }) => Promise<{ context: C }>
+  export interface FunctionMiddleware<C> {
+    readonly '~context'?: C
+  }
+  export function createMiddleware(options?: { type?: 'function' | 'request' }): {
+    server<C extends object>(
+      fn: (options: { next: Next; request: Request; context: object }) => Promise<{ context: C }>,
+    ): FunctionMiddleware<C>
+  }
+  interface ServerFnBuilder<D, C> {
+    validator<V>(fn: (data: never) => V): ServerFnBuilder<V, C>
+    middleware<M>(middleware: readonly FunctionMiddleware<M>[]): ServerFnBuilder<D, C & M>
+    handler<R>(fn: (options: { data: D; context: C }) => R | Promise<R>): (options?: { data: D }) => Promise<Awaited<R>>
+  }
+  export function createServerFn(options?: { method?: 'GET' | 'POST' }): ServerFnBuilder<undefined, object>
+}
+
+declare module '@tanstack/react-start/server' {
+  export function getRequest(): Request
+}
+
+/** TanStack Router, the parts the TanStack Start guide uses. */
+declare module '@tanstack/react-router' {
+  type Handler = (ctx: { request: Request; params: Record<string, string> }) => Response | Promise<Response>
+  export function createFileRoute(path: string): (options: {
+    server?: { handlers: Partial<Record<'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE', Handler>> }
+    beforeLoad?: () => unknown
+  }) => unknown
+  export function redirect(options: { to: string }): Response
+}
