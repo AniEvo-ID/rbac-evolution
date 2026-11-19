@@ -4,7 +4,7 @@
 
 ## `@anievo-id/rbac-evolution`
 
-114 exports.
+116 exports.
 
 ```ts
 // ActiveLinkOptions: interface
@@ -306,6 +306,8 @@ declare class Rbac<T extends RbacTypeConfig = DefaultRbacTypes> {
     sync<G extends string = DefaultGuardName<T>>(definition: SyncDefinitions<T, G>, options?: SyncOptions<CheckGuard<T, G>>): Promise<SyncResult>;
     subjectsWithRole<G extends string = DefaultGuardName<T>>(subjectType: string, roles: Many<RoleInput<RoleName<T, G>>>, options?: ScopeOptions<CheckGuard<T, G>>): Promise<Id[]>;
     subjectsWithPermission<G extends string = DefaultGuardName<T>>(subjectType: string, permissions: Many<PermissionInput<PermissionName<T, G>>>, options?: SubjectsWithPermissionOptions<CheckGuard<T, G>>): Promise<Id[]>;
+    subjectsWithoutRole<G extends string = DefaultGuardName<T>>(subjectType: string, roles: Many<RoleInput<RoleName<T, G>>>, options: SubjectsWithoutRoleOptions<CheckGuard<T, G>>): Promise<Id[]>;
+    subjectsWithoutPermission<G extends string = DefaultGuardName<T>>(subjectType: string, permissions: Many<PermissionInput<PermissionName<T, G>>>, options: SubjectsWithoutPermissionOptions<CheckGuard<T, G>>): Promise<Id[]>;
     deleteTeam(teamId: Id): Promise<void>;
     pruneExpired(): Promise<DeletedLinkCounts>;
     forgetCachedPermissions(): Promise<void>;
@@ -666,6 +668,16 @@ interface SubjectTeamsOptions {
 // SubjectsWithPermissionOptions: interface
 interface SubjectsWithPermissionOptions<G extends string = string> extends ScopeOptions<G> {
     expandWildcards?: boolean | undefined;
+}
+
+// SubjectsWithoutPermissionOptions: interface
+interface SubjectsWithoutPermissionOptions<G extends string = string> extends SubjectsWithPermissionOptions<G> {
+    among: readonly Id[];
+}
+
+// SubjectsWithoutRoleOptions: interface
+interface SubjectsWithoutRoleOptions<G extends string = string> extends ScopeOptions<G> {
+    among: readonly Id[];
 }
 
 // SyncDefinition: interface

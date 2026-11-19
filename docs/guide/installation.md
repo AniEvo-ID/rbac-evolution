@@ -80,7 +80,9 @@ All integrations are optional.
 | React Router | `@anievo-id/rbac-evolution-react-router` | `react-router` 7+ (or Remix 2) |
 | Vue | `@anievo-id/rbac-evolution-vue` | `vue` 3.3+ |
 | SvelteKit | `@anievo-id/rbac-evolution-sveltekit` | `@sveltejs/kit` 2+, `svelte` 5+ |
+| TanStack Start | `@anievo-id/rbac-evolution-tanstack-start` | `@tanstack/react-start` or `@tanstack/solid-start` 1.x |
 | Express | `@anievo-id/rbac-evolution-express` | `express` 4+ |
+| Elysia | `@anievo-id/rbac-evolution-elysia` | `elysia` 1.2+ |
 | tRPC | `@anievo-id/rbac-evolution-trpc` | `@trpc/server` 11+ |
 
 For example, a Next.js app using Prisma:

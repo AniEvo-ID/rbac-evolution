@@ -1,0 +1,70 @@
+{
+  "name": "@anievo-id/rbac-evolution-redis",
+  "version": "1.4.0",
+  "description": "Redis and Valkey cache store for rbac-evolution: one shared cache for every process, works with ioredis and node-redis.",
+  "license": "MIT",
+  "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
+  "homepage": "https://creation.anievo.id/rbac-evolution/advanced/cache",
+  "bugs": {
+    "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AniEvo-ID/rbac-evolution.git",
+    "directory": "packages/redis"
+  },
+  "keywords": [
+    "rbac",
+    "permissions",
+    "roles",
+    "authorization",
+    "redis",
+    "valkey",
+    "cache",
+    "ioredis"
+  ],
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@anievo-id/rbac-evolution": "workspace:^"
+  },
+  "devDependencies": {
+    "ioredis": "^5.4.0",
+    "redis": "^5.0.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

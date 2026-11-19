@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-trpc",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "tRPC middleware for rbac-evolution — permission and role guards for procedures, with a narrowed ctx.rbac.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
@@ -44,7 +44,6 @@
   "files": [
     "dist"
   ],
-  "private": true,
   "publishConfig": {
     "access": "public"
   },

@@ -71,6 +71,7 @@ These only change in a major release:
 | Express | 4, 5 |
 | Fastify | 5 |
 | Hono | 4 |
+| Elysia | 1.2+ |
 | Next.js | 14, 15, 16 |
 | Nuxt | 3, 4 |
 | NestJS | 10, 11, 12 |
@@ -79,6 +80,7 @@ These only change in a major release:
 | React Router | 7, 8 (framework mode), Remix 2 |
 | Vue | 3.3+ |
 | SvelteKit | 2, 3 (with Svelte 5) |
+| TanStack Start | 1.x (React and Solid) |
 | Prisma | 5.12+, 6, 7 |
 | Drizzle ORM | 0.38+ |
 | Kysely | 0.28, 0.29 (Node.js 22+ and TypeScript 5.4+, Kysely's own minimums) |

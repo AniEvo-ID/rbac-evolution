@@ -88,8 +88,8 @@ The [Prisma](/adapters/prisma) and [Drizzle](/adapters/drizzle) adapters use the
 | `Role::syncModels([...])` | `rbac.role('writer').syncSubjects('user', [...ids])` |
 | `User::role('writer')->get()` | `rbac.subjectsWithRole('user', 'writer')` (returns ids) |
 | `User::permission('edit articles')->get()` | `rbac.subjectsWithPermission('user', 'edit articles')` (returns ids) |
-| `User::withoutRole('writer')->get()` | Query your users with `id NOT IN (await rbac.subjectsWithRole('user', 'writer'))` |
-| `User::withoutPermission(...)->get()` | Same, with `subjectsWithPermission` |
+| `User::withoutRole('writer')->get()` | `rbac.subjectsWithoutRole('user', 'writer', { among: ids })`, or `id NOT IN (await rbac.subjectsWithRole('user', 'writer'))` for the whole table |
+| `User::withoutPermission('edit articles')->get()` | `rbac.subjectsWithoutPermission('user', 'edit articles', { among: ids })`, or `NOT IN` with `subjectsWithPermission` |
 
 ## Blade directives
 

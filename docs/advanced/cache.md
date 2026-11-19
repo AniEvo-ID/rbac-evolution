@@ -98,7 +98,7 @@ Call it when the data changed **without** going through this `rbac` instance:
 
 ## Custom store
 
-To share the cache between processes, or to keep it in Redis, Valkey, Memcached or a KV store, implement `CacheStore`:
+For Redis and Valkey, use the [Redis package](#redis-and-valkey). To keep the cache in Memcached, a KV store or anything else, implement `CacheStore`:
 
 ```ts
 interface CacheStore {
@@ -114,58 +114,71 @@ Methods may be synchronous or return promises. The contract:
 - **`set`** stores the value for `ttlMs` milliseconds. The value is a plain object made of arrays of `Role` and `Permission` objects (plus, with [expiry](#expiry), numbers), so `JSON.stringify` / `JSON.parse` round-trip it. `ttlMs` can be shorter than `cacheTtl` when an assignment in the value expires sooner.
 - **`clear`** removes **every** RBAC Evolution entry. It is called after every change, so the store should be dedicated to RBAC Evolution or namespaced by your implementation. Don't flush a shared database.
 
-### Redis example
+### Redis and Valkey
 
-This store uses [ioredis](https://github.com/redis/ioredis). Keys are namespaced with a prefix, so `clear()` only deletes rbac entries:
+`@anievo-id/rbac-evolution-redis` is a ready `CacheStore` for Redis and Valkey. Every process that uses the same server and
+prefix shares one cache, and a change made in any of them is seen by all the others on their next check.
 
-```ts
-// rbac-cache.ts
-import type { CacheStore } from '@anievo-id/rbac-evolution'
-import type { Redis } from 'ioredis'
+::: code-group
 
-export class RedisCache implements CacheStore {
-  constructor(
-    private readonly redis: Redis,
-    private readonly prefix = 'rbac-cache:',
-  ) {}
-
-  async get(key: string): Promise<unknown> {
-    const raw = await this.redis.get(this.prefix + key)
-    return raw === null ? undefined : JSON.parse(raw) // miss → undefined, never null
-  }
-
-  async set(key: string, value: unknown, ttlMs: number): Promise<void> {
-    await this.redis.set(this.prefix + key, JSON.stringify(value), 'PX', ttlMs)
-  }
-
-  async clear(): Promise<void> {
-    let cursor = '0'
-    do {
-      const [next, keys] = await this.redis.scan(cursor, 'MATCH', `${this.prefix}*`, 'COUNT', 500)
-      cursor = next
-      if (keys.length > 0) await this.redis.del(...keys)
-    } while (cursor !== '0')
-  }
-}
+```bash [npm]
+npm i @anievo-id/rbac-evolution-redis
 ```
+
+```bash [pnpm]
+pnpm add @anievo-id/rbac-evolution-redis
+```
+
+```bash [yarn]
+yarn add @anievo-id/rbac-evolution-redis
+```
+
+:::
+
+Pass it a connected client of [ioredis](https://github.com/redis/ioredis) or
+[node-redis](https://github.com/redis/node-redis) 4+ (or iovalkey, `@valkey/client`):
 
 ```ts
 import { Redis } from 'ioredis'
 import { createRbac } from '@anievo-id/rbac-evolution'
-import { RedisCache } from './rbac-cache'
+import { RedisCache } from '@anievo-id/rbac-evolution-redis'
 
 const redis = new Redis(process.env.REDIS_URL!)
 
 export const rbac = createRbac({
   adapter,
-  cache: new RedisCache(redis),
+  cache: new RedisCache({ client: redis }),
   cacheTtl: 60 * 60_000, // 1 hour
 })
 ```
 
-::: tip Cheaper `clear()` for large caches
-`SCAN` + `DEL` costs more as the number of cached subjects grows. Another approach is a **generation counter**: put a version number in every key (`rbac-cache:v12:...`), read it in `get`/`set`, and make `clear()` a single `INCR` of that number. The old keys are never read again and expire through their TTL.
-:::
+```ts
+import { createClient } from 'redis'
+import { createRbac } from '@anievo-id/rbac-evolution'
+import { RedisCache } from '@anievo-id/rbac-evolution-redis'
+
+const redis = await createClient({ url: process.env.REDIS_URL }).connect()
+
+export const rbac = createRbac({ adapter, cache: new RedisCache({ client: redis }) })
+```
+
+| Option | Type | Description |
+| --- | --- | --- |
+| `client` | ioredis or node-redis client | Anything with ioredis's `call()` or node-redis's `sendCommand()`. The package imports neither. |
+| `prefix` | `string` | Prepended to every key. Default: `'rbac-cache:'`. Use one prefix per app on a shared server. |
+
+How it stores entries:
+
+- **Keys** are `<prefix><generation>:<key>`, with the value as JSON and a `PX` TTL in milliseconds.
+- **`clear()`** is one `INCR` of `<prefix>generation`. Entries of an older generation are never read again and
+  expire through their TTL. Nothing is scanned or deleted, so it costs the same with a million cached subjects, and
+  works on a cluster.
+- **A lookup that overlaps a change** in another process is written under the generation it started in, so a value
+  computed from data read before the change is never served after it.
+- A check reads two keys (the generation, then the entry): two round trips on a cache hit.
+
+A client with neither method, such as a REST client, needs a [custom store](#custom-store). Make its `get` return
+`undefined` on a miss, and the value already parsed.
 
 ## Multiple processes
 
@@ -175,7 +188,7 @@ Choose one of these:
 
 | Approach | Trade-off |
 | --- | --- |
-| **Shared store** (Redis, as above) | Every process sees the same entries, and `clear()` affects all of them. Recommended for production clusters. |
+| **Shared store** ([Redis](#redis-and-valkey)) | Every process sees the same entries, and `clear()` affects all of them. Recommended for production clusters. |
 | **Short `cacheTtl`** (for example 30–60 s) | Simple, no extra infrastructure. Changes may take up to the TTL to show up in other processes. |
 | **`cache: false`** | Always correct. Costs a few adapter queries per check. |
 | **Broadcast a clear** | Publish a message after each change (for example from an [event listener](/advanced/events)) and call `rbac.forgetCachedPermissions()` in every process that receives it. |

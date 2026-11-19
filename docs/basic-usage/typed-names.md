@@ -76,7 +76,7 @@ The server integrations check names against the same type, so a typo in a route 
 Pipe lists (`'edit articles|delete articles'`) are checked part by part.
 
 ```ts
-// Express, Fastify, Hono: pass the type to createGuards
+// Express, Fastify, Hono, Elysia: pass the type to createGuards
 const { requirePermission, requireRole } = createGuards<AppRbac>()
 app.put('/articles/:id', requirePermission('edit articles|publish articles'), handler) // ok
 app.delete('/articles/:id', requirePermission('delete artcles'), handler) // type error
@@ -109,9 +109,11 @@ check inside a handler is typed like a call on the engine:
 | Express, Fastify | Register the engine once (`interface RbacRegister { rbac: typeof rbac }`), or type a handler's request as `RbacRequest<typeof rbac>`. |
 | React Router | `createRbacServer({ rbac })` infers them for the guards and the subjects they return. |
 | Hono | `RbacVariables<typeof rbac>` / `RbacEnv<typeof rbac>` in the app's env; `rbacMiddleware({ rbac })` infers them. |
+| Elysia | `rbacPlugin({ rbac })` infers them for `rbac` in the context. |
 | NestJS | `@CurrentRbac() access: SubjectRbac<AppRbac>`, or `getRbac<AppRbac>(context)`. |
 | Next.js, Nuxt | Inferred from `rbac`: the helpers return a `SubjectRbac<AppRbac>`. |
 | SvelteKit | `interface Locals extends RbacLocals<AppRbac>` in `src/app.d.ts`; `createGuards<AppRbac>()` guards return a `SubjectRbac<AppRbac>`. |
+| TanStack Start | `createRbacServer({ rbac })` infers them for the guards and the subjects they return. |
 
 The options of every integration (`RbacMiddlewareOptions`, `RbacPluginOptions`, `RbacModuleOptions`, ...) are
 generic over the engine and infer `T` from `rbac`. Express and Fastify type the request globally, through module
@@ -272,11 +274,12 @@ The guards of every integration check names in the guard they run in: the reques
 
 | Integration | Names of the request's guard | Another guard per route |
 | --- | --- | --- |
-| Express, Fastify, Hono | `createGuards<AppRbac, 'api'>()` (the default guard without the second argument) | `requirePermission('orders.read', { guard: 'api' })` |
+| Express, Fastify, Hono, Elysia | `createGuards<AppRbac, 'api'>()` (the default guard without the second argument) | `requirePermission('orders.read', { guard: 'api' })` |
 | NestJS | `createRbacDecorators<AppRbac, 'api'>()`, `getRbac<AppRbac, 'api'>(context)` | `@RequirePermissions('orders.read', { guard: 'api' })` |
 | Next.js | `createNextRbac({ rbac, guard: 'api', getSubject })` | `can('orders.read', { guard: 'api' })` |
 | Nuxt | `createRbacServer({ rbac, guard: 'api', getSubject })` | `requirePermission(event, 'orders.read', { guard: 'api' })` |
 | SvelteKit | `createGuards<AppRbac, 'api'>()`, `RbacLocals<AppRbac, 'api'>` | `requirePermission(event, 'orders.read', { guard: 'api' })` |
+| TanStack Start | `createRbacServer({ rbac, guard: 'api', getSubject })` | `requirePermission(request, 'orders.read', { guard: 'api' })` |
 | CLI | `seed` in `defineConfig()` is checked block by block, like `sync()` | |
 
 ```ts

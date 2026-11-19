@@ -21,8 +21,10 @@ listed on their package's page. For how to use them, start with the [guide](/gui
 | [`@anievo-id/rbac-evolution-vue`](/api/vue/) | `.` |
 | [`@anievo-id/rbac-evolution-nuxt`](/api/nuxt/) | `.`, [`/server`](/api/nuxt/server/), [`/rule`](/api/nuxt/rule/) |
 | [`@anievo-id/rbac-evolution-sveltekit`](/api/sveltekit/) | `.`, [`/server`](/api/sveltekit/server/) |
+| [`@anievo-id/rbac-evolution-tanstack-start`](/api/tanstack-start/) | `.` |
 | [`@anievo-id/rbac-evolution-express`](/api/express/) | `.` |
 | [`@anievo-id/rbac-evolution-hono`](/api/hono/) | `.` |
+| [`@anievo-id/rbac-evolution-elysia`](/api/elysia/) | `.` |
 | [`@anievo-id/rbac-evolution-fastify`](/api/fastify/) | `.` |
 | [`@anievo-id/rbac-evolution-nestjs`](/api/nestjs/) | `.` |
 | [`@anievo-id/rbac-evolution-trpc`](/api/trpc/) | `.` |
@@ -35,5 +37,6 @@ listed on their package's page. For how to use them, start with the [guide](/gui
 | [`@anievo-id/rbac-evolution-drizzle`](/api/drizzle/) | `.`, [`/pg`](/api/drizzle/pg/), [`/sqlite`](/api/drizzle/sqlite/), [`/mysql`](/api/drizzle/mysql/) |
 | [`@anievo-id/rbac-evolution-kysely`](/api/kysely/) | `.` |
 | [`@anievo-id/rbac-evolution-mongoose`](/api/mongoose/) | `.` |
+| [`@anievo-id/rbac-evolution-redis`](/api/redis/) | `.` |
 
 The memory adapter ships with the core package: [`MemoryAdapter`](/api/core/classes/MemoryAdapter).
