@@ -19,7 +19,7 @@ Laravel developers have a de-facto standard for roles and permissions. In JavaSc
 RBAC Evolution keeps the logic in one framework-agnostic core and moves the rest into small packages:
 
 - an **adapter** decides where roles and permissions are stored (Prisma, Drizzle, Kysely, TypeORM, Mongoose, memory, or your own),
-- an **integration** connects the engine to your framework (Express, Fastify, Hono, Elysia, NestJS, Next.js, React Router, Nuxt, SvelteKit, Astro, TanStack Start, tRPC, React, Vue).
+- an **integration** connects the engine to your framework (Express, Fastify, Hono, Elysia, NestJS, Next.js, React Router, Nuxt, SvelteKit, Astro, TanStack Start, tRPC, React, Vue, Solid).
 
 You install only the pieces you use.
 
@@ -35,7 +35,7 @@ You install only the pieces you use.
 - Built-in caching with pluggable stores (Redis, KV, ...)
 - Events when roles or permissions are created, deleted, attached or detached
 - A [CLI](/basic-usage/cli) similar to `php artisan permission:*`
-- UI helpers for React, Vue and Svelte, and route protection for Express, Fastify, Hono, Elysia, NestJS, Next.js, React Router, Nuxt, SvelteKit, TanStack Start, Astro and tRPC
+- UI helpers for React, Vue, Solid and Svelte, and route protection for Express, Fastify, Hono, Elysia, NestJS, Next.js, React Router, Nuxt, SvelteKit, TanStack Start, Astro and tRPC
 
 ## Packages
 
@@ -54,6 +54,7 @@ You install only the pieces you use.
 | `@anievo-id/rbac-evolution-tanstack-start` | Guards for TanStack Start server functions, middleware and server routes, snapshot for `<RbacProvider>` |
 | `@anievo-id/rbac-evolution-astro` | Astro guards for pages, endpoints and middleware, and a snapshot for client islands |
 | `@anievo-id/rbac-evolution-react` | `<RbacProvider>`, `<Can>`, `<Cannot>`, `<HasRole>`, `useCan()` and other hooks |
+| `@anievo-id/rbac-evolution-solid` | The same for Solid 1.x and 2.x: `<RbacProvider>`, `<Can>`, `<HasRole>`, `useCan()` accessors |
 | `@anievo-id/rbac-evolution-vue` | `v-can` / `v-role` directives, `<Can>` / `<HasRole>` components and composables |
 | `@anievo-id/rbac-evolution-express` | Express middleware: `requirePermission`, `requireRole`, `requireRoleOrPermission` |
 | `@anievo-id/rbac-evolution-fastify` | Fastify plugin and `preHandler` guards |
@@ -65,7 +66,7 @@ You install only the pieces you use.
 | `@anievo-id/rbac-evolution-cli` | Command-line tool to create roles, assign them and inspect the setup |
 
 ::: tip
-The React, Vue and Svelte helpers only decide what the UI shows. Always enforce permissions on the server as well.
+The React, Vue, Solid and Svelte helpers only decide what the UI shows. Always enforce permissions on the server as well.
 :::
 
 ## Next steps

@@ -198,7 +198,8 @@ their own checks.
 ## Showing and hiding UI
 
 Load the snapshot in the root route with a server function, and give it to `<RbacProvider>` of the
-[React](/frameworks/react) package:
+[React](/frameworks/react) package (or of the [Solid](/frameworks/solid#tanstack-start-solid) package with
+`@tanstack/solid-start`):
 
 ```ts
 // src/server/rbac-snapshot.ts

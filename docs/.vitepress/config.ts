@@ -12,7 +12,7 @@ const apiSidebar: DefaultTheme.SidebarItem[] = existsSync(apiSidebarFile)
   ? JSON.parse(readFileSync(apiSidebarFile, 'utf8'))
   : []
 // `/api/` lists the packages; each `/api/<dir>/` page only gets its own package's tree, so a page
-// doesn't render the members of all 22 packages in its sidebar.
+// doesn't render the members of all 23 packages in its sidebar.
 const apiPackages: DefaultTheme.SidebarItem = {
   text: 'API reference',
   items: [{ text: 'All packages', link: '/api/' }, ...apiSidebar.map(({ text, link }) => ({ text, link }))],
@@ -137,6 +137,7 @@ export default defineConfig({
           text: 'Frameworks',
           items: [
             { text: 'React', link: '/frameworks/react' },
+            { text: 'Solid', link: '/frameworks/solid' },
             { text: 'Next.js', link: '/frameworks/nextjs' },
             { text: 'React Router', link: '/frameworks/react-router' },
             { text: 'Vue', link: '/frameworks/vue' },

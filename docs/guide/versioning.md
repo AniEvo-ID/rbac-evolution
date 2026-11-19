@@ -77,6 +77,7 @@ These only change in a major release:
 | NestJS | 10, 11, 12 |
 | tRPC | 11 |
 | React | 18, 19 |
+| Solid | 1.8, 1.9, 2.x |
 | React Router | 7, 8 (framework mode), Remix 2 |
 | Vue | 3.3+ |
 | SvelteKit | 2, 3 (with Svelte 5) |

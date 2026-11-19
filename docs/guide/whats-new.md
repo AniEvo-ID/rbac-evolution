@@ -6,6 +6,9 @@ with `1.x` of all the others. Full details are in the
 
 ## 1.6
 
+- **Solid.** The new `@anievo-id/rbac-evolution-solid` package brings `<RbacProvider>`, `<Can>`, `<HasRole>` and
+  `useCan()` accessors to Solid 1.8+ and 2.x, in the browser and in server rendering (SolidStart, TanStack Start
+  Solid). See [Solid](/frameworks/solid).
 - **TypeORM.** The new `@anievo-id/rbac-evolution-typeorm` package stores roles and permissions through a TypeORM
   0.3.20+ or 1.x `DataSource`: `createRbac({ adapter: typeormAdapter(dataSource) })`, or `typeormAdapter(manager)`
   inside `dataSource.transaction()`. `rbacMigration()` creates the tables as a regular TypeORM migration. See

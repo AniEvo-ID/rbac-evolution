@@ -1,0 +1,73 @@
+{
+  "name": "@anievo-id/rbac-evolution-solid",
+  "version": "1.5.0",
+  "description": "Solid bindings for rbac-evolution: <Can>, <HasRole>, useCan() accessors. Solid 1.8+ and 2.x, SSR included.",
+  "license": "MIT",
+  "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
+  "homepage": "https://creation.anievo.id/rbac-evolution/frameworks/solid",
+  "bugs": {
+    "url": "https://github.com/AniEvo-ID/rbac-evolution/issues"
+  },
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AniEvo-ID/rbac-evolution.git",
+    "directory": "packages/solid"
+  },
+  "keywords": [
+    "rbac",
+    "permissions",
+    "roles",
+    "authorization",
+    "solid",
+    "solidjs",
+    "solid-start",
+    "tanstack-start"
+  ],
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@anievo-id/rbac-evolution": "workspace:^"
+  },
+  "peerDependencies": {
+    "solid-js": "^1.8.0 || ^2.0.0"
+  },
+  "devDependencies": {
+    "jsdom": "^25.0.0",
+    "solid-js": "^1.9.10",
+    "tsup": "^8.3.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
