@@ -6,6 +6,10 @@ with `1.x` of all the others. Full details are in the
 
 ## 1.5
 
+- **TanStack Start.** The new `@anievo-id/rbac-evolution-tanstack-start` package guards server functions,
+  middleware and server routes: `await rbacServer.requirePermission(getRequest(), 'edit articles')` resolves to the
+  subject or throws the usual 401 / 403 `Response`, and a handler can return TanStack Router's `redirect()` for
+  pages. See [TanStack Start](/frameworks/tanstack-start).
 - **Redis cache store.** The new `@anievo-id/rbac-evolution-redis` package shares the cache between every process:
   `createRbac({ adapter, cache: new RedisCache({ client: redis }) })` with an ioredis or node-redis client.
   `clear()` is a single `INCR`, and a lookup that overlaps a change elsewhere is never served after it. See

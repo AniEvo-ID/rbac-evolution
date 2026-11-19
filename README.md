@@ -104,7 +104,7 @@ The API follows [spatie/laravel-permission](https://spatie.be/docs/laravel-permi
 | Database seeding | ✅ declarative `rbac.sync()` / `rbac-evolution sync` |
 | `User::role('writer')`, `User::permission('edit')` | ✅ `subjectsWithRole()`, `subjectsWithPermission()` |
 | `User::withoutRole('writer')`, `User::withoutPermission('edit')` | ✅ `subjectsWithoutRole()`, `subjectsWithoutPermission()` |
-| `role`, `permission`, `role_or_permission` middleware | ✅ Express, Fastify, Hono, NestJS, Next.js, Nuxt, SvelteKit, tRPC |
+| `role`, `permission`, `role_or_permission` middleware | ✅ Express, Fastify, Hono, NestJS, Next.js, Nuxt, SvelteKit, TanStack Start, tRPC |
 | Route-group authorization (v8.4) | ✅ router-level middleware in every integration |
 | Backed enums for role and permission names (v8.0) | ✅ [typed names](https://creation.anievo.id/rbac-evolution/basic-usage/typed-names): unions or TypeScript string enums |
 | `@can`, `@role` Blade directives | ✅ `<Can>`, `useCan()`, `v-can`, `v-role`, Svelte `<Can>` / `<HasRole>` |
@@ -129,6 +129,7 @@ The API follows [spatie/laravel-permission](https://spatie.be/docs/laravel-permi
 | [`@anievo-id/rbac-evolution-next`](./packages/next) | Next.js middleware, server helpers, server action guards |
 | [`@anievo-id/rbac-evolution-nuxt`](./packages/nuxt) | Nuxt module: SSR snapshot, page rules, Nitro helpers |
 | [`@anievo-id/rbac-evolution-sveltekit`](./packages/sveltekit) | SvelteKit `handle` hook, guards for loads, actions and endpoints, Svelte 5 `<Can>` / `<HasRole>` |
+| [`@anievo-id/rbac-evolution-tanstack-start`](./packages/tanstack-start) | TanStack Start guards for server functions, middleware and server routes, snapshot for `<RbacProvider>` |
 | [`@anievo-id/rbac-evolution-react`](./packages/react) | `<Can>`, `<Cannot>`, `<HasRole>`, `useCan()` |
 | [`@anievo-id/rbac-evolution-vue`](./packages/vue) | `v-can`, `v-role`, `<Can>`, composables |
 | [`@anievo-id/rbac-evolution-cli`](./packages/cli) | CLI like `php artisan permission:*` |
@@ -142,7 +143,7 @@ To see how the packages fit together, how a check is decided and which tables th
 
 Every push to `main` refreshes the public [Test report](https://creation.anievo.id/rbac-evolution/quality):
 
-- **Unit and integration tests** for all 17 packages, with code coverage, including the adapter suites against real
+- **Unit and integration tests** for all 18 packages, with code coverage, including the adapter suites against real
   PostgreSQL 16, MySQL 8 and MongoDB 7 servers, and the Redis cache store against Redis 7.
 - **End-to-end tests** with Playwright on the three [example apps](./examples) (Vue + Express + Drizzle,
   Next.js + Prisma, NestJS + Kysely) and the docs site: `401` for guests, `403` without access, a revoked role denied on the next
@@ -155,7 +156,7 @@ Every push to `main` refreshes the public [Test report](https://creation.anievo.
 
 - [x] Core: roles, permissions, direct permissions, guards, wildcards, teams, cache, events, typed names
 - [x] Adapters: memory, Prisma, Drizzle (PostgreSQL, MySQL, SQLite), Kysely, Mongoose
-- [x] Integrations: Express, Fastify, Hono, NestJS, Next.js, Nuxt, SvelteKit, tRPC, React, Vue
+- [x] Integrations: Express, Fastify, Hono, NestJS, Next.js, Nuxt, SvelteKit, TanStack Start, tRPC, React, Vue
 - [x] CLI and declarative seeding
 - [x] Documentation site, test report, E2E tests, verified releases
 - [x] `canAny()` / `canAll()` guards in every integration (spatie v8.5)
