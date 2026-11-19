@@ -6,6 +6,10 @@ with `1.x` of all the others. Full details are in the
 
 ## 1.5
 
+- **React Router.** The new `@anievo-id/rbac-evolution-react-router` package guards the loaders and actions of
+  React Router 7 and 8 (framework mode) and Remix 2: `await rbacServer.requirePermission(args, 'edit articles')`
+  resolves to the subject or throws the usual 401 / 403 `Response`, and `getSnapshot(args)` feeds `<RbacProvider>`
+  of the React package. See [React Router](/frameworks/react-router).
 - **Elysia.** The new `@anievo-id/rbac-evolution-elysia` package is an Elysia plugin: `rbacPlugin()` puts a typed
   `rbac` on the request context, and `requirePermission`, `requireRole`, `requireRoleOrPermission`, `canAny` and
   `canAll` run as `beforeHandle` hooks on a route or a whole `app.guard()` group, with the same 401 / 403 bodies as

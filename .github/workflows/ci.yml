@@ -144,6 +144,9 @@ jobs:
           - name: elysia 1.2
             pkg: '@anievo-id/rbac-evolution-elysia'
             deps: elysia@1.2.0
+          - name: react-router 7.0
+            pkg: '@anievo-id/rbac-evolution-react-router'
+            deps: react-router@7.0.0
           - name: hono 4.0
             pkg: '@anievo-id/rbac-evolution-hono'
             deps: hono@4.0.0
