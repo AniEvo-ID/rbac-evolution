@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-nuxt",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Nuxt 3/4 module for rbac-evolution: SSR-hydrated permissions, auto-imported composables, route middleware & Nitro helpers.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",

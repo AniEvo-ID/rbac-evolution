@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-astro",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Astro guards for rbac-evolution: pages, endpoints and middleware, redirects, and a snapshot for client islands.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",

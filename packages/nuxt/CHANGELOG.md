@@ -1,5 +1,13 @@
 # @anievo-id/rbac-evolution-nuxt
 
+## 1.5.0
+
+### Patch Changes
+
+- Updated dependencies [72e73a6]
+  - @anievo-id/rbac-evolution@1.5.0
+  - @anievo-id/rbac-evolution-vue@1.5.0
+
 ## 1.4.0
 
 ### Patch Changes

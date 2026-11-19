@@ -1,5 +1,12 @@
 # @anievo-id/rbac-evolution-react
 
+## 1.5.0
+
+### Patch Changes
+
+- Updated dependencies [72e73a6]
+  - @anievo-id/rbac-evolution@1.5.0
+
 ## 1.4.0
 
 ### Patch Changes
