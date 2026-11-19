@@ -5,7 +5,7 @@ RBAC Evolution ships plain JavaScript (ESM and CommonJS) with no runtime-specifi
 | Runtime | Status | Tested in CI |
 | --- | --- | --- |
 | **Node.js** 20, 22+ | ✅ Supported | Every package, plus real PostgreSQL, MySQL and MongoDB |
-| **Bun** (latest) | ✅ Supported | Core + adapter conformance suite, Drizzle on `bun:sqlite`, Hono on `Bun.serve`, CLI |
+| **Bun** (latest) | ✅ Supported | Core + adapter conformance suite, Drizzle on `bun:sqlite`, Hono on `Bun.serve`, Elysia, CLI |
 | Edge / Workers | ✅ Core, React, Vue and Hono | Hono only uses Web APIs |
 
 ## Bun

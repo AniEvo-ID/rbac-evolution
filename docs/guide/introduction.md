@@ -19,7 +19,7 @@ Laravel developers have a de-facto standard for roles and permissions. In JavaSc
 RBAC Evolution keeps the logic in one framework-agnostic core and moves the rest into small packages:
 
 - an **adapter** decides where roles and permissions are stored (Prisma, Drizzle, Kysely, Mongoose, memory, or your own),
-- an **integration** connects the engine to your framework (Express, Fastify, Hono, NestJS, Next.js, Nuxt, SvelteKit, TanStack Start, tRPC, React, Vue).
+- an **integration** connects the engine to your framework (Express, Fastify, Hono, Elysia, NestJS, Next.js, Nuxt, SvelteKit, TanStack Start, tRPC, React, Vue).
 
 You install only the pieces you use.
 
@@ -35,7 +35,7 @@ You install only the pieces you use.
 - Built-in caching with pluggable stores (Redis, KV, ...)
 - Events when roles or permissions are created, deleted, attached or detached
 - A [CLI](/basic-usage/cli) similar to `php artisan permission:*`
-- UI helpers for React, Vue and Svelte, and route protection for Express, Fastify, Hono, NestJS, Next.js, Nuxt, SvelteKit, TanStack Start and tRPC
+- UI helpers for React, Vue and Svelte, and route protection for Express, Fastify, Hono, Elysia, NestJS, Next.js, Nuxt, SvelteKit, TanStack Start and tRPC
 
 ## Packages
 
@@ -56,6 +56,7 @@ You install only the pieces you use.
 | `@anievo-id/rbac-evolution-express` | Express middleware: `requirePermission`, `requireRole`, `requireRoleOrPermission` |
 | `@anievo-id/rbac-evolution-fastify` | Fastify plugin and `preHandler` guards |
 | `@anievo-id/rbac-evolution-hono` | Hono middleware (Node, Bun, Cloudflare Workers and other edge runtimes) |
+| `@anievo-id/rbac-evolution-elysia` | Elysia plugin and `beforeHandle` guards (Bun first, also Node, Deno, Workers) |
 | `@anievo-id/rbac-evolution-nestjs` | NestJS module, guard and decorators |
 | `@anievo-id/rbac-evolution-trpc` | tRPC middleware: `requirePermission`, `requireRole`, `requireRoleOrPermission` for procedures |
 | `@anievo-id/rbac-evolution-cli` | Command-line tool to create roles, assign them and inspect the setup |

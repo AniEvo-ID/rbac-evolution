@@ -141,6 +141,9 @@ jobs:
           - name: express 4
             pkg: '@anievo-id/rbac-evolution-express'
             deps: express@4 @types/express@4
+          - name: elysia 1.2
+            pkg: '@anievo-id/rbac-evolution-elysia'
+            deps: elysia@1.2.0
           - name: hono 4.0
             pkg: '@anievo-id/rbac-evolution-hono'
             deps: hono@4.0.0
@@ -223,7 +226,7 @@ jobs:
 
   bun:
     # Runs the built packages under the Bun runtime: core + the shared adapter conformance
-    # suite, Drizzle on bun:sqlite, Hono on Bun.serve, and the CLI via `bun`.
+    # suite, Drizzle on bun:sqlite, Hono on Bun.serve, Elysia, and the CLI via `bun`.
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

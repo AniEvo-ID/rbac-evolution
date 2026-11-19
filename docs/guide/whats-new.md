@@ -6,6 +6,10 @@ with `1.x` of all the others. Full details are in the
 
 ## 1.5
 
+- **Elysia.** The new `@anievo-id/rbac-evolution-elysia` package is an Elysia plugin: `rbacPlugin()` puts a typed
+  `rbac` on the request context, and `requirePermission`, `requireRole`, `requireRoleOrPermission`, `canAny` and
+  `canAll` run as `beforeHandle` hooks on a route or a whole `app.guard()` group, with the same 401 / 403 bodies as
+  the other integrations. Bun first, also on Node, Deno and Cloudflare Workers. See [Elysia](/frameworks/elysia).
 - **TanStack Start.** The new `@anievo-id/rbac-evolution-tanstack-start` package guards server functions,
   middleware and server routes: `await rbacServer.requirePermission(getRequest(), 'edit articles')` resolves to the
   subject or throws the usual 401 / 403 `Response`, and a handler can return TanStack Router's `redirect()` for
