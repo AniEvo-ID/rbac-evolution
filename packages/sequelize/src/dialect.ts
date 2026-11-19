@@ -93,7 +93,7 @@ export const toBindSql = (sql: string, dialect: RbacDialect): string => {
 const mssqlValue = (value: unknown): unknown =>
   value instanceof Date ? value.toISOString().replace('T', ' ').replace('Z', '') : value
 
-type Kind = 'SELECT' | 'INSERT' | 'BULKDELETE' | 'RAW'
+type Kind = 'SELECT' | 'INSERT' | 'BULKDELETE' | 'BULKUPDATE' | 'RAW'
 
 /**
  * The Sequelize query type that gives back what Kysely needs: the rows of a select (or of an INSERT with
@@ -103,7 +103,9 @@ const kindOf = (compiled: CompiledQuery, dialect: RbacDialect): Kind => {
   const node = compiled.query as { kind: string; returning?: unknown; output?: unknown }
   if (node.kind === 'SelectQueryNode' || node.returning !== undefined || node.output !== undefined) return 'SELECT'
   if (node.kind === 'InsertQueryNode' && dialect === 'mysql') return 'INSERT'
-  if (node.kind === 'DeleteQueryNode') return 'BULKDELETE'
+  // SQL Server: Sequelize reads a BULKDELETE count from an `AFFECTEDROWS` column its own SQL adds, but a BULKUPDATE
+  // count from the driver's row count, which a plain DELETE has too.
+  if (node.kind === 'DeleteQueryNode') return dialect === 'mssql' ? 'BULKUPDATE' : 'BULKDELETE'
   return 'RAW'
 }
 
@@ -140,7 +142,9 @@ class SequelizeConnection implements DatabaseConnection {
         ...(typeof affected === 'number' ? { numAffectedRows: BigInt(affected) } : {}),
       }
     }
-    if (type === 'BULKDELETE' && typeof result === 'number') return { rows: [], numAffectedRows: BigInt(result) }
+    if ((type === 'BULKDELETE' || type === 'BULKUPDATE') && typeof result === 'number') {
+      return { rows: [], numAffectedRows: BigInt(result) }
+    }
     return { rows: [] }
   }
 

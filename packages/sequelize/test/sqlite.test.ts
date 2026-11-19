@@ -126,6 +126,8 @@ describe('sequelize dialect', () => {
     const f = fake('mssql', 0)
     await sequelizeAdapter(f.sequelize, { expiry: true }).deleteExpiredLinks(new Date('2026-11-19T10:20:30.456Z'))
     expect(f.calls[0]?.options.bind).toEqual(['2026-11-19 10:20:30.456'])
+    // A row count from the driver, not from an AFFECTEDROWS column.
+    expect(f.calls[0]?.options.type).toBe('BULKUPDATE')
   })
 
   it('starts, commits and rolls back its own transactions', async () => {
