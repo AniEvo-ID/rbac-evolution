@@ -38,6 +38,13 @@ For real data, install the adapter for your ORM.
 | --- | --- | --- |
 | Prisma | `@anievo-id/rbac-evolution-prisma` | `@prisma/client` 5.12+, 6 or 7 |
 | Drizzle | `@anievo-id/rbac-evolution-drizzle` | `drizzle-orm` 0.38+ (PostgreSQL or SQLite) |
+| Kysely | `@anievo-id/rbac-evolution-kysely` | `kysely` 0.28 or 0.29 |
+| TypeORM | `@anievo-id/rbac-evolution-typeorm` | `typeorm` 0.3.20+ or 1.x |
+| Sequelize | `@anievo-id/rbac-evolution-sequelize` | `sequelize` 6.1+ |
+| Mongoose | `@anievo-id/rbac-evolution-mongoose` | `mongoose` 8 or 9 |
+
+MikroORM 7 uses the Kysely adapter, see [MikroORM](/adapters/mikro-orm). For a shared cache across server instances,
+add `@anievo-id/rbac-evolution-redis` ([cache](/advanced/cache)).
 
 ::: code-group
 
@@ -67,7 +74,7 @@ bun add @anievo-id/rbac-evolution-drizzle
 
 :::
 
-Each adapter needs a few tables. See [Prisma](/adapters/prisma) or [Drizzle](/adapters/drizzle) for the schema, or [write your own adapter](/adapters/custom) for another database.
+Each adapter needs a few tables. See the [adapters overview](/adapters/overview) for the schema of each one, or [write your own adapter](/adapters/custom) for another database.
 
 ## 3. Pick framework integrations
 
@@ -80,12 +87,17 @@ All integrations are optional.
 | Solid | `@anievo-id/rbac-evolution-solid` | `solid-js` 1.8+ or 2.x |
 | React Router | `@anievo-id/rbac-evolution-react-router` | `react-router` 7+ (or Remix 2) |
 | Vue | `@anievo-id/rbac-evolution-vue` | `vue` 3.3+ |
+| Nuxt | `@anievo-id/rbac-evolution-nuxt` | `nuxt` 3 or 4, `vue` 3.3+ |
 | SvelteKit | `@anievo-id/rbac-evolution-sveltekit` | `@sveltejs/kit` 2+, `svelte` 5+ |
 | TanStack Start | `@anievo-id/rbac-evolution-tanstack-start` | `@tanstack/react-start` or `@tanstack/solid-start` 1.x |
 | Astro | `@anievo-id/rbac-evolution-astro` | `astro` 4+ |
 | Express | `@anievo-id/rbac-evolution-express` | `express` 4+ |
+| Fastify | `@anievo-id/rbac-evolution-fastify` | `fastify` 5+ |
+| Hono | `@anievo-id/rbac-evolution-hono` | `hono` 4+ |
 | Elysia | `@anievo-id/rbac-evolution-elysia` | `elysia` 1.2+ |
+| NestJS | `@anievo-id/rbac-evolution-nestjs` | `@nestjs/common`, `@nestjs/core` 10 to 12 |
 | tRPC | `@anievo-id/rbac-evolution-trpc` | `@trpc/server` 11+ |
+| Better Auth | `@anievo-id/rbac-evolution-better-auth` | `better-auth` 1.4+ |
 
 For example, a Next.js app using Prisma:
 
