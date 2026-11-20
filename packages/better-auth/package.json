@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-better-auth",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "Better Auth plugin for rbac-evolution: the signed-in user as an rbac subject, a snapshot endpoint, default roles on sign-up and cleanup on delete.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
