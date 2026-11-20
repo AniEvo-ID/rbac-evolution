@@ -22,6 +22,7 @@ body:
         - "@anievo-id/rbac-evolution-sequelize"
         - "@anievo-id/rbac-evolution-mongoose"
         - "@anievo-id/rbac-evolution-redis"
+        - "@anievo-id/rbac-evolution-better-auth"
         - "@anievo-id/rbac-evolution-prisma"
         - "@anievo-id/rbac-evolution-express"
         - "@anievo-id/rbac-evolution-fastify"

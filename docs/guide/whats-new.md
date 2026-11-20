@@ -4,6 +4,15 @@ The highlights of each minor release. Every package shares one version number, s
 with `1.x` of all the others. Full details are in the
 [changelog](https://github.com/AniEvo-ID/rbac-evolution/blob/main/packages/core/CHANGELOG.md).
 
+## 1.8
+
+- **Better Auth.** The new `@anievo-id/rbac-evolution-better-auth` package is a Better Auth plugin:
+  `rbacPlugin({ rbac, defaultRoles: ['member'] })` gives new users their roles, serves the signed-in user's snapshot
+  (`authClient.rbac.snapshot()` with `rbacClient()`), and removes a deleted user's roles. `subjectFromSession(auth,
+  headers)` is the `getSubject` of every integration. See [Better Auth](/recipes/better-auth).
+- **Clerk.** A new recipe connects Clerk users and organizations to subjects and teams, with a webhook for default
+  roles. See [Clerk](/recipes/clerk).
+
 ## 1.7
 
 - **MikroORM.** MikroORM 7 runs on Kysely, so the Kysely adapter works on `orm.em.getKysely()` with no extra
