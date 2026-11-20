@@ -1,5 +1,12 @@
 # @anievo-id/rbac-evolution-sequelize
 
+## 1.8.0
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@1.8.0
+  - @anievo-id/rbac-evolution-kysely@1.8.0
+
 ## 1.7.0
 
 ### Minor Changes

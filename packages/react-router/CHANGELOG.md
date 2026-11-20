@@ -1,5 +1,11 @@
 # @anievo-id/rbac-evolution-react-router
 
+## 1.8.0
+
+### Patch Changes
+
+- @anievo-id/rbac-evolution@1.8.0
+
 ## 1.7.0
 
 ### Patch Changes

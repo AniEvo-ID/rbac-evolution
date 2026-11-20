@@ -1,6 +1,6 @@
 {
   "name": "@anievo-id/rbac-evolution-react-router",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "React Router 7 and 8 (framework mode) guards for rbac-evolution: loaders and actions, redirects, and a snapshot for <RbacProvider>.",
   "license": "MIT",
   "author": "AniEvo-ID (https://github.com/AniEvo-ID)",
