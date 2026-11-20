@@ -1,4 +1,5 @@
-import { existsSync, readFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
 import { type DefaultTheme, defineConfig, type MarkdownRenderer } from 'vitepress'
 
 const repo = 'https://github.com/AniEvo-ID/rbac-evolution'
@@ -39,6 +40,18 @@ const mermaidFence = (md: MarkdownRenderer): void => {
   }
 }
 
+// `<PageActions>` (Copy page, Markdown, Ask ChatGPT, Ask Claude) right under the first `# title` of each page.
+// `pageActions: false` in the frontmatter leaves it out; the home page has no `# title`.
+const pageActions = (md: MarkdownRenderer): void => {
+  const close = md.renderer.rules.heading_close ?? ((tokens, idx, options, _env, self) => self.renderToken(tokens, idx, options))
+  md.renderer.rules.heading_close = (tokens, idx, options, env, self) => {
+    const html = close(tokens, idx, options, env, self)
+    if (tokens[idx]!.tag !== 'h1' || env.pageActionsDone || env.frontmatter?.pageActions === false) return html
+    env.pageActionsDone = true
+    return `${html}<PageActions />\n`
+  }
+}
+
 export default defineConfig({
   title: 'RBAC Evolution',
   description: 'Role & permission management (RBAC) for JavaScript & TypeScript — inspired by spatie/laravel-permission.',
@@ -49,7 +62,20 @@ export default defineConfig({
   // dark only: no light theme, no theme switch
   appearance: 'force-dark',
   lastUpdated: true,
-  markdown: { config: mermaidFence },
+  markdown: {
+    config: (md) => {
+      mermaidFence(md)
+      pageActions(md)
+    },
+  },
+  // Every page's Markdown source next to its HTML (`/guide/installation.md`), for the Markdown and Ask AI buttons.
+  buildEnd: ({ pages, srcDir, outDir }) => {
+    for (const page of pages) {
+      const target = join(outDir, page)
+      mkdirSync(dirname(target), { recursive: true })
+      copyFileSync(join(srcDir, page), target)
+    }
+  },
   head: [
     ['meta', { name: 'theme-color', content: '#0a0c0e' }],
     ['link', { rel: 'icon', type: 'image/png', href: '/rbac-evolution/brand/favicon.png' }],

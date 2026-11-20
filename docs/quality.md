@@ -2,6 +2,7 @@
 title: Test report
 outline: false
 aside: false
+pageActions: false
 ---
 
 # Test report
